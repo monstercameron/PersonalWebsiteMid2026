@@ -10,14 +10,18 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/monstercameron/GoGRPCBridge/pkg/grpctunnel"
 	"github.com/monstercameron/earlcameron/internal/config"
+	"github.com/monstercameron/earlcameron/internal/contact"
 	"github.com/monstercameron/earlcameron/internal/content"
+	"github.com/monstercameron/earlcameron/internal/store"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 	"google.golang.org/grpc"
 )
@@ -28,24 +32,57 @@ type Server struct {
 	log    *slog.Logger
 	grpc   *grpc.Server
 	tunnel http.Handler
+	store  *store.Store
 }
 
-// New builds the gRPC server, registers the services, and wraps them in the GoGRPCBridge
-// WebSocket tunnel. It returns an error if the tunnel handler cannot be constructed.
+// New opens the store, builds the gRPC server, registers the services, and wraps them in the
+// GoGRPCBridge WebSocket tunnel. It returns an error if the store or tunnel cannot be built.
 func New(cfg config.Config) (*Server, error) {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	grpcSrv := grpc.NewServer()
-	sitepb.RegisterContentServiceServer(grpcSrv, content.New())
-
-	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
-		// Dev: allow any WebSocket origin. TODO: restrict to the site origin in production.
-		CheckOrigin: func(_ *http.Request) bool { return true },
-	})
+	st, err := store.Open(cfg.DBPath)
 	if err != nil {
 		return nil, err
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel}, nil
+
+	grpcSrv := grpc.NewServer()
+	sitepb.RegisterContentServiceServer(grpcSrv, content.New())
+	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
+
+	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
+		CheckOrigin: originChecker(cfg.AllowedOrigins),
+	})
+	if err != nil {
+		_ = st.Close()
+		return nil, err
+	}
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st}, nil
+}
+
+// originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
+// hijacking: it allows requests with no Origin header (non-browser clients), same-origin
+// requests (Origin host matches the request Host), and any origin in the allow-list. Everything
+// else — i.e. a browser page on another site — is rejected.
+func originChecker(allowed []string) func(*http.Request) bool {
+	set := make(map[string]struct{}, len(allowed))
+	for _, o := range allowed {
+		set[o] = struct{}{}
+	}
+	return func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		u, err := url.Parse(origin)
+		if err != nil {
+			return false
+		}
+		if strings.EqualFold(u.Host, r.Host) {
+			return true
+		}
+		_, ok := set[origin]
+		return ok
+	}
 }
 
 // routes builds the request multiplexer.
@@ -89,6 +126,7 @@ func (s *Server) Run() error {
 	<-stop
 
 	s.grpc.GracefulStop()
+	_ = s.store.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return srv.Shutdown(ctx)

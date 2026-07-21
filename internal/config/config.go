@@ -5,20 +5,42 @@
 // are never web-editable.
 package config
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 // Config is the process configuration.
 type Config struct {
 	Addr   string // ingress listen address, e.g. 127.0.0.1:8095
 	DBPath string // path to the SQLite file
+	// AllowedOrigins are extra WebSocket upgrade origins permitted beyond same-origin (comma-
+	// separated ALLOWED_ORIGINS). Same-origin requests are always allowed; everything else is
+	// rejected to prevent cross-site WebSocket hijacking.
+	AllowedOrigins []string
 }
 
 // Load reads configuration from the environment, applying sane local defaults.
 func Load() Config {
 	return Config{
-		Addr:   env("LISTEN_ADDR", "127.0.0.1:8095"),
-		DBPath: env("DB_PATH", "web/data/site.db"),
+		Addr:           env("LISTEN_ADDR", "127.0.0.1:8095"),
+		DBPath:         env("DB_PATH", "web/data/site.db"),
+		AllowedOrigins: splitCSV(os.Getenv("ALLOWED_ORIGINS")),
 	}
+}
+
+// splitCSV splits a comma-separated list, trimming spaces and dropping empties.
+func splitCSV(csv string) []string {
+	if csv == "" {
+		return nil
+	}
+	var out []string
+	for _, p := range strings.Split(csv, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // env returns the value of environment variable key, or def when it is unset or empty.
