@@ -49,6 +49,49 @@ service AdminService {
   rpc GetTailoring(TailoringId) returns (TailorResult);
   // DeleteTailoring removes a saved variant by id.
   rpc DeleteTailoring(TailoringId) returns (Ack);
+  // --- RSS / anime control panel ---
+  // ListPrompts returns the configurable QOTD (question-of-the-day) prompts.
+  rpc ListPrompts(Empty) returns (PromptList);
+  // AddPrompt adds a QOTD prompt.
+  rpc AddPrompt(PromptText) returns (Ack);
+  // DeletePrompt removes a QOTD prompt by id.
+  rpc DeletePrompt(PromptId) returns (Ack);
+  // GetSlackConfig returns the Slack posting config (the webhook URL is never returned, only whether set).
+  rpc GetSlackConfig(Empty) returns (SlackConfig);
+  // SaveSlackConfig persists the Slack config (a blank webhook_url leaves the stored one unchanged).
+  rpc SaveSlackConfig(SlackConfig) returns (Ack);
+  // PostToSlackNow composes the latest anime news + today's prompt and posts it to Slack now.
+  rpc PostToSlackNow(Empty) returns (Ack);
+}
+
+// PromptText carries a QOTD prompt to add.
+message PromptText {
+  string text = 1;
+}
+
+// PromptId identifies a QOTD prompt.
+message PromptId {
+  int64 id = 1;
+}
+
+// Prompt is one QOTD prompt.
+message Prompt {
+  int64 id = 1;
+  string text = 2;
+  int64 created_at = 3;
+}
+
+// PromptList is the configured QOTD prompts, newest first.
+message PromptList {
+  repeated Prompt items = 1;
+}
+
+// SlackConfig is the Slack posting configuration. On read, webhook_url is empty and webhook_set
+// reports whether one is stored; on write, a blank webhook_url leaves the stored value unchanged.
+message SlackConfig {
+  string webhook_url = 1;
+  bool enabled = 2;
+  bool webhook_set = 3;
 }
 
 // TailoringId identifies a saved variant.

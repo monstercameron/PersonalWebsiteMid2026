@@ -16,6 +16,7 @@ import (
 	"github.com/monstercameron/earlcameron/internal/anime"
 	"github.com/monstercameron/earlcameron/internal/openai"
 	"github.com/monstercameron/earlcameron/internal/resume"
+	"github.com/monstercameron/earlcameron/internal/rss"
 	"github.com/monstercameron/earlcameron/internal/store"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
@@ -267,6 +268,90 @@ func (s *Service) DeleteTailoring(ctx context.Context, req *sitepb.TailoringId) 
 		return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
 	}
 	return &sitepb.Ack{Ok: true}, nil
+}
+
+// --- RSS / anime control panel ---
+
+// ListPrompts returns the configurable QOTD prompts (newest first).
+func (s *Service) ListPrompts(ctx context.Context, _ *sitepb.Empty) (*sitepb.PromptList, error) {
+	list, err := s.store.ListPrompts(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list prompts: %v", err)
+	}
+	out := &sitepb.PromptList{}
+	for _, p := range list {
+		out.Items = append(out.Items, &sitepb.Prompt{Id: p.ID, Text: p.Prompt, CreatedAt: p.CreatedAt})
+	}
+	return out, nil
+}
+
+// AddPrompt adds a QOTD prompt.
+func (s *Service) AddPrompt(ctx context.Context, req *sitepb.PromptText) (*sitepb.Ack, error) {
+	t := strings.TrimSpace(req.GetText())
+	if t == "" {
+		return &sitepb.Ack{Ok: false, Message: "empty prompt"}, nil
+	}
+	if len(t) > 500 {
+		return &sitepb.Ack{Ok: false, Message: "prompt too long (max 500 characters)"}, nil
+	}
+	if _, err := s.store.AddPrompt(ctx, t, time.Now().Unix()); err != nil {
+		return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+	}
+	return &sitepb.Ack{Ok: true}, nil
+}
+
+// DeletePrompt removes a QOTD prompt by id.
+func (s *Service) DeletePrompt(ctx context.Context, req *sitepb.PromptId) (*sitepb.Ack, error) {
+	if err := s.store.DeletePrompt(ctx, req.GetId()); err != nil {
+		return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+	}
+	return &sitepb.Ack{Ok: true}, nil
+}
+
+// GetSlackConfig reports whether a Slack webhook is stored and whether posting is enabled (never
+// returns the webhook URL itself).
+func (s *Service) GetSlackConfig(ctx context.Context, _ *sitepb.Empty) (*sitepb.SlackConfig, error) {
+	webhook, _ := s.store.GetSetting(ctx, store.SettingSlackWebhook)
+	enabled, _ := s.store.GetSetting(ctx, store.SettingSlackEnabled)
+	return &sitepb.SlackConfig{WebhookSet: webhook != "", Enabled: enabled == "1" || enabled == "true"}, nil
+}
+
+// SaveSlackConfig persists the Slack config. A blank webhook_url leaves the stored webhook unchanged.
+func (s *Service) SaveSlackConfig(ctx context.Context, req *sitepb.SlackConfig) (*sitepb.Ack, error) {
+	if w := strings.TrimSpace(req.GetWebhookUrl()); w != "" {
+		if err := s.store.SetSetting(ctx, store.SettingSlackWebhook, w); err != nil {
+			return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+		}
+	}
+	val := "0"
+	if req.GetEnabled() {
+		val = "1"
+	}
+	if err := s.store.SetSetting(ctx, store.SettingSlackEnabled, val); err != nil {
+		return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+	}
+	return &sitepb.Ack{Ok: true}, nil
+}
+
+// PostToSlackNow composes the latest anime news + today's QOTD prompt into a discussion message and
+// posts it to the configured Slack webhook.
+func (s *Service) PostToSlackNow(ctx context.Context, _ *sitepb.Empty) (*sitepb.Ack, error) {
+	webhook, _ := s.store.GetSetting(ctx, store.SettingSlackWebhook)
+	if strings.TrimSpace(webhook) == "" {
+		return &sitepb.Ack{Ok: false, Message: "no Slack webhook configured — add one in settings"}, nil
+	}
+	prompts, _ := s.store.ListPrompts(ctx)
+	texts := make([]string, 0, len(prompts))
+	for _, p := range prompts {
+		texts = append(texts, p.Prompt)
+	}
+	prompt := rss.DailyPrompt(texts, time.Now())
+	news, _ := rss.FetchAnimeNews(ctx) // best-effort; message still posts without news
+	msg := rss.BuildDiscussionMessage(news, prompt)
+	if err := rss.PostToSlack(ctx, webhook, msg); err != nil {
+		return &sitepb.Ack{Ok: false, Message: "post failed: " + err.Error()}, nil
+	}
+	return &sitepb.Ack{Ok: true, Message: "posted to Slack"}, nil
 }
 
 // unmarshalResult decodes a stored TailorResult (protojson), returning an empty result on error.

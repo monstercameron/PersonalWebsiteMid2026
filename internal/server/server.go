@@ -20,6 +20,8 @@ import (
 	"github.com/monstercameron/GoGRPCBridge/pkg/grpctunnel"
 	"github.com/monstercameron/earlcameron/internal/admin"
 	"github.com/monstercameron/earlcameron/internal/anime"
+	"github.com/monstercameron/earlcameron/internal/budget"
+	"github.com/monstercameron/earlcameron/internal/rss"
 	"github.com/monstercameron/earlcameron/internal/config"
 	"github.com/monstercameron/earlcameron/internal/contact"
 	"github.com/monstercameron/earlcameron/internal/content"
@@ -49,6 +51,10 @@ func New(cfg config.Config) (*Server, error) {
 	st, err := store.Open(cfg.DBPath)
 	if err != nil {
 		return nil, err
+	}
+	// Seed the default QOTD prompts on a fresh database (no-op once prompts exist).
+	if _, err := rss.SeedPrompts(context.Background(), st, time.Now()); err != nil {
+		log.Warn("qotd seed failed", "err", err)
 	}
 
 	cs := content.New()
@@ -126,6 +132,8 @@ func (s *Server) routes() *http.ServeMux {
 	mux.Handle("/socket/", s.tunnel)
 	// Document plane (HTTP GET).
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+	// CashFlux, hosted as a managed budgeting app (its own WASM SPA under web/cashflux).
+	mux.Handle("/budget/", http.StripPrefix("/budget/", budget.Handler()))
 	mux.HandleFunc("/healthz", s.healthz)
 	s.registerAdminRoutes(mux)
 	s.registerResumeRoutes(mux)

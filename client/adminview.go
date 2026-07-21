@@ -51,8 +51,9 @@ func consoleShell(active string, navTo func(string) ui.Handler, onLogout ui.Hand
 	}
 	header := Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), PadY(Spacing4)),
 		A(Class(FontSemibold, Fg(theme.Accent)), Props{Href: "/"}, "~/earlcameron"),
-		Div(Class(Flex, Gap(Spacing5), ItemsCenter),
-			tab("anime", "anime"), tab("resume", "résumé"), tab("settings", "settings"),
+		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
+			tab("anime", "anime"), tab("resume", "résumé"), tab("rss", "rss"), tab("settings", "settings"),
+			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)), Props{Href: "/budget/", Target: "_blank", Rel: "noopener"}, "budget ↗"),
 			ghostButton("logout", onLogout),
 		),
 	)
@@ -494,6 +495,66 @@ func settingRow(label, hint string, field ui.Node) ui.Node {
 		Span(Class(FontSemibold, TextSize(TextSm)), label),
 		Span(Class(Fg(theme.Dim), TextSize(TextSm)), hint),
 		field,
+	)
+}
+
+// --- rss / anime control panel ---
+
+// rssView renders the RSS control panel: the public feed links, Slack posting config (+ post-now),
+// and the configurable QOTD prompt list with add/delete.
+func rssView(prompts []*sitepb.Prompt, newPrompt ui.State[string], onAddPrompt ui.Handler, onDeletePrompt func(int64),
+	slackWebhook ui.State[string], slackSet, slackEnabled bool, onToggleSlack, onSaveSlack, onPostNow ui.Handler) ui.Node {
+	onNew := ui.WrapHandler(func(e ui.Event) { newPrompt.Set(e.GetValue()) })
+	onWebhook := ui.WrapHandler(func(e ui.Event) { slackWebhook.Set(e.GetValue()) })
+
+	webhookPlaceholder := "https://hooks.slack.com/services/…"
+	if slackSet {
+		webhookPlaceholder = "a webhook is set — leave blank to keep it"
+	}
+	schedule := "scheduled posting: off"
+	if slackEnabled {
+		schedule = "scheduled posting: on"
+	}
+
+	promptRows := []any{Class(Flex, FlexCol, Gap(Spacing2))}
+	for _, p := range prompts {
+		id := p.GetId()
+		del := ui.WrapHandler(func() { onDeletePrompt(id) })
+		promptRows = append(promptRows,
+			Div(Class(Flex, JustifyBetween, ItemsCenter, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
+				Span(Class(TextSize(TextSm)), p.GetText()),
+				linkButton("delete", del, theme.Red),
+			))
+	}
+
+	return Div(Class(Flex, FlexCol, Gap(Spacing5)),
+		Div(Class(Flex, FlexCol, Gap(Spacing2)),
+			sectionLabel("public rss feeds"),
+			Div(Class(Flex, Gap(Spacing4), css.Raw("flex-wrap", "wrap"), TextSize(TextSm)),
+				A(Class(Fg(theme.Accent2)), Props{Href: "/anime.xml", Target: "_blank", Rel: "noopener"}, "↗ /anime.xml — Release Radar"),
+				A(Class(Fg(theme.Accent2)), Props{Href: "/anime/qotd.xml", Target: "_blank", Rel: "noopener"}, "↗ /anime/qotd.xml — QOTD"),
+			),
+		),
+		Div(Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(560))),
+			sectionLabel("slack — post to your channel"),
+			P(Class(Fg(theme.Dim), TextSize(TextSm)),
+				"Posts the latest anime news + today's prompt as a discussion/debate topic to a Slack incoming webhook."),
+			settingRow("Webhook URL ("+keyStatus(slackSet)+")", "stored in the backend, never shown",
+				textInput(slackWebhook.Get(), onWebhook, webhookPlaceholder, "password", false)),
+			Div(Class(Flex, Gap(Spacing3), ItemsCenter, css.Raw("flex-wrap", "wrap")),
+				ghostButton(schedule, onToggleSlack),
+				primaryButton("Save Slack config", onSaveSlack),
+				ghostButton("Post to Slack now", onPostNow),
+			),
+		),
+		Div(Class(Flex, FlexCol, Gap(Spacing3)),
+			sectionLabel("question-of-the-day prompts ("+strconv.Itoa(len(prompts))+")"),
+			Div(Class(Flex, Gap(Spacing2)),
+				growInput(newPrompt.Get(), onNew, "add a discussion prompt…"),
+				primaryButton("Add", onAddPrompt),
+			),
+			Div(promptRows...),
+		),
 	)
 }
 

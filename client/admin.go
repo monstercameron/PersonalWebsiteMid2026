@@ -33,6 +33,13 @@ func AdminApp() ui.Node {
 	rationales := ui.UseState[[]*sitepb.Rationale](nil)
 	variants := ui.UseState[[]*sitepb.TailoringMeta](nil) // saved tailoring variants (the CRUD list)
 
+	// RSS / anime control panel
+	prompts := ui.UseState[[]*sitepb.Prompt](nil)
+	newPrompt := ui.UseState("")
+	slackWebhook := ui.UseState("")
+	slackSet := ui.UseState(false)
+	slackEnabled := ui.UseState(false)
+
 	keySet := ui.UseState(false)
 	model := ui.UseState("")
 	models := ui.UseState[[]string](nil)
@@ -112,6 +119,27 @@ func AdminApp() ui.Node {
 				ml, err := c.ListModels(ctx, &sitepb.Empty{})
 				if err == nil {
 					models.Set(ml.GetModels())
+				}
+			}()
+		case "rss":
+			go func() {
+				c, err := adminClient()
+				if err != nil {
+					flash.Set("connection error")
+					return
+				}
+				ctx, cancel := callCtx(token.Get())
+				defer cancel()
+				pl, err := c.ListPrompts(ctx, &sitepb.Empty{})
+				if onAuthErr(err) {
+					return
+				}
+				if err == nil {
+					prompts.Set(pl.GetItems())
+				}
+				if sc, err := c.GetSlackConfig(ctx, &sitepb.Empty{}); err == nil {
+					slackSet.Set(sc.GetWebhookSet())
+					slackEnabled.Set(sc.GetEnabled())
 				}
 			}()
 		}
@@ -418,12 +446,106 @@ func AdminApp() ui.Node {
 		}()
 	}
 
+	reloadPrompts := func() {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if pl, err := c.ListPrompts(ctx, &sitepb.Empty{}); err == nil {
+				prompts.Set(pl.GetItems())
+			}
+		}()
+	}
+	onAddPrompt := ui.UseEvent(func() {
+		if newPrompt.Get() == "" {
+			return
+		}
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if _, err := c.AddPrompt(ctx, &sitepb.PromptText{Text: newPrompt.Get()}); err != nil {
+				if onAuthErr(err) {
+					return
+				}
+				flash.Set("add failed")
+				return
+			}
+			newPrompt.Set("")
+			reloadPrompts()
+		}()
+	})
+	deletePrompt := func(id int64) {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if _, err := c.DeletePrompt(ctx, &sitepb.PromptId{Id: id}); err == nil {
+				reloadPrompts()
+			} else {
+				onAuthErr(err)
+			}
+		}()
+	}
+	onToggleSlack := ui.WrapHandler(func() { slackEnabled.Set(!slackEnabled.Get()) })
+	onSaveSlack := ui.UseEvent(func() {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if _, err := c.SaveSlackConfig(ctx, &sitepb.SlackConfig{WebhookUrl: slackWebhook.Get(), Enabled: slackEnabled.Get()}); err != nil {
+				if onAuthErr(err) {
+					return
+				}
+				flash.Set("save failed")
+				return
+			}
+			slackWebhook.Set("")
+			slackSet.Set(true)
+			flash.Set("Slack config saved")
+		}()
+	})
+	onPostNow := ui.UseEvent(func() {
+		flash.Set("posting to Slack…")
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			ack, err := c.PostToSlackNow(ctx, &sitepb.Empty{})
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("post failed")
+				return
+			}
+			flash.Set(ack.GetMessage())
+		}()
+	})
+
 	var content ui.Node
 	switch view.Get() {
 	case "resume":
 		content = resumeView(jobURL, onTailor, onApply, onCancel, canonical.Get(), tailored.Get(), jobAnalysis.Get(), rationales.Get(), variants.Get(), selectVariant, deleteVariant)
 	case "settings":
 		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
+	case "rss":
+		content = rssView(prompts.Get(), newPrompt, onAddPrompt, deletePrompt, slackWebhook, slackSet.Get(), slackEnabled.Get(), onToggleSlack, onSaveSlack, onPostNow)
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}

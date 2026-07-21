@@ -36,6 +36,12 @@ const (
 	AdminService_ListTailorings_FullMethodName   = "/site.v1.AdminService/ListTailorings"
 	AdminService_GetTailoring_FullMethodName     = "/site.v1.AdminService/GetTailoring"
 	AdminService_DeleteTailoring_FullMethodName  = "/site.v1.AdminService/DeleteTailoring"
+	AdminService_ListPrompts_FullMethodName      = "/site.v1.AdminService/ListPrompts"
+	AdminService_AddPrompt_FullMethodName        = "/site.v1.AdminService/AddPrompt"
+	AdminService_DeletePrompt_FullMethodName     = "/site.v1.AdminService/DeletePrompt"
+	AdminService_GetSlackConfig_FullMethodName   = "/site.v1.AdminService/GetSlackConfig"
+	AdminService_SaveSlackConfig_FullMethodName  = "/site.v1.AdminService/SaveSlackConfig"
+	AdminService_PostToSlackNow_FullMethodName   = "/site.v1.AdminService/PostToSlackNow"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -85,6 +91,19 @@ type AdminServiceClient interface {
 	GetTailoring(ctx context.Context, in *TailoringId, opts ...grpc.CallOption) (*TailorResult, error)
 	// DeleteTailoring removes a saved variant by id.
 	DeleteTailoring(ctx context.Context, in *TailoringId, opts ...grpc.CallOption) (*Ack, error)
+	// --- RSS / anime control panel ---
+	// ListPrompts returns the configurable QOTD (question-of-the-day) prompts.
+	ListPrompts(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PromptList, error)
+	// AddPrompt adds a QOTD prompt.
+	AddPrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*Ack, error)
+	// DeletePrompt removes a QOTD prompt by id.
+	DeletePrompt(ctx context.Context, in *PromptId, opts ...grpc.CallOption) (*Ack, error)
+	// GetSlackConfig returns the Slack posting config (the webhook URL is never returned, only whether set).
+	GetSlackConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SlackConfig, error)
+	// SaveSlackConfig persists the Slack config (a blank webhook_url leaves the stored one unchanged).
+	SaveSlackConfig(ctx context.Context, in *SlackConfig, opts ...grpc.CallOption) (*Ack, error)
+	// PostToSlackNow composes the latest anime news + today's prompt and posts it to Slack now.
+	PostToSlackNow(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Ack, error)
 }
 
 type adminServiceClient struct {
@@ -265,6 +284,66 @@ func (c *adminServiceClient) DeleteTailoring(ctx context.Context, in *TailoringI
 	return out, nil
 }
 
+func (c *adminServiceClient) ListPrompts(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PromptList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PromptList)
+	err := c.cc.Invoke(ctx, AdminService_ListPrompts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) AddPrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_AddPrompt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeletePrompt(ctx context.Context, in *PromptId, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_DeletePrompt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetSlackConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SlackConfig, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SlackConfig)
+	err := c.cc.Invoke(ctx, AdminService_GetSlackConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SaveSlackConfig(ctx context.Context, in *SlackConfig, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_SaveSlackConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) PostToSlackNow(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_PostToSlackNow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -312,6 +391,19 @@ type AdminServiceServer interface {
 	GetTailoring(context.Context, *TailoringId) (*TailorResult, error)
 	// DeleteTailoring removes a saved variant by id.
 	DeleteTailoring(context.Context, *TailoringId) (*Ack, error)
+	// --- RSS / anime control panel ---
+	// ListPrompts returns the configurable QOTD (question-of-the-day) prompts.
+	ListPrompts(context.Context, *Empty) (*PromptList, error)
+	// AddPrompt adds a QOTD prompt.
+	AddPrompt(context.Context, *PromptText) (*Ack, error)
+	// DeletePrompt removes a QOTD prompt by id.
+	DeletePrompt(context.Context, *PromptId) (*Ack, error)
+	// GetSlackConfig returns the Slack posting config (the webhook URL is never returned, only whether set).
+	GetSlackConfig(context.Context, *Empty) (*SlackConfig, error)
+	// SaveSlackConfig persists the Slack config (a blank webhook_url leaves the stored one unchanged).
+	SaveSlackConfig(context.Context, *SlackConfig) (*Ack, error)
+	// PostToSlackNow composes the latest anime news + today's prompt and posts it to Slack now.
+	PostToSlackNow(context.Context, *Empty) (*Ack, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -372,6 +464,24 @@ func (UnimplementedAdminServiceServer) GetTailoring(context.Context, *TailoringI
 }
 func (UnimplementedAdminServiceServer) DeleteTailoring(context.Context, *TailoringId) (*Ack, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteTailoring not implemented")
+}
+func (UnimplementedAdminServiceServer) ListPrompts(context.Context, *Empty) (*PromptList, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPrompts not implemented")
+}
+func (UnimplementedAdminServiceServer) AddPrompt(context.Context, *PromptText) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddPrompt not implemented")
+}
+func (UnimplementedAdminServiceServer) DeletePrompt(context.Context, *PromptId) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeletePrompt not implemented")
+}
+func (UnimplementedAdminServiceServer) GetSlackConfig(context.Context, *Empty) (*SlackConfig, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSlackConfig not implemented")
+}
+func (UnimplementedAdminServiceServer) SaveSlackConfig(context.Context, *SlackConfig) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveSlackConfig not implemented")
+}
+func (UnimplementedAdminServiceServer) PostToSlackNow(context.Context, *Empty) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method PostToSlackNow not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -700,6 +810,114 @@ func _AdminService_DeleteTailoring_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListPrompts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListPrompts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListPrompts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListPrompts(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_AddPrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PromptText)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).AddPrompt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_AddPrompt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).AddPrompt(ctx, req.(*PromptText))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeletePrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PromptId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeletePrompt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeletePrompt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeletePrompt(ctx, req.(*PromptId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetSlackConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetSlackConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetSlackConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetSlackConfig(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SaveSlackConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SlackConfig)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SaveSlackConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SaveSlackConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SaveSlackConfig(ctx, req.(*SlackConfig))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_PostToSlackNow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).PostToSlackNow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_PostToSlackNow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).PostToSlackNow(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -774,6 +992,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteTailoring",
 			Handler:    _AdminService_DeleteTailoring_Handler,
+		},
+		{
+			MethodName: "ListPrompts",
+			Handler:    _AdminService_ListPrompts_Handler,
+		},
+		{
+			MethodName: "AddPrompt",
+			Handler:    _AdminService_AddPrompt_Handler,
+		},
+		{
+			MethodName: "DeletePrompt",
+			Handler:    _AdminService_DeletePrompt_Handler,
+		},
+		{
+			MethodName: "GetSlackConfig",
+			Handler:    _AdminService_GetSlackConfig_Handler,
+		},
+		{
+			MethodName: "SaveSlackConfig",
+			Handler:    _AdminService_SaveSlackConfig_Handler,
+		},
+		{
+			MethodName: "PostToSlackNow",
+			Handler:    _AdminService_PostToSlackNow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

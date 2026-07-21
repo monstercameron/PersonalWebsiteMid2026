@@ -189,20 +189,20 @@ Goal: **one-click install, push-to-deploy from GitHub, no brain-racking.**
 Tracking (Claude Code TodoWrite tool is not exposed in this session; tracked here instead).
 
 ### A. RSS features + in-app control panels  [subagent: internal/rss]
-- [ ] Configurable QOTD prompts — full CRUD in-app (add/list/delete), store-backed (`qotd_prompts`)
-- [ ] Spec-compliant RSS 2.0 (atom:self, RFC1123Z dates, guid, lastBuildDate) — /anime.xml, /anime/qotd.xml
-- [ ] Anime news fetch (Anime News Network RSS) → discussion/debate composer
-- [ ] Slack integration: post news + QOTD to a configurable company Slack channel (webhook), toggle + "post now"
-- [ ] RSS/Slack control panel in the wasm admin (gRPC): QOTD CRUD, Slack config, post-now, feed links
-- [ ] e2e + screenshot the control panel; adversarial review → refine
+- [x] Configurable QOTD prompts — full CRUD in-app (add/list/delete), store-backed (`qotd_prompts`)
+- [x] Spec-compliant RSS 2.0 (atom:self, RFC1123Z dates, guid, lastBuildDate) — /anime.xml, /anime/qotd.xml
+- [x] Anime news fetch (Anime News Network RSS) → discussion/debate composer
+- [x] Slack integration: post news + QOTD to a configurable company Slack channel (webhook), toggle + "post now"
+- [x] RSS/Slack control panel in the wasm admin (gRPC): QOTD CRUD, Slack config, post-now, feed links
+- [x] e2e + screenshot the control panel; adversarial review → refine (5 findings fixed: Slack escape, guid, seed race, len cap, redirect host)
 
 ### B. CashFlux as a managed budgeting service  [subagent: internal/budget]
-- [ ] Build CashFlux wasm frontend → serve from this server at /budget (internal/budget handler)
-- [ ] Server integration so it runs as a managed/hosted app (serve + assess backend sync)
-- [ ] Link from site/admin; e2e + screenshot; adversarial review → refine
+- [x] Build CashFlux wasm frontend → serve from this server at /budget (internal/budget handler)
+- [x] Server integration so it runs as a managed/hosted app (serve + assess backend sync)
+- [x] Link from site/admin; e2e + screenshot; adversarial review → refine
 
 ### Orchestration
 - [x] 2 parallel Sonnet subagents (disjoint new packages, no shared-file collision)
-- [ ] Wire each package into proto/AdminService + wasm-admin views + server routes (me)
-- [ ] Adversarial Sonnet review per feature; refine until clean
-- [ ] e2e + screenshot both; commit feature-atomically
+- [x] Wire each package into proto/AdminService + wasm-admin views + server routes (me)
+- [x] Adversarial Sonnet review per feature; refine until clean
+- [~] e2e + screenshot both (done); commit

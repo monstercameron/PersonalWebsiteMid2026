@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/monstercameron/earlcameron/internal/anime"
+	"github.com/monstercameron/earlcameron/internal/rss"
 )
 
 // registerAdminRoutes wires the public anime RSS feeds and the admin console shell.
@@ -21,21 +21,36 @@ func (s *Server) registerAdminRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/", s.adminShell)       // client-routed sub-paths
 }
 
-// animeFeed serves the tracked-releases RSS feed.
+// animeFeed serves the tracked-releases RSS feed (spec-compliant RSS 2.0 via internal/rss).
 func (s *Server) animeFeed(w http.ResponseWriter, r *http.Request) {
 	list, err := s.anime.List(r.Context())
 	if err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
+	xml, err := rss.TrackedFeedXML(list, s.cfg.BaseURL, time.Now())
+	if err != nil {
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
-	_, _ = fmt.Fprint(w, s.anime.TrackedFeedXML(list, s.cfg.BaseURL))
+	_, _ = fmt.Fprint(w, xml)
 }
 
-// qotdFeed serves the daily-prompts RSS feed.
-func (s *Server) qotdFeed(w http.ResponseWriter, _ *http.Request) {
+// qotdFeed serves the daily-prompts (QOTD) RSS feed, built from the configurable prompt list.
+func (s *Server) qotdFeed(w http.ResponseWriter, r *http.Request) {
+	prompts, _ := s.store.ListPrompts(r.Context())
+	texts := make([]string, 0, len(prompts))
+	for _, p := range prompts {
+		texts = append(texts, p.Prompt)
+	}
+	xml, err := rss.QuestionFeedXML(texts, s.cfg.BaseURL, time.Now())
+	if err != nil {
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
-	_, _ = fmt.Fprint(w, anime.QuestionFeedXML(s.cfg.BaseURL, time.Now()))
+	_, _ = fmt.Fprint(w, xml)
 }
 
 // adminShell serves the admin console shell: a minimal document that mounts #admin-root and boots

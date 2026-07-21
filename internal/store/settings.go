@@ -8,9 +8,11 @@ import (
 
 // Setting keys used by the admin console. Kept as constants so callers don't hardcode strings.
 const (
-	SettingOpenAIKey   = "openai_api_key"
-	SettingOpenAIModel = "openai_model"
-	SettingActiveResume = "active_resume" // JSON of the applied résumé (overrides the canonical)
+	SettingOpenAIKey    = "openai_api_key"
+	SettingOpenAIModel  = "openai_model"
+	SettingActiveResume = "active_resume"     // JSON of the applied résumé (overrides the canonical)
+	SettingSlackWebhook = "slack_webhook_url" // Slack incoming-webhook URL for QOTD/news posts
+	SettingSlackEnabled = "slack_enabled"     // "1"/"true" to enable scheduled Slack posting
 )
 
 // GetSetting returns the stored value for key, or "" if it has never been set.

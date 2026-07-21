@@ -72,6 +72,14 @@ func migrate(db *sql.DB) error {
 			result     TEXT    NOT NULL,
 			created_at INTEGER NOT NULL
 		)`,
+		`CREATE TABLE IF NOT EXISTS qotd_prompts (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			prompt     TEXT    NOT NULL,
+			created_at INTEGER NOT NULL
+		)`,
+		// Unique prompt text: makes seeding and adds idempotent (INSERT OR IGNORE), so a concurrent
+		// double-seed or a duplicate add can never duplicate a prompt.
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_qotd_prompt ON qotd_prompts(prompt)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

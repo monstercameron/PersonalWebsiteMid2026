@@ -5,6 +5,17 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **RSS / anime control panel** (`internal/rss`, wasm admin → gRPC): a fully in-app RSS surface.
+  Configurable **QOTD prompts** with add/delete (50 seeded defaults, `qotd_prompts` table); the daily
+  prompt feed is built from them. **Spec-compliant RSS 2.0** feeds at `/anime.xml` + `/anime/qotd.xml`
+  (xmlns:atom + self `atom:link`, RFC1123Z `pubDate`/`lastBuildDate`, escaped via `encoding/xml`,
+  stable guids). **Slack** integration — a configurable incoming-webhook (stored server-side, never
+  returned), an enable toggle, and **Post to Slack now** which composes the latest **Anime News
+  Network** headline + today's prompt into a discussion/debate message. New `rss` admin tab.
+- **CashFlux as a managed budgeting service** at `/budget/` (`internal/budget`): the full CashFlux
+  WASM app is built (`scripts/build-cashflux.sh`) and served from this server (correct `application/wasm`
+  types, no double-decompress on the self-decompressing `.gz`, SPA fallback, path-containment guard).
+  Linked from the admin nav. Frontend-hosting only — server-side sync is a separate larger project.
 - **Résumé variants library**: the base résumé is permanent (the diff baseline, never overwritten).
   Each tailoring is saved as a variant, shown as designed, glanceable cards — the role **title @
   company** and the **keyword chips** the tailoring emphasized (derived from the stored analysis, so
@@ -112,6 +123,11 @@ Semantic Versioning once released.
 - Terminal: text is selectable again — click-to-focus no longer clears an active selection, and
   the body is explicitly `user-select: text`. (Verified via a chromedp mouse-drag selection.)
 ### Security
+- Slack posting escapes untrusted external content: an Anime News Network headline can't inject
+  mrkdwn (`@channel`/`@here` pings or a forged `<url|label>` link) into the composed Slack message
+  (adversarial-review finding). The news fetch also restricts redirects to the feed's host, and QOTD
+  prompts are length-capped + deduped by a unique index (race-proof seeding). The CashFlux static
+  handler validates path containment explicitly (no reliance on stdlib side effects).
 - Admin auth is now **username + password → signed HS256 JWT** (golang-jwt/jwt v5): the login
   (`ADMIN_USERNAME`/`ADMIN_PASSWORD`) mints a JWT with algorithm pinned to HS256 and bound to the
   owner subject; the same token gates both the HTTP cookie path and the gRPC `authorization` metadata.
