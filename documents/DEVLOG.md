@@ -52,3 +52,32 @@ mockup. Added `scripts/build.sh`. Design tokens centralized to `internal/theme`.
 
 **Next.** Make the terminal interactive: controlled input → command dispatch → gRPC programs
 (projects/about/contact over the tunnel) + local programs (help/theme/clear/neofetch).
+
+### Carried-over features + auth hardening (same day)
+Ported two features off Cam's current site and closed a security round.
+
+**Anime tracker (Go).** Replaced the old Node feature. `internal/anime` queries AniList's public
+GraphQL (search + refresh); `internal/store/anime.go` persists `tracked_anime`; two RSS 2.0 feeds
+ship at `/anime.xml` (Release Radar) and `/anime/qotd.xml` (daily discussion prompts). A strong
+config page at `/admin` (search with cover art, track/untrack, run release check) is password-gated.
+Verified end-to-end: search *Frieren* → track → it appears in `/anime.xml` (curl + screenshot).
+
+**Résumé.** A print-optimized HTML résumé at `/resume` (light professional document, Ubuntu-orange
+accent, "Save as PDF") — chose browser Save-as-PDF over authoring/maintaining a static PDF or a
+server-side Go PDF; simpler and always in sync. `internal/resume` holds the structured content +
+renderer. Owner-gated **tailoring tool** at `/admin/resume`: paste a job-posting URL → server
+fetches it (HTML→text) → OpenAI re-emphasizes *existing* facts to fit. Guardrails: system prompt
+forbids fabrication, and identity/contact fields are force-overwritten with the originals after the
+model returns (defense in depth against prompt injection). Disabled with a clear notice when
+`OPENAI_API_KEY` is unset. Site card + terminal `resume` now point to `/resume`.
+
+**Broke / corrected.** Commit security review flagged three real issues in the admin gate, all
+fixed and verified: (1) **auth-bypass** — the session secret fell back to a *known* constant, so
+anyone could forge an admin cookie; now a random per-process 32-byte secret when `ADMIN_SECRET` is
+unset (set it to persist sessions across restarts). (2) **insecure-cookie** — session cookie now
+`Secure` when `BASE_URL` is https. (3) **brute-force** — `/admin/login` is rate-limited (5 fails →
+15-min lockout → 429); confirmed 5×200 then 429. Behind nginx the limiter is effectively global on
+one RemoteAddr — fine for a single-owner gate.
+
+**Next.** Résumé-tailor follow-ups: OpenAI budget cap ($20/mo) + SSRF guard on the URL fetch
+(block private/loopback). Then wire the terminal's portfolio programs to real gRPC.

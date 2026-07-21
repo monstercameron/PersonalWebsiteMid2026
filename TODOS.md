@@ -10,11 +10,13 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[?]` needs a de
       (bidi-stream demo)? Currently out of scope.
 - [?] **AI-first copy** — react to the draft About/hero wording (honest "judgment × leverage",
       not self-deprecating, not grandiose). Tune the exact words.
-- [?] **Résumé** — provide the real experience/content to author the canonical one-page PDF.
+- [~] **Résumé** — canonical content authored from Cam's profile in internal/resume/Data(); shipped
+      at `/resume`. Open: Cam to review/correct the exact wording + fill any gaps.
 - [?] **Curated i18n languages** — which languages get reviewed bundles? (Suggest: en + a few +
       signature **Jamaican Patois**.)
 - [?] **BYOK run-location** — client-direct vs **proxy-over-gRPC** (recommend proxy).
-- [?] **Résumé-tailor cost/auth** — owner-gated (recommended) · public on $20 budget · BYOK.
+- [x] **Résumé-tailor cost/auth** — decided **owner-gated** (ADMIN_PASSWORD + OPENAI_API_KEY).
+      Budget cap + optional public demo tracked as §8 follow-ups.
 - [?] **Live-CashFlux level** — L1 host-wasm (recommended first) vs L2 full-backend integration.
 - [?] **Admin-auth method** — **WebAuthn/passkey** (recommended) vs password + TOTP 2FA.
 - [?] **CI build source** — git submodule GWC pinned to v4.3.0 (recommended) vs `go mod vendor`.
@@ -97,17 +99,24 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[?]` needs a de
 
 ## 8. Carried-over & new features
 ### Résumé + agentic tailoring
-- [ ] Canonical one-page résumé → static PDF; `resume` / download button ($0, no AI).
-- [ ] `ResumeService.Tailor` — job posting → tailored variant → **server-side Go PDF** → Blob download.
-- [ ] Fixed Go PDF template (guarantees one page); agent fills slots only.
-- [ ] **No-fabrication guardrail**: reorder/emphasize/rephrase existing facts ONLY.
-- [ ] Cost/auth per §0 decision (recommend owner-gated + optional rate-limited public demo).
+- [x] Canonical one-page résumé → **print-optimized HTML at `/resume`** (browser Save-as-PDF; no
+      static-PDF asset needed); `resume` command + site card link to it. (internal/resume)
+- [x] Résumé **tailoring tool** at `/admin/resume` — job posting URL → server fetch → OpenAI →
+      tailored variant, rendered as the same print-to-PDF page. (chose HTML Save-as-PDF over a
+      server-side Go PDF; document-plane HTTP, owner-gated — not a gRPC service.)
+- [x] **No-fabrication guardrail**: system prompt forbids invention; identity/contact fields are
+      force-preserved after the model returns; empty result falls back to the canonical résumé.
+- [x] Cost/auth: **owner-gated** (behind ADMIN_PASSWORD + OPENAI_API_KEY), per §0 recommendation.
+- [ ] Follow-ups: per-request/monthly OpenAI budget cap (Cam's $20/mo); SSRF hardening on the URL
+      fetch (block private/loopback targets); optional rate-limited public demo.
 ### Blog
 - [ ] `BlogService`: ListPosts/GetPost (+ admin Create/Update/Delete behind auth).
 - [ ] Markdown→HTML + syntax highlight; `blog` list + `read <slug>` TUI; `/blog` on site.
 - [ ] RSS feed at `/blog.xml` (document-plane HTTP GET).
 ### Slack anime RSS
-- [ ] Go cron: anime-release check → RSS feed (`/anime.xml`); optional Slack post; `anime` command.
+- [x] Go anime tracker: AniList search/track/untrack + release-check → **`/anime.xml`** (Release
+      Radar RSS) and **`/anime/qotd.xml`** (daily-prompt RSS); password-gated config at `/admin`.
+      (internal/anime, internal/store/anime.go). Optional Slack post + `anime` terminal command TBD.
 ### Live CashFlux instance
 - [ ] **L1**: build CashFlux wasm, serve under `/apps/cashflux`, launch via `budget`/`cashflux`
       command + project "Launch live demo" (iframe overlay); seed demo data; lazy-load on launch.
