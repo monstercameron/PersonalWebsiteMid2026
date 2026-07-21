@@ -163,8 +163,9 @@ func tailoredCard(r *sitepb.Resume) ui.Node {
 
 // --- settings view ---
 
-// settingsView renders the OpenAI key + model form (a dropdown when models are known).
-func settingsView(keySet bool, models []string, model, apiKey ui.State[string], onSave ui.Handler) ui.Node {
+// settingsView renders the OpenAI key + model form (a dropdown when models are known). onReload
+// re-fetches the model list from OpenAI using the stored key.
+func settingsView(keySet bool, models []string, model, apiKey ui.State[string], onSave, onReload ui.Handler) ui.Node {
 	onKey := ui.WrapHandler(func(e ui.Event) { apiKey.Set(e.GetValue()) })
 	onModel := ui.WrapHandler(func(e ui.Event) { model.Set(e.GetValue()) })
 
@@ -174,23 +175,29 @@ func settingsView(keySet bool, models []string, model, apiKey ui.State[string], 
 	}
 
 	var modelField ui.Node = textInput(model.Get(), onModel, "gpt-4o-mini", "text", false)
-	modelHint := "add a key above and save to load available models"
+	modelHint := "save a key, then hit “reload models” to load the list"
 	switch {
 	case len(models) > 0:
-		modelHint = "models available to your key"
+		modelHint = "pick a model available to your key"
 		opts := []any{inputBase(rawWidth("100%")), Props{OnChange: onModel}}
 		for _, m := range models {
 			opts = append(opts, Tag("option", Props{Value: m, Selected: m == model.Get()}, m))
 		}
 		modelField = Tag("select", opts...)
 	case keySet:
-		modelHint = "couldn't load models from OpenAI (key invalid?) — type a model id"
+		modelHint = "no models loaded yet — hit “reload models” (or the key may be invalid)"
 	}
+
+	// The model row pairs the field with a reload button that re-fetches the list from OpenAI.
+	modelControl := Div(Class(Flex, Gap(Spacing2), ItemsCenter),
+		Div(Class(css.Raw("flex", "1")), modelField),
+		ghostButton("reload models", onReload),
+	)
 
 	return Div(Class(Flex, FlexCol, Gap(Spacing4), MaxWidth(Px(520))),
 		P(Class(Fg(theme.Dim), TextSize(TextSm)), "The OpenAI key is stored in the backend database and used server-side."),
 		settingRow("OpenAI API key", "openai key ("+keyStatus(keySet)+")", textInput(apiKey.Get(), onKey, keyPlaceholder, "password", false)),
-		settingRow("OpenAI model", modelHint, modelField),
+		settingRow("OpenAI model", modelHint, modelControl),
 		primaryButton("Save settings", onSave),
 	)
 }

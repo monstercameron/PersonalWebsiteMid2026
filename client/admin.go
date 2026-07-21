@@ -255,12 +255,51 @@ func AdminApp() ui.Node {
 		}()
 	})
 
+	onReloadModels := ui.UseEvent(func() {
+		flash.Set("loading models…")
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			// If a key was just typed but not saved, store it first so the fetch uses it.
+			if apiKey.Get() != "" {
+				if _, err := c.SaveSettings(ctx, &sitepb.Settings{OpenaiApiKey: apiKey.Get()}); err != nil {
+					if onAuthErr(err) {
+						return
+					}
+					flash.Set("couldn't save the key")
+					return
+				}
+				apiKey.Set("")
+				keySet.Set(true)
+			}
+			ml, err := c.ListModels(ctx, &sitepb.Empty{})
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("couldn't load models")
+				return
+			}
+			models.Set(ml.GetModels())
+			if len(ml.GetModels()) == 0 {
+				flash.Set("no models returned — is the API key valid?")
+			} else {
+				flash.Set("models loaded — pick one and Save")
+			}
+		}()
+	})
+
 	var content ui.Node
 	switch view.Get() {
 	case "resume":
 		content = resumeView(jobURL, onTailor, tailored.Get())
 	case "settings":
-		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave)
+		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}

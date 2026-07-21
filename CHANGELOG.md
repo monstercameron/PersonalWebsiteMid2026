@@ -36,6 +36,8 @@ Semantic Versioning once released.
   `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
   (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
   The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
+- Settings: a **"reload models"** button that fetches the models available to the OpenAI key (saving
+  the key first if it was just typed) and turns the model field into a **dropdown** of those models.
 - **Settings page** (`/admin/settings`): configure the **OpenAI API key + model** from the admin UI
   (stored in the site database), so secrets no longer require env vars / SSH. A DB setting overrides
   the env default and is read live — a key added here enables the résumé tailoring tool with **no
