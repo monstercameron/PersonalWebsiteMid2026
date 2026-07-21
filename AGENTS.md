@@ -3,9 +3,9 @@
 Canonical instructions for any AI agent (Claude or otherwise) working in this repo. Read this
 first. `CLAUDE.md` defers to this file.
 
-> **PHASE: PLANNING.** As of 2026-07-21 this is a **design/planning** repo — docs and a static
-> mockup only, **no application code yet**. Do **not** scaffold `go.mod` or write app code until
-> Cam explicitly says to start building. When in doubt, plan and document; don't build.
+> **PHASE: BUILD (P1).** As of 2026-07-21 the build has started (Cam gave the go-ahead). The P1
+> ingress server foundation is in; work the plan in `TODOS.md` phase by phase. The planning docs
+> remain the source of truth for scope and design.
 
 ## What we're building
 A personal portfolio that **is** a working terminal, plus a conventional standard site — two
@@ -108,8 +108,11 @@ Then follow the locked design language in `documents/DESIGN.md`: macOS chrome, U
 `prefers-reduced-motion`, and the keyboard/a11y floor.
 
 ## Docs discipline
-Keep `README.md`, `documents/DESIGN.md`, `documents/PROJECT_LAYOUT.md`, and `TODOS.md` in sync
-with every decision. Log decisions and their *why*, not just outcomes.
+- **NEVER create a new `.md` file without Cam's explicit instruction.** Update the existing docs
+  instead (README, DESIGN, PROJECT_LAYOUT, DEPLOYMENT, TODOS, DEVLOG, CHANGELOG). A new markdown
+  file happens only when Cam asks for it, by name.
+- Keep those existing docs in sync with every decision. Log decisions and their *why*, not just
+  outcomes.
 
 ## Version control, dev log & changelog
 - **Feature-atomic commits.** Each commit is ONE coherent, self-contained change (a feature,

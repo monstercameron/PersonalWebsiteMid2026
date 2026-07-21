@@ -3,8 +3,8 @@
 **`AGENTS.md` is canonical — read it first.** Everything there applies. This file adds
 Claude-specific notes.
 
-> **PHASE: PLANNING.** Docs + a static mockup only. Do **not** scaffold `go.mod` or write app
-> code until Cam says to start building.
+> **PHASE: BUILD (P1).** The build has started; the P1 foundation is in. Work `TODOS.md` phase
+> by phase; the planning docs are the source of truth for scope and design.
 
 ## Claude specifics
 - **Coding behavior**: load the **`karpathy-guidelines`** skill
@@ -41,5 +41,7 @@ Claude-specific notes.
   (Keep a Changelog) current.
 
 ## Docs discipline
-Keep `README.md`, `documents/DESIGN.md`, `documents/PROJECT_LAYOUT.md`, and `TODOS.md` in sync
-with every decision — log the *why*, not just the outcome.
+- **NEVER create a new `.md` file without Cam's explicit instruction** — update the existing docs
+  instead. New markdown only when Cam asks for it by name.
+- Keep `README.md`, `documents/DESIGN.md`, `documents/PROJECT_LAYOUT.md`, `documents/DEVLOG.md`,
+  `CHANGELOG.md`, and `TODOS.md` in sync with every decision — log the *why*, not just the outcome.
