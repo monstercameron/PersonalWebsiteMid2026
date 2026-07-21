@@ -10,6 +10,7 @@ import (
 const (
 	SettingOpenAIKey   = "openai_api_key"
 	SettingOpenAIModel = "openai_model"
+	SettingActiveResume = "active_resume" // JSON of the applied résumé (overrides the canonical)
 )
 
 // GetSetting returns the stored value for key, or "" if it has never been set.

@@ -125,33 +125,127 @@ func animeCardNode(a *sitepb.Anime, trackFn func(int32, bool)) ui.Node {
 
 // --- résumé view ---
 
-// resumeView renders the tailor form, the extracted job signals + rationales (after a tailoring
-// pass), and a live document render of the résumé (canonical until tailored).
-func resumeView(jobURL ui.State[string], onTailor ui.Handler, res *sitepb.Resume, job *sitepb.JobAnalysis, rationales []*sitepb.Rationale) ui.Node {
+// resumeView renders the tailor form; when a tailoring is pending it shows the extracted job
+// signals, the rationales, a git-diff of the proposed changes, and Apply/Reanalyze/Cancel; otherwise
+// it live-renders the active résumé.
+func resumeView(jobURL ui.State[string], onTailor, onApply, onCancel ui.Handler, canonical, tailored *sitepb.Resume, job *sitepb.JobAnalysis, rationales []*sitepb.Rationale) ui.Node {
 	onURL := ui.WrapHandler(func(e ui.Event) { jobURL.Set(e.GetValue()) })
 	sections := []any{Class(Flex, FlexCol, Gap(Spacing4)),
 		P(Class(Fg(theme.Dim), TextSize(TextSm)),
-			"Paste a job URL to tailor a variant. The canonical résumé is at ",
+			"Paste a job URL to tailor a variant. Your active résumé is at ",
 			A(Class(Fg(theme.Accent2)), Props{Href: "/resume", Target: "_blank", Rel: "noopener"}, "/resume"), " (save as PDF)."),
 		Div(Class(Flex, Gap(Spacing2)),
 			growInput(jobURL.Get(), onURL, "paste a job-posting URL…"),
 			primaryButton("Tailor résumé", onTailor),
 		),
 	}
-	if job != nil || len(rationales) > 0 {
-		panels := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fit,minmax(280px,1fr))"))}
-		if job != nil {
-			panels = append(panels, jobAnalysisPanel(job))
+	if tailored != nil {
+		if job != nil || len(rationales) > 0 {
+			panels := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fit,minmax(280px,1fr))"))}
+			if job != nil {
+				panels = append(panels, jobAnalysisPanel(job))
+			}
+			if len(rationales) > 0 {
+				panels = append(panels, rationalesPanel(rationales))
+			}
+			sections = append(sections, Div(panels...))
 		}
-		if len(rationales) > 0 {
-			panels = append(panels, rationalesPanel(rationales))
+		sections = append(sections, sectionLabel("proposed changes"))
+		if canonical != nil {
+			sections = append(sections, diffView(canonical, tailored))
 		}
-		sections = append(sections, Div(panels...))
-	}
-	if res != nil {
-		sections = append(sections, sectionLabel("live résumé"), resumeDocument(res))
+		sections = append(sections, Div(Class(Flex, Gap(Spacing2), css.Raw("flex-wrap", "wrap")),
+			primaryButton("Apply", onApply),
+			ghostButton("Reanalyze", onTailor),
+			ghostButton("Cancel", onCancel),
+		))
+	} else if canonical != nil {
+		sections = append(sections, sectionLabel("live résumé"), resumeDocument(canonical))
 	}
 	return Div(sections...)
+}
+
+// diffOp is one line in a git-style diff: kind -1 removed, 0 unchanged, +1 added.
+type diffOp struct {
+	kind int
+	text string
+}
+
+// lineDiff computes a git-style line diff of a → b via a longest-common-subsequence walk.
+func lineDiff(a, b []string) []diffOp {
+	n, m := len(a), len(b)
+	dp := make([][]int, n+1)
+	for i := range dp {
+		dp[i] = make([]int, m+1)
+	}
+	for i := n - 1; i >= 0; i-- {
+		for j := m - 1; j >= 0; j-- {
+			if a[i] == b[j] {
+				dp[i][j] = dp[i+1][j+1] + 1
+			} else if dp[i+1][j] >= dp[i][j+1] {
+				dp[i][j] = dp[i+1][j]
+			} else {
+				dp[i][j] = dp[i][j+1]
+			}
+		}
+	}
+	var ops []diffOp
+	i, j := 0, 0
+	for i < n && j < m {
+		switch {
+		case a[i] == b[j]:
+			ops = append(ops, diffOp{0, a[i]})
+			i, j = i+1, j+1
+		case dp[i+1][j] >= dp[i][j+1]:
+			ops = append(ops, diffOp{-1, a[i]})
+			i++
+		default:
+			ops = append(ops, diffOp{1, b[j]})
+			j++
+		}
+	}
+	for ; i < n; i++ {
+		ops = append(ops, diffOp{-1, a[i]})
+	}
+	for ; j < m; j++ {
+		ops = append(ops, diffOp{1, b[j]})
+	}
+	return ops
+}
+
+// diffView renders a git-style diff of the changed résumé sections (summary + each job's bullets).
+func diffView(before, after *sitepb.Resume) ui.Node {
+	rows := []any{Class(Flex, FlexCol, css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"),
+		css.Raw("font-size", "12.5px"), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), css.Raw("overflow", "hidden"))}
+	hdr := func(label string) ui.Node {
+		return Div(Class(Fg(theme.Dim), css.Raw("padding", "4px 12px"), css.Raw("background", "#241a22")), label)
+	}
+	section := func(label string, bs, as []string) {
+		rows = append(rows, hdr(label))
+		for _, op := range lineDiff(bs, as) {
+			rows = append(rows, diffLine(op))
+		}
+	}
+	section("summary", []string{before.GetSummary()}, []string{after.GetSummary()})
+	bj, aj := before.GetJobs(), after.GetJobs()
+	for i := range bj {
+		if i < len(aj) {
+			section(bj[i].GetRole()+" — "+bj[i].GetOrg(), bj[i].GetBullets(), aj[i].GetBullets())
+		}
+	}
+	return Div(rows...)
+}
+
+// diffLine renders one diff line with git-style +/-/context coloring.
+func diffLine(op diffOp) ui.Node {
+	bg, fg, prefix := "transparent", "#a98ba0", "  "
+	switch op.kind {
+	case -1:
+		bg, fg, prefix = "#3a1418", "#ef9a9a", "- "
+	case 1:
+		bg, fg, prefix = "#12301a", "#a5d6a7", "+ "
+	}
+	return Div(Class(css.Raw("background", bg), css.Raw("color", fg), css.Raw("padding", "2px 12px"), css.Raw("white-space", "pre-wrap")), prefix+op.text)
 }
 
 // jobAnalysisPanel shows what the tool extracted from the posting.

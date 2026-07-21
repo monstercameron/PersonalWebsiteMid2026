@@ -36,6 +36,10 @@ Semantic Versioning once released.
   `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
   (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
   The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
+- Résumé tool shows the tailored revision as a **git-style diff** (summary + each job's bullets,
+  red/green/context) with **Apply / Reanalyze / Cancel**. **Apply** persists the tailored résumé as
+  the *active* one — `GetResume` and the `/resume` page then serve it (stored in SQLite via
+  `ApplyResume`); Reanalyze re-runs the tailoring; Cancel discards it.
 - **Tailoring results persist to SQLite** (`tailorings` table) — each pass (which costs an OpenAI
   call) is saved and the latest reloads when you open the résumé tool (`GetLastTailoring`). Joins the
   data already in SQLite: contact messages, tracked anime, and settings.

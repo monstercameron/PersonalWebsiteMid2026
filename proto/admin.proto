@@ -25,8 +25,10 @@ service AdminService {
   rpc UntrackAnime(AnimeId) returns (Ack);
   // RunReleaseCheck refreshes tracked shows against AniList and reports how many changed.
   rpc RunReleaseCheck(Empty) returns (CheckReply);
-  // GetResume returns the canonical résumé data (the source the tailor refines).
+  // GetResume returns the active résumé — the applied override if one exists, else the canonical.
   rpc GetResume(Empty) returns (Resume);
+  // ApplyResume saves a résumé as the active one (served by GetResume and the /resume page).
+  rpc ApplyResume(Resume) returns (Ack);
   // TailorResume fetches a job posting and returns the tailored résumé plus the signals extracted
   // from the posting and the rationale for each tailoring choice. The résumé is constrained to the
   // canonical one — the model cannot fabricate employers/skills/etc.

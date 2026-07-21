@@ -1162,7 +1162,7 @@ const file_admin_proto_rawDesc = "" +
 	"\frequirements\x18\x04 \x03(\tR\frequirements\"9\n" +
 	"\tRationale\x12\x14\n" +
 	"\x05focus\x18\x01 \x01(\tR\x05focus\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason2\x84\x05\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason2\xb2\x05\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x129\n" +
 	"\vSearchAnime\x12\x16.site.v1.SearchRequest\x1a\x12.site.v1.AnimeList\x121\n" +
@@ -1171,7 +1171,8 @@ const file_admin_proto_rawDesc = "" +
 	"TrackAnime\x12\x10.site.v1.AnimeId\x1a\f.site.v1.Ack\x12.\n" +
 	"\fUntrackAnime\x12\x10.site.v1.AnimeId\x1a\f.site.v1.Ack\x126\n" +
 	"\x0fRunReleaseCheck\x12\x0e.site.v1.Empty\x1a\x13.site.v1.CheckReply\x12,\n" +
-	"\tGetResume\x12\x0e.site.v1.Empty\x1a\x0f.site.v1.Resume\x12=\n" +
+	"\tGetResume\x12\x0e.site.v1.Empty\x1a\x0f.site.v1.Resume\x12,\n" +
+	"\vApplyResume\x12\x0f.site.v1.Resume\x1a\f.site.v1.Ack\x12=\n" +
 	"\fTailorResume\x12\x16.site.v1.TailorRequest\x1a\x15.site.v1.TailorResult\x120\n" +
 	"\vGetSettings\x12\x0e.site.v1.Empty\x1a\x11.site.v1.Settings\x12/\n" +
 	"\fSaveSettings\x12\x11.site.v1.Settings\x1a\f.site.v1.Ack\x120\n" +
@@ -1228,25 +1229,27 @@ var file_admin_proto_depIdxs = []int32{
 	6,  // 11: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
 	2,  // 12: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
 	2,  // 13: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
-	14, // 14: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
-	2,  // 15: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
-	0,  // 16: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
-	2,  // 17: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
-	2,  // 18: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
-	4,  // 19: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	9,  // 20: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	9,  // 21: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	18, // 22: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	18, // 23: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	7,  // 24: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	10, // 25: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	15, // 26: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	0,  // 27: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	18, // 28: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	1,  // 29: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	15, // 30: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	19, // [19:31] is the sub-list for method output_type
-	7,  // [7:19] is the sub-list for method input_type
+	10, // 14: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
+	14, // 15: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
+	2,  // 16: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
+	0,  // 17: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
+	2,  // 18: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
+	2,  // 19: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
+	4,  // 20: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	9,  // 21: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	9,  // 22: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	18, // 23: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	18, // 24: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	7,  // 25: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	10, // 26: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	18, // 27: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	15, // 28: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	0,  // 29: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	18, // 30: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	1,  // 31: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	15, // 32: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	20, // [20:33] is the sub-list for method output_type
+	7,  // [7:20] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name

@@ -5,6 +5,7 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -148,9 +149,27 @@ func (s *Service) RunReleaseCheck(ctx context.Context, _ *sitepb.Empty) (*sitepb
 	return &sitepb.CheckReply{Updated: int32(n)}, nil
 }
 
-// GetResume returns the canonical résumé data.
-func (s *Service) GetResume(_ context.Context, _ *sitepb.Empty) (*sitepb.Resume, error) {
+// GetResume returns the active résumé: the applied override if one is stored, else the canonical.
+func (s *Service) GetResume(ctx context.Context, _ *sitepb.Empty) (*sitepb.Resume, error) {
+	if v, _ := s.store.GetSetting(ctx, store.SettingActiveResume); v != "" {
+		var dom resume.Resume
+		if json.Unmarshal([]byte(v), &dom) == nil && dom.Name != "" {
+			return resumeToProto(dom), nil
+		}
+	}
 	return resumeToProto(resume.Data()), nil
+}
+
+// ApplyResume saves the given résumé as the active one (served by GetResume + the /resume page).
+func (s *Service) ApplyResume(ctx context.Context, req *sitepb.Resume) (*sitepb.Ack, error) {
+	data, err := json.Marshal(protoToResume(req))
+	if err != nil {
+		return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+	}
+	if err := s.store.SetSetting(ctx, store.SettingActiveResume, string(data)); err != nil {
+		return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+	}
+	return &sitepb.Ack{Ok: true}, nil
 }
 
 // TailorResume fetches the job posting and returns a résumé re-emphasized to fit it. The result is
@@ -220,6 +239,24 @@ func resumeToProto(r resume.Resume) *sitepb.Resume {
 	}
 	for _, p := range r.Projects {
 		out.Projects = append(out.Projects, &sitepb.ResumeProject{Name: p.Name, Desc: p.Desc})
+	}
+	return out
+}
+
+// protoToResume maps a wire résumé DTO back to the domain type (inverse of resumeToProto).
+func protoToResume(p *sitepb.Resume) resume.Resume {
+	out := resume.Resume{
+		Name: p.GetName(), Title: p.GetTitle(), Location: p.GetLocation(), Email: p.GetEmail(),
+		GitHub: p.GetGithub(), LinkedIn: p.GetLinkedin(), Summary: p.GetSummary(), Edu: p.GetEducation(),
+	}
+	for _, j := range p.GetJobs() {
+		out.Jobs = append(out.Jobs, resume.Job{Role: j.GetRole(), Org: j.GetOrg(), Dates: j.GetDates(), Bullets: j.GetBullets()})
+	}
+	for _, sk := range p.GetSkills() {
+		out.Skills = append(out.Skills, resume.SkillGroup{Label: sk.GetLabel(), Items: sk.GetItems()})
+	}
+	for _, pr := range p.GetProjects() {
+		out.Projects = append(out.Projects, resume.Project{Name: pr.GetName(), Desc: pr.GetDesc()})
 	}
 	return out
 }

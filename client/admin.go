@@ -27,7 +27,8 @@ func AdminApp() ui.Node {
 	tracked := ui.UseState[[]*sitepb.Anime](nil)
 
 	jobURL := ui.UseState("")
-	resumeData := ui.UseState[*sitepb.Resume](nil)
+	canonical := ui.UseState[*sitepb.Resume](nil) // the active résumé (live render / diff baseline)
+	tailored := ui.UseState[*sitepb.Resume](nil)  // the proposed tailored résumé (nil = none pending)
 	jobAnalysis := ui.UseState[*sitepb.JobAnalysis](nil)
 	rationales := ui.UseState[[]*sitepb.Rationale](nil)
 
@@ -71,7 +72,7 @@ func AdminApp() ui.Node {
 				tracked.Set(list.GetItems())
 			}()
 		case "resume":
-			if resumeData.Get() == nil { // load once: the last saved tailoring, else the canonical résumé
+			if canonical.Get() == nil { // load once: the active résumé + the last pending tailoring (if any)
 				go func() {
 					c, err := adminClient()
 					if err != nil {
@@ -80,17 +81,18 @@ func AdminApp() ui.Node {
 					}
 					ctx, cancel := callCtx(token.Get())
 					defer cancel()
+					r, err := c.GetResume(ctx, &sitepb.Empty{})
+					if onAuthErr(err) {
+						return
+					}
+					if err == nil {
+						canonical.Set(r)
+					}
 					if last, err := c.GetLastTailoring(ctx, &sitepb.Empty{}); err == nil && last.GetResume() != nil {
-						resumeData.Set(last.GetResume())
+						tailored.Set(last.GetResume())
 						jobAnalysis.Set(last.GetJob())
 						rationales.Set(last.GetRationales())
-						return
 					}
-					r, err := c.GetResume(ctx, &sitepb.Empty{})
-					if onAuthErr(err) || err != nil {
-						return
-					}
-					resumeData.Set(r)
 				}()
 			}
 		case "settings":
@@ -253,8 +255,8 @@ func AdminApp() ui.Node {
 				flash.Set("tailoring failed: " + status.Convert(err).Message())
 				return
 			}
-			flash.Set("tailored — review the extraction, rationale, and live résumé below")
-			resumeData.Set(r.GetResume())
+			flash.Set("tailored — review the diff, extraction, and rationale below")
+			tailored.Set(r.GetResume())
 			jobAnalysis.Set(r.GetJob())
 			rationales.Set(r.GetRationales())
 		}()
@@ -328,10 +330,45 @@ func AdminApp() ui.Node {
 		}()
 	})
 
+	onApply := ui.UseEvent(func() {
+		t := tailored.Get()
+		if t == nil {
+			return
+		}
+		flash.Set("applying…")
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if _, err := c.ApplyResume(ctx, t); err != nil {
+				if onAuthErr(err) {
+					return
+				}
+				flash.Set("apply failed")
+				return
+			}
+			canonical.Set(t)
+			tailored.Set(nil)
+			jobAnalysis.Set(nil)
+			rationales.Set(nil)
+			flash.Set("applied — this is now your active résumé (/resume updated)")
+		}()
+	})
+	onCancel := ui.UseEvent(func() {
+		tailored.Set(nil)
+		jobAnalysis.Set(nil)
+		rationales.Set(nil)
+		flash.Set("")
+	})
+
 	var content ui.Node
 	switch view.Get() {
 	case "resume":
-		content = resumeView(jobURL, onTailor, resumeData.Get(), jobAnalysis.Get(), rationales.Get())
+		content = resumeView(jobURL, onTailor, onApply, onCancel, canonical.Get(), tailored.Get(), jobAnalysis.Get(), rationales.Get())
 	case "settings":
 		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
 	default:

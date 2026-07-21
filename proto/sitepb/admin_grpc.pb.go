@@ -26,6 +26,7 @@ const (
 	AdminService_UntrackAnime_FullMethodName     = "/site.v1.AdminService/UntrackAnime"
 	AdminService_RunReleaseCheck_FullMethodName  = "/site.v1.AdminService/RunReleaseCheck"
 	AdminService_GetResume_FullMethodName        = "/site.v1.AdminService/GetResume"
+	AdminService_ApplyResume_FullMethodName      = "/site.v1.AdminService/ApplyResume"
 	AdminService_TailorResume_FullMethodName     = "/site.v1.AdminService/TailorResume"
 	AdminService_GetSettings_FullMethodName      = "/site.v1.AdminService/GetSettings"
 	AdminService_SaveSettings_FullMethodName     = "/site.v1.AdminService/SaveSettings"
@@ -56,8 +57,10 @@ type AdminServiceClient interface {
 	UntrackAnime(ctx context.Context, in *AnimeId, opts ...grpc.CallOption) (*Ack, error)
 	// RunReleaseCheck refreshes tracked shows against AniList and reports how many changed.
 	RunReleaseCheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CheckReply, error)
-	// GetResume returns the canonical résumé data (the source the tailor refines).
+	// GetResume returns the active résumé — the applied override if one exists, else the canonical.
 	GetResume(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Resume, error)
+	// ApplyResume saves a résumé as the active one (served by GetResume and the /resume page).
+	ApplyResume(ctx context.Context, in *Resume, opts ...grpc.CallOption) (*Ack, error)
 	// TailorResume fetches a job posting and returns the tailored résumé plus the signals extracted
 	// from the posting and the rationale for each tailoring choice. The résumé is constrained to the
 	// canonical one — the model cannot fabricate employers/skills/etc.
@@ -150,6 +153,16 @@ func (c *adminServiceClient) GetResume(ctx context.Context, in *Empty, opts ...g
 	return out, nil
 }
 
+func (c *adminServiceClient) ApplyResume(ctx context.Context, in *Resume, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_ApplyResume_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) TailorResume(ctx context.Context, in *TailorRequest, opts ...grpc.CallOption) (*TailorResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TailorResult)
@@ -223,8 +236,10 @@ type AdminServiceServer interface {
 	UntrackAnime(context.Context, *AnimeId) (*Ack, error)
 	// RunReleaseCheck refreshes tracked shows against AniList and reports how many changed.
 	RunReleaseCheck(context.Context, *Empty) (*CheckReply, error)
-	// GetResume returns the canonical résumé data (the source the tailor refines).
+	// GetResume returns the active résumé — the applied override if one exists, else the canonical.
 	GetResume(context.Context, *Empty) (*Resume, error)
+	// ApplyResume saves a résumé as the active one (served by GetResume and the /resume page).
+	ApplyResume(context.Context, *Resume) (*Ack, error)
 	// TailorResume fetches a job posting and returns the tailored résumé plus the signals extracted
 	// from the posting and the rationale for each tailoring choice. The résumé is constrained to the
 	// canonical one — the model cannot fabricate employers/skills/etc.
@@ -267,6 +282,9 @@ func (UnimplementedAdminServiceServer) RunReleaseCheck(context.Context, *Empty) 
 }
 func (UnimplementedAdminServiceServer) GetResume(context.Context, *Empty) (*Resume, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetResume not implemented")
+}
+func (UnimplementedAdminServiceServer) ApplyResume(context.Context, *Resume) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApplyResume not implemented")
 }
 func (UnimplementedAdminServiceServer) TailorResume(context.Context, *TailorRequest) (*TailorResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method TailorResume not implemented")
@@ -430,6 +448,24 @@ func _AdminService_GetResume_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ApplyResume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Resume)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ApplyResume(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ApplyResume_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ApplyResume(ctx, req.(*Resume))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_TailorResume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TailorRequest)
 	if err := dec(in); err != nil {
@@ -554,6 +590,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetResume",
 			Handler:    _AdminService_GetResume_Handler,
+		},
+		{
+			MethodName: "ApplyResume",
+			Handler:    _AdminService_ApplyResume_Handler,
 		},
 		{
 			MethodName: "TailorResume",
