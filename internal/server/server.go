@@ -1,9 +1,8 @@
 // Package server wires the single ingress HTTP server.
 //
-// It will host BOTH the gRPC-over-WebSocket tunnel (the app data plane, added with the first
-// service) and the document plane (wasm assets, SSR pages, RSS, PDFs). Browser<->server app
-// comms are gRPC/WS only; there is deliberately no ad-hoc REST API. Today it serves /healthz,
-// static files, and an SSR placeholder so the foundation is runnable and verifiable.
+// One listener hosts BOTH the gRPC-over-WebSocket tunnel (the app data plane, at /socket, via
+// GoGRPCBridge) and the document plane (static assets, SSR pages — SSR is added next as GWC
+// components). Browser<->server app comms are gRPC/WS only; there is no ad-hoc REST API.
 package server
 
 import (
@@ -16,24 +15,46 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/monstercameron/GoGRPCBridge/pkg/grpctunnel"
 	"github.com/monstercameron/earlcameron/internal/config"
+	"github.com/monstercameron/earlcameron/internal/content"
+	"github.com/monstercameron/earlcameron/proto/sitepb"
+	"google.golang.org/grpc"
 )
 
 // Server owns the ingress lifecycle.
 type Server struct {
-	cfg config.Config
-	log *slog.Logger
+	cfg    config.Config
+	log    *slog.Logger
+	grpc   *grpc.Server
+	tunnel http.Handler
 }
 
-// New constructs a Server from configuration.
-func New(cfg config.Config) *Server {
-	return &Server{cfg: cfg, log: slog.New(slog.NewJSONHandler(os.Stdout, nil))}
+// New builds the gRPC server, registers the services, and wraps them in the GoGRPCBridge
+// WebSocket tunnel. It returns an error if the tunnel handler cannot be constructed.
+func New(cfg config.Config) (*Server, error) {
+	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	grpcSrv := grpc.NewServer()
+	sitepb.RegisterContentServiceServer(grpcSrv, content.New())
+
+	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
+		// Dev: allow any WebSocket origin. TODO: restrict to the site origin in production.
+		CheckOrigin: func(_ *http.Request) bool { return true },
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel}, nil
 }
 
 // routes builds the request multiplexer.
 func (s *Server) routes() *http.ServeMux {
 	mux := http.NewServeMux()
-	// Document plane (HTTP GET). TODO: /socket tunnel, RSS, résumé PDF, /apps/cashflux.
+	// Data plane: gRPC over WebSocket.
+	mux.Handle("/socket", s.tunnel)
+	mux.Handle("/socket/", s.tunnel)
+	// Document plane (HTTP GET).
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/", s.ssrShell)
@@ -45,8 +66,8 @@ func (s *Server) healthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok"))
 }
 
-// ssrShell server-renders the standard site (SEO + no-WASM failsafe). The GWC/WASM terminal
-// will later enhance over this markup. TODO: render real content per detected locale.
+// ssrShell serves the standard site (SEO + no-WASM failsafe). TODO: server-render the GWC
+// component tree here (SSR + hydrate); placeholder for now.
 func (s *Server) ssrShell(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write([]byte("<!doctype html><meta charset=utf-8><title>Earl Cameron</title><h1>earlcameron.com</h1>"))
@@ -67,6 +88,7 @@ func (s *Server) Run() error {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
+	s.grpc.GracefulStop()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return srv.Shutdown(ctx)

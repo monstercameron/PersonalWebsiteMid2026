@@ -13,3 +13,4 @@ Semantic Versioning once released.
 - `/bin` gitignored build-output directory.
 - gRPC contract (`ContentService`, `ContactService`) with generated stubs via `buf` (pure Go).
 - `ContentService` implementation: featured-project dataset + about copy, unit-tested.
+- gRPC-over-WebSocket tunnel at `/socket` (GoGRPCBridge) with `ContentService` registered.

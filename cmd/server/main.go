@@ -13,7 +13,11 @@ import (
 
 // main loads configuration and runs the ingress server until interrupted.
 func main() {
-	if err := server.New(config.Load()).Run(); err != nil {
+	srv, err := server.New(config.Load())
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := srv.Run(); err != nil {
 		log.Fatal(err)
 	}
 }
