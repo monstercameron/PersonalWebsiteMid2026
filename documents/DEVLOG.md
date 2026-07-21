@@ -26,3 +26,19 @@ before any gRPC service.
 
 **Next.** Install `protoc` + Go plugins → write `proto/site.proto` → implement `ContentService`
 (projects/about), the single source both the terminal and the standard site read from.
+
+### Build progress (P1, same day)
+Used `buf` (pure Go) instead of a protoc binary — cleaner on ARM64. Shipped as atomic commits:
+gRPC contract (Content + Contact); `ContentService` (9 projects + about, tested); the
+gRPC-over-WebSocket tunnel at `/socket` (GoGRPCBridge) with services registered; `ContactService`
++ a pure-Go SQLite store (modernc.org/sqlite, tested); and the **standard site** rendered
+server-side as GWC components with typed CSS (`css/u`), mobile-first responsive (`@media 768px`),
+served at `/` — live at http://127.0.0.1:8095.
+
+**Broke / corrected.** (1) Hand-wrote a raw `.css` file for SSR — wrong for this stack; reverted
+and switched to GWC's typed `css/u` per Cam (portfolio-site's raw-Tailwind approach is the
+anti-pattern; `examples/public/typed-css/counter.go` is the template). (2) Commit security review
+caught a **CSWSH** hole — my dev `CheckOrigin: return true` allowed any origin; replaced with a
+same-origin + allow-list validator (tested).
+
+**Next.** wasm client + hydration + the minimal bootstrap glue, then the interactive terminal.

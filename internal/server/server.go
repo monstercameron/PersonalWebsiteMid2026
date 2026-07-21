@@ -21,6 +21,7 @@ import (
 	"github.com/monstercameron/earlcameron/internal/config"
 	"github.com/monstercameron/earlcameron/internal/contact"
 	"github.com/monstercameron/earlcameron/internal/content"
+	"github.com/monstercameron/earlcameron/internal/site"
 	"github.com/monstercameron/earlcameron/internal/store"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 	"google.golang.org/grpc"
@@ -33,6 +34,7 @@ type Server struct {
 	grpc   *grpc.Server
 	tunnel http.Handler
 	store  *store.Store
+	page   []byte // the standard site, server-rendered once at startup
 }
 
 // New opens the store, builds the gRPC server, registers the services, and wraps them in the
@@ -45,8 +47,9 @@ func New(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	cs := content.New()
 	grpcSrv := grpc.NewServer()
-	sitepb.RegisterContentServiceServer(grpcSrv, content.New())
+	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
 
 	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
@@ -56,7 +59,15 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st}, nil
+
+	// The standard site is static content, so render it once here (avoids per-request work and
+	// the process-global CSS sink accumulating across concurrent renders).
+	page, err := site.RenderHTML(cs.About(), cs.Projects())
+	if err != nil {
+		_ = st.Close()
+		return nil, err
+	}
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page)}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
@@ -103,11 +114,11 @@ func (s *Server) healthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok"))
 }
 
-// ssrShell serves the standard site (SEO + no-WASM failsafe). TODO: server-render the GWC
-// component tree here (SSR + hydrate); placeholder for now.
+// ssrShell serves the standard site (SEO + no-WASM failsafe), rendered once at startup. The
+// GWC/WASM terminal will later hydrate over this markup.
 func (s *Server) ssrShell(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte("<!doctype html><meta charset=utf-8><title>Earl Cameron</title><h1>earlcameron.com</h1>"))
+	_, _ = w.Write(s.page)
 }
 
 // Run starts the ingress server and blocks until SIGINT/SIGTERM, then shuts down gracefully.

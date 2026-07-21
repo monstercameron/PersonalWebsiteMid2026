@@ -4,18 +4,21 @@ go 1.26.3
 
 require (
 	github.com/monstercameron/GoGRPCBridge v0.0.19
+	github.com/monstercameron/GoWebComponents/v4 v4.2.0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.54.0
 )
 
-// Use the local GoGRPCBridge checkout (vendored in the GWC repo) so we track the same version
-// GWC does and build offline.
+// Track the local checkouts: the newest (unreleased v4.3.0) GWC and the GoGRPCBridge it vendors.
+replace github.com/monstercameron/GoWebComponents/v4 => ../GoWebComponents
+
 replace github.com/monstercameron/GoGRPCBridge => ../GoWebComponents/third_party/GoGRPCBridge
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -23,6 +26,8 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/x448/float16 v0.8.4 // indirect
+	github.com/yuin/goldmark v1.7.13 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
