@@ -11,3 +11,5 @@ Semantic Versioning once released.
 - P1 ingress server foundation: `/healthz`, static file serving, SSR placeholder, graceful
   shutdown.
 - `/bin` gitignored build-output directory.
+- gRPC contract (`ContentService`, `ContactService`) with generated stubs via `buf` (pure Go).
+- `ContentService` implementation: featured-project dataset + about copy, unit-tested.
