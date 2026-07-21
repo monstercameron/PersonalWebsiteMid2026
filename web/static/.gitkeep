@@ -1,0 +1,2 @@
+# Static asset root (document plane). Built artifacts (app.wasm, wasm_exec.js) land here at
+# build time and are .gitignored; commit only source assets (css, fonts, icons).
