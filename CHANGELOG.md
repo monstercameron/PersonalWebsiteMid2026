@@ -6,8 +6,9 @@ Semantic Versioning once released.
 ## [Unreleased]
 ### Added
 - **Résumé variants library**: the base résumé is permanent (the diff baseline, never overwritten).
-  Each tailoring is saved as a variant linked to its job URL + title/company + date, shown as
-  designed, scannable cards (accent stripe, domain source-chip, date) in a **CRUD list** at the
+  Each tailoring is saved as a variant, shown as designed, glanceable cards — the role **title @
+  company** and the **keyword chips** the tailoring emphasized (derived from the stored analysis, so
+  older variants are backfilled), plus a domain source-chip and date — in a **CRUD list** at the
   bottom of the résumé tool — **view / PDF** opens the variant's print page (`/resume?variant=<id>`,
   Save as PDF), **tweak** re-opens it in the workspace, **delete** removes it, and **Apply** sets the
   active `/resume`. Over gRPC: `GetBaseResume`/`ListTailorings`/`GetTailoring`/`DeleteTailoring`;

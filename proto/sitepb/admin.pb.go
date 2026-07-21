@@ -74,6 +74,7 @@ type TailoringMeta struct {
 	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	Company       string                 `protobuf:"bytes,4,opt,name=company,proto3" json:"company,omitempty"`
 	CreatedAt     int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // unix seconds
+	Keywords      []string               `protobuf:"bytes,6,rep,name=keywords,proto3" json:"keywords,omitempty"`                     // top job keywords — what the tailoring emphasized, at a glance
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -141,6 +142,13 @@ func (x *TailoringMeta) GetCreatedAt() int64 {
 		return x.CreatedAt
 	}
 	return 0
+}
+
+func (x *TailoringMeta) GetKeywords() []string {
+	if x != nil {
+		return x.Keywords
+	}
+	return nil
 }
 
 // TailoringList is the saved variants, newest first.
@@ -1255,14 +1263,15 @@ const file_admin_proto_rawDesc = "" +
 	"\vadmin.proto\x12\asite.v1\x1a\n" +
 	"site.proto\"\x1d\n" +
 	"\vTailoringId\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\"\x87\x01\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"\xa3\x01\n" +
 	"\rTailoringMeta\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
 	"\ajob_url\x18\x02 \x01(\tR\x06jobUrl\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
 	"\acompany\x18\x04 \x01(\tR\acompany\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\x03R\tcreatedAt\"=\n" +
+	"created_at\x18\x05 \x01(\x03R\tcreatedAt\x12\x1a\n" +
+	"\bkeywords\x18\x06 \x03(\tR\bkeywords\"=\n" +
 	"\rTailoringList\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.site.v1.TailoringMetaR\x05items\"l\n" +
 	"\bSettings\x12$\n" +

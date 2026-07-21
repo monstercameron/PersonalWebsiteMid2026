@@ -199,9 +199,20 @@ func variantCard(m *sitepb.TailoringMeta, onSelect func(*sitepb.TailoringMeta), 
 		head = append(head, Span(Class(Fg(theme.Accent2), TextSize(TextSm)), c))
 	}
 
-	return Div(Class(Flex, FlexCol, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4),
+	children := []any{Class(Flex, FlexCol, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4),
 		css.Raw("border-left", "3px solid "+accentHex), Transition(PropAll, Ms(160), Ease), Hover(Border(theme.Accent))),
 		Div(head...),
+	}
+	// Glanceable focus: the job keywords the tailoring emphasized.
+	if kws := m.GetKeywords(); len(kws) > 0 {
+		chips := []any{Class(Flex, css.Raw("flex-wrap", "wrap"), Gap(Spacing1))}
+		for _, k := range kws {
+			chips = append(chips, Span(Class(TextSize(TextSm), Fg(theme.Dim), css.Raw("background", "#241a22"),
+				Rounded(RadiusLg), PadX(Spacing2), PadY(Spacing1)), k))
+		}
+		children = append(children, Div(chips...))
+	}
+	children = append(children,
 		Div(Class(Flex, ItemsCenter, Gap(Spacing2), css.Raw("flex-wrap", "wrap")),
 			A(Class(TextSize(TextSm), Fg(theme.Accent2), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2), PadY(Spacing1)),
 				Props{Href: m.GetJobUrl(), Target: "_blank", Rel: "noopener"}, "↗ "+hostOf(m.GetJobUrl())),
@@ -213,6 +224,7 @@ func variantCard(m *sitepb.TailoringMeta, onSelect func(*sitepb.TailoringMeta), 
 			linkButton("delete", del, theme.Red),
 		),
 	)
+	return Div(children...)
 }
 
 // linkButton renders a borderless text button that changes color on hover (subtle inline action).

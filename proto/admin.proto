@@ -62,7 +62,8 @@ message TailoringMeta {
   string job_url = 2;
   string title = 3;
   string company = 4;
-  int64 created_at = 5; // unix seconds
+  int64 created_at = 5;         // unix seconds
+  repeated string keywords = 6; // top job keywords — what the tailoring emphasized, at a glance
 }
 
 // TailoringList is the saved variants, newest first.

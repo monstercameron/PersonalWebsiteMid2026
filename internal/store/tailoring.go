@@ -28,10 +28,11 @@ func (s *Store) SaveTailoring(ctx context.Context, jobURL, title, company, resul
 	return res.LastInsertId()
 }
 
-// ListTailorings returns saved variants (newest first) — metadata only, no result payload.
+// ListTailorings returns saved variants (newest first), including the result payload so callers can
+// derive glanceable info (title/company/keywords) from the stored analysis.
 func (s *Store) ListTailorings(ctx context.Context) ([]Tailoring, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, job_url, title, company, created_at FROM tailorings ORDER BY id DESC`)
+		`SELECT id, job_url, title, company, result, created_at FROM tailorings ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +40,7 @@ func (s *Store) ListTailorings(ctx context.Context) ([]Tailoring, error) {
 	var out []Tailoring
 	for rows.Next() {
 		var t Tailoring
-		if err := rows.Scan(&t.ID, &t.JobURL, &t.Title, &t.Company, &t.CreatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.JobURL, &t.Title, &t.Company, &t.Result, &t.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, t)

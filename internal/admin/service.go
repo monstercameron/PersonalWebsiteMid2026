@@ -227,11 +227,29 @@ func (s *Service) ListTailorings(ctx context.Context, _ *sitepb.Empty) (*sitepb.
 	}
 	out := &sitepb.TailoringList{}
 	for _, t := range list {
-		out.Items = append(out.Items, &sitepb.TailoringMeta{
-			Id: t.ID, JobUrl: t.JobURL, Title: t.Title, Company: t.Company, CreatedAt: t.CreatedAt,
-		})
+		meta := &sitepb.TailoringMeta{Id: t.ID, JobUrl: t.JobURL, Title: t.Title, Company: t.Company, CreatedAt: t.CreatedAt}
+		// Derive richer, glanceable info from the stored analysis — this also backfills variants
+		// saved before the title/company columns existed.
+		if job := unmarshalResult(t.Result).GetJob(); job != nil {
+			if meta.Title == "" {
+				meta.Title = job.GetTitle()
+			}
+			if meta.Company == "" {
+				meta.Company = job.GetCompany()
+			}
+			meta.Keywords = topN(job.GetKeywords(), 5)
+		}
+		out.Items = append(out.Items, meta)
 	}
 	return out, nil
+}
+
+// topN returns at most the first n elements of s.
+func topN(s []string, n int) []string {
+	if len(s) > n {
+		return s[:n]
+	}
+	return s
 }
 
 // GetTailoring loads one saved variant's full result by id.
