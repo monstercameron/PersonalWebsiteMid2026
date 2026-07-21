@@ -23,6 +23,9 @@ Semantic Versioning once released.
   and prompt with cursor — styled with typed CSS from theme tokens; screenshot-verified against
   the mockup. Static for now; the interactive engine + gRPC programs are next.
 ### Changed
+- Standard site reworked to match the mockup: hero-first order (orange-dash eyebrow, accent
+  headline, sans-serif lede, glyphed social, orange launch CTA), then the terminal; boot log with
+  OK badges + dotted leaders + right-aligned values; "live · interactive" title; ambient glows.
 - Colors centralized into `internal/theme` design tokens (quick-ref: DESIGN.md §16).
 - Minimal bootstrap `<style>` (reset + base bg + mono font-family) added to the SSR shell.
 ### Security

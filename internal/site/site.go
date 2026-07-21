@@ -16,10 +16,11 @@ import (
 // Colors come from the shared token package (internal/theme); see documents/DESIGN.md.
 
 // Page renders the full standard site for the given content.
-func Page(about *sitepb.About, projects []*sitepb.Project) ui.Node {
-	return Div(Class(Bg(theme.Bg), Fg(theme.Fg)),
+func Page(_ *sitepb.About, projects []*sitepb.Project) ui.Node {
+	return Div(Class(Fg(theme.Fg)),
 		center(
-			hero(about),
+			hero(),
+			termMount(),
 			work(projects),
 			how(),
 			contact(),
@@ -38,21 +39,22 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project) (string, error)
 	head := `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
 		`<meta name="viewport" content="width=device-width,initial-scale=1">` +
 		`<title>Earl Cameron — AI-native systems engineer</title>` +
-		// Minimal bootstrap glue (permitted): reset, base bg/fg to avoid a flash, and the mono
-		// font-family the typed CSS system can't express. Everything else is typed css/u.
-		`<style>*{box-sizing:border-box}html,body{margin:0}body{background:#17040f;color:#f3e9e6;` +
-		`font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code","JetBrains Mono",monospace}</style>` +
+		// Minimal bootstrap glue (permitted): reset, base color, mono font-family, and the ambient
+		// glow background. Everything else is typed css/u.
+		`<style>*{box-sizing:border-box}html,body{margin:0}body{color:#f3e9e6;` +
+		`font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code","JetBrains Mono",monospace;` +
+		`background:radial-gradient(60vw 50vw at 12% -8%,rgba(190,123,230,.16),transparent 60%),` +
+		`radial-gradient(55vw 55vw at 105% 115%,rgba(233,84,32,.14),transparent 55%),#17040f;` +
+		`background-attachment:fixed}</style>` +
 		css.StyleBlock() + `</head><body>`
-	// #term-root is where the wasm terminal mounts; the standard-site markup follows as the
-	// no-JS failsafe. The two <script> lines are the only JavaScript in the project: the wasm
-	// bootstrap glue.
-	mount := `<div id="term-root"></div>`
+	// The wasm terminal mounts into #term-root (rendered inside the hero). The two <script> lines
+	// are the only JavaScript in the project: the wasm bootstrap glue.
 	boot := `<script src="/static/wasm_exec.js"></script>` +
 		`<script>const go=new Go();` +
 		`WebAssembly.instantiateStreaming(fetch("/static/app.wasm"),go.importObject)` +
 		`.then(function(r){go.run(r.instance);})` +
 		`.catch(function(e){console.error("wasm boot failed",e);});</script>`
-	return head + mount + markup + boot + `</body></html>`, nil
+	return head + markup + boot + `</body></html>`, nil
 }
 
 // center wraps children in a max-width column, horizontally centered by a flex parent.
@@ -64,21 +66,64 @@ func center(children ...ui.Node) ui.Node {
 	return Div(Class(Flex, JustifyCenter), Div(args...))
 }
 
-// hero renders the identity block: eyebrow, headline, thesis, and social links.
-func hero(about *sitepb.About) ui.Node {
-	return Div(Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing6)),
-		Div(Class(TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.2))), "EARL CAMERON · LAUDERHILL, FL"),
-		H1(Class(FontSize(Rem(2)), Md(FontSize(Rem(2.8))), FontBold, LineHeight(Num(1.08))), about.GetHeadline()),
-		P(Class(FontSize(Rem(1.05)), Md(FontSize(Rem(1.15))), Fg(theme.Dim), MaxWidth(Px(640))), about.GetBody()),
-		Div(Class(Flex, Gap(Spacing5), TextSize(TextSm)),
-			extLink("https://github.com/monstercameron", "github"),
-			extLink("https://www.earlcameron.com", "earlcameron.com"),
-			A(Class(Fg(theme.Accent2)), Props{Href: "mailto:mr.e.cameron@gmail.com"}, "email"),
+// sansFont is Cam's voice (proportional sans) for prose, contrasted with the mono machine voice.
+// font-family isn't in css/u, so use the typed css.Property escape hatch.
+var sansFont = css.Property("font-family", `-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif`)
+
+// hero renders the identity block: eyebrow, headline (with accent), thesis (sans), social links,
+// and the launch CTA — matching the mockup. The terminal mounts immediately below (see Page).
+func hero() ui.Node {
+	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
+		Div(Class(Flex, ItemsCenter, Gap(Spacing3), TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.18))),
+			Span(Class(css.Property("width", "26px"), css.Property("height", "1px"),
+				css.Property("background", "#e95420"), css.Property("display", "inline-block"))),
+			Span("EARL CAMERON · LAUDERHILL, FL"),
 		),
-		Div(Class(TextSize(TextSm), Fg(theme.Dim)),
-			"Prefer a shell? This site has a live terminal — enable JavaScript and type ",
-			Span(Class(Fg(theme.Accent)), "help"), "."),
+		H1(Class(FontSize(Rem(2)), Md(FontSize(Rem(2.9))), FontBold, LineHeight(Num(1.06))),
+			Span("AI-native systems engineer. "),
+			Span(Class(Fg(theme.Accent)), "I ship "),
+			Span("ambitious things, fast."),
+		),
+		P(Class(sansFont, FontSize(Rem(1.05)), Md(FontSize(Rem(1.2))), Fg(theme.Dim), MaxWidth(Px(620)), LineHeight(Num(1.5))),
+			"I pair real systems judgment — Go, WebAssembly, on-device ML, low-level performance — with ",
+			Span(Class(Fg(theme.Fg), FontSemibold), "LLMs in the loop"),
+			". The result: I design, build, and ship at a pace that used to take a team. ",
+			Span(Class(Fg(theme.Fg), FontSemibold), "This whole site is the proof"),
+			" — rendered by a UI framework I wrote, talking to a Go backend over a gRPC bridge I built.",
+		),
+		Div(Class(Flex, Gap(Spacing5), TextSize(TextSm)),
+			socialLink("https://github.com/monstercameron", "◆", "github"),
+			socialLink("https://www.earlcameron.com", "✦", "earlcameron.com"),
+			socialLink("mailto:mr.e.cameron@gmail.com", "✉", "email"),
+		),
+		launchCTA(),
 	)
+}
+
+// launchCTA renders the orange call-to-action + pitch that invites using the terminal below.
+func launchCTA() ui.Node {
+	return Div(Class(Flex, ItemsCenter, Gap(Spacing4), css.Property("flex-wrap", "wrap")),
+		Div(Class(Bg(theme.Accent), Fg(Hex("#ffffff")), FontSemibold, Rounded(RadiusLg), PadX(Spacing5), PadY(Spacing3),
+			css.Property("cursor", "pointer")),
+			"▶ Launch the live terminal"),
+		Div(Class(sansFont, Fg(theme.Dim), TextSize(TextSm), MaxWidth(Px(380))),
+			"Not a screenshot — a real shell wired to a Go backend over gRPC. Every command runs. ",
+			Span(Class(Fg(theme.Accent)), "▸ type below to start"),
+		),
+	)
+}
+
+// socialLink renders a glyphed external link.
+func socialLink(href, glyph, text string) ui.Node {
+	return A(Class(Fg(theme.Dim), Flex, ItemsCenter, Gap(Spacing2)),
+		Props{Href: href, Target: "_blank", Rel: "noopener"},
+		Span(Class(Fg(theme.Accent2)), glyph), Span(text))
+}
+
+// termMount is the element the wasm terminal mounts into, placed right after the hero (the
+// mockup's unified hero). No-JS visitors simply see the standard site without it.
+func termMount() ui.Node {
+	return Div(FromProps(Props{ID: "term-root"}))
 }
 
 // work renders the featured-projects section.
@@ -167,9 +212,4 @@ func sectionH2(text string) ui.Node {
 // label renders a mono-style section eyebrow.
 func label(text string) ui.Node {
 	return Div(Class(TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.15))), text)
-}
-
-// extLink renders an external link that opens in a new tab.
-func extLink(href, text string) ui.Node {
-	return A(Class(Fg(theme.Accent2)), Props{Href: href, Target: "_blank", Rel: "noopener"}, text)
 }

@@ -29,7 +29,10 @@ func titleBar() ui.Node {
 	return Div(Class(Flex, ItemsCenter, Gap(Spacing2), PadX(Spacing4), PadY(Spacing3),
 		css.Property("border-bottom", "1px solid #3a1b2e")),
 		light("#ff5f56"), light("#ffbd2e"), light("#27c93f"),
-		Span(Class(Fg(theme.Dim), PadX(Spacing4), FontSize(Rem(0.85))), "cameron — zsh — 80×24"),
+		Span(Class(css.Property("flex", "1"), css.Property("text-align", "center"), Fg(theme.Dim), FontSize(Rem(0.82))),
+			"cameron — zsh — 80×24"),
+		Span(Class(Fg(theme.Dim), FontSize(Rem(0.75))),
+			Span(Class(Fg(theme.Green)), "● "), "live · interactive"),
 	)
 }
 
@@ -57,10 +60,13 @@ func termBody() ui.Node {
 
 // bootLine renders one "[ok] label · value" boot entry.
 func bootLine(label, val string) ui.Node {
-	return Div(Class(Flex, Gap(Spacing2)),
-		Span(Class(Fg(theme.Green)), "[ok]"),
-		Span(Class(Fg(theme.Fg)), label),
-		Span(Class(Fg(theme.Dim)), "· "+val),
+	return Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
+		Span(Class(Fg(theme.Green), FontSize(Rem(0.7)), css.Property("border", "1px solid #3a1b2e"),
+			css.Property("border-radius", "4px"), css.Property("padding", "1px 6px"), css.Property("letter-spacing", "0.1em")), "OK"),
+		Span(Class(FontSemibold, Fg(theme.Fg)), label),
+		Span(Class(css.Property("flex", "1"), css.Property("border-bottom", "1px dotted #6f5364"),
+			css.Property("height", "0"), css.Property("transform", "translateY(-3px)"))),
+		Span(Class(Fg(theme.Dim)), val),
 	)
 }
 
