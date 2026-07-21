@@ -81,3 +81,24 @@ one RemoteAddr — fine for a single-owner gate.
 
 **Next.** Résumé-tailor follow-ups: OpenAI budget cap ($20/mo) + SSRF guard on the URL fetch
 (block private/loopback). Then wire the terminal's portfolio programs to real gRPC.
+
+### RSS control panel + CashFlux managed service (same day)
+Two features, built by **two parallel Sonnet subagents on disjoint new packages** (worktree isolation
+was off-limits — it breaks the `../GoWebComponents` relative replace — and two agents on the shared
+proto/server/client tree would collide, so each agent owned a standalone package: `internal/rss`,
+`internal/budget`), then wired into the gRPC/WASM admin by hand and **adversarially reviewed** (one
+fresh Sonnet reviewer per feature) with a fix loop.
+
+**RSS** (ported from the old Node `PersonalWebsite2026/api`): configurable QOTD prompts (50 seeded,
+`qotd_prompts` + unique-index dedup), spec-compliant RSS 2.0 via `encoding/xml` (atom:self, RFC1123Z,
+stable guid), Anime News Network fetch, and a Slack incoming-webhook poster that composes the latest
+headline + today's prompt into a discussion topic — all controllable from a new `rss` admin tab over
+`AdminService`. **CashFlux** is built to WASM and hosted at `/budget/` as a managed SPA.
+
+**Broke / corrected (adversarial review).** RSS reviewer caught a real **HIGH**: unescaped ANN
+headlines flowing into Slack `<url|label>` mrkdwn — a hostile headline could `@channel`-ping or forge
+a link; fixed with Slack escaping (+test). Also: unstable RSS guid (re-showed tracked shows every
+episode), a seed TOCTOU race (→ unique index + INSERT OR IGNORE), prompt length cap, news
+redirect-host restriction. CashFlux reviewer caught a path-containment gap (stdlib-side-effect
+reliance) → explicit `filepath.Rel` guard. Verified in-browser: RSS panel + 50 prompts + Slack
+config, CashFlux dashboard boots at `/budget/`, both feeds valid XML. Tests + vet green.
