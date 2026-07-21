@@ -213,25 +213,53 @@ func lineDiff(a, b []string) []diffOp {
 	return ops
 }
 
-// diffView renders a git-style diff of the changed résumé sections (summary + each job's bullets).
+// diffView renders the ENTIRE résumé as a git-style diff: unchanged sections (header, skills,
+// projects, education, job metadata) appear as context lines, and the changed parts (summary + each
+// job's bullets) show as removed/added — so the whole document is visible with the edits in place.
 func diffView(before, after *sitepb.Resume) ui.Node {
 	rows := []any{Class(Flex, FlexCol, css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"),
 		css.Raw("font-size", "12.5px"), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), css.Raw("overflow", "hidden"))}
-	hdr := func(label string) ui.Node {
-		return Div(Class(Fg(theme.Dim), css.Raw("padding", "4px 12px"), css.Raw("background", "#241a22")), label)
+	ctx := func(text string) { rows = append(rows, diffLine(diffOp{0, text})) }
+	hdr := func(label string) {
+		rows = append(rows, Div(Class(Fg(theme.Dim), FontSemibold, css.Raw("padding", "6px 12px"),
+			css.Raw("background", "#241a22"), css.Raw("letter-spacing", ".1em")), label))
 	}
-	section := func(label string, bs, as []string) {
-		rows = append(rows, hdr(label))
+	diff := func(bs, as []string) {
 		for _, op := range lineDiff(bs, as) {
 			rows = append(rows, diffLine(op))
 		}
 	}
-	section("summary", []string{before.GetSummary()}, []string{after.GetSummary()})
+
+	ctx(after.GetName())
+	ctx(after.GetTitle())
+	ctx(after.GetLocation() + " · " + after.GetEmail() + " · " + after.GetGithub() + " · " + after.GetLinkedin())
+
+	hdr("SUMMARY")
+	diff([]string{before.GetSummary()}, []string{after.GetSummary()})
+
+	hdr("EXPERIENCE")
 	bj, aj := before.GetJobs(), after.GetJobs()
-	for i := range bj {
-		if i < len(aj) {
-			section(bj[i].GetRole()+" — "+bj[i].GetOrg(), bj[i].GetBullets(), aj[i].GetBullets())
+	for i := range aj {
+		ctx(aj[i].GetRole() + "  (" + aj[i].GetDates() + ")")
+		ctx(aj[i].GetOrg())
+		var bb []string
+		if i < len(bj) {
+			bb = bj[i].GetBullets()
 		}
+		diff(bb, aj[i].GetBullets())
+	}
+
+	hdr("SKILLS")
+	for _, sk := range after.GetSkills() {
+		ctx(sk.GetLabel() + ": " + sk.GetItems())
+	}
+	hdr("SELECTED PROJECTS")
+	for _, p := range after.GetProjects() {
+		ctx(p.GetName() + " — " + p.GetDesc())
+	}
+	hdr("EDUCATION")
+	for _, e := range after.GetEducation() {
+		ctx(e)
 	}
 	return Div(rows...)
 }
