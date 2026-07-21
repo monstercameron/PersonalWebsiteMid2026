@@ -4,17 +4,15 @@ go 1.26.3
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/monstercameron/GoGRPCBridge v0.0.19
+	github.com/monstercameron/GoGRPCBridge v1.1.1
 	github.com/monstercameron/GoWebComponents/v4 v4.2.0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.54.0
 )
 
-// Track the local checkouts: the newest (unreleased v4.3.0) GWC and the GoGRPCBridge it vendors.
+// GWC tracks the local checkout (unreleased v4.3.0). GoGRPCBridge is the published v1.1.1 module.
 replace github.com/monstercameron/GoWebComponents/v4 => ../GoWebComponents
-
-replace github.com/monstercameron/GoGRPCBridge => ../GoWebComponents/third_party/GoGRPCBridge
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -35,7 +33,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	modernc.org/libc v1.74.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
