@@ -27,10 +27,11 @@ func AdminApp() ui.Node {
 	tracked := ui.UseState[[]*sitepb.Anime](nil)
 
 	jobURL := ui.UseState("")
-	canonical := ui.UseState[*sitepb.Resume](nil) // the active résumé (live render / diff baseline)
+	canonical := ui.UseState[*sitepb.Resume](nil) // the PERMANENT base résumé (diff baseline)
 	tailored := ui.UseState[*sitepb.Resume](nil)  // the proposed tailored résumé (nil = none pending)
 	jobAnalysis := ui.UseState[*sitepb.JobAnalysis](nil)
 	rationales := ui.UseState[[]*sitepb.Rationale](nil)
+	variants := ui.UseState[[]*sitepb.TailoringMeta](nil) // saved tailoring variants (the CRUD list)
 
 	keySet := ui.UseState(false)
 	model := ui.UseState("")
@@ -72,7 +73,7 @@ func AdminApp() ui.Node {
 				tracked.Set(list.GetItems())
 			}()
 		case "resume":
-			if canonical.Get() == nil { // load once: the active résumé + the last pending tailoring (if any)
+			if canonical.Get() == nil { // load once: the permanent base résumé + the saved variants list
 				go func() {
 					c, err := adminClient()
 					if err != nil {
@@ -81,17 +82,15 @@ func AdminApp() ui.Node {
 					}
 					ctx, cancel := callCtx(token.Get())
 					defer cancel()
-					r, err := c.GetResume(ctx, &sitepb.Empty{})
+					r, err := c.GetBaseResume(ctx, &sitepb.Empty{})
 					if onAuthErr(err) {
 						return
 					}
 					if err == nil {
 						canonical.Set(r)
 					}
-					if last, err := c.GetLastTailoring(ctx, &sitepb.Empty{}); err == nil && last.GetResume() != nil {
-						tailored.Set(last.GetResume())
-						jobAnalysis.Set(last.GetJob())
-						rationales.Set(last.GetRationales())
+					if l, err := c.ListTailorings(ctx, &sitepb.Empty{}); err == nil {
+						variants.Set(l.GetItems())
 					}
 				}()
 			}
@@ -238,6 +237,20 @@ func AdminApp() ui.Node {
 		}()
 	})
 
+	reloadVariants := func() {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if l, err := c.ListTailorings(ctx, &sitepb.Empty{}); err == nil {
+				variants.Set(l.GetItems())
+			}
+		}()
+	}
+
 	onTailor := ui.UseEvent(func() {
 		flash.Set("tailoring…")
 		go func() {
@@ -259,6 +272,7 @@ func AdminApp() ui.Node {
 			tailored.Set(r.GetResume())
 			jobAnalysis.Set(r.GetJob())
 			rationales.Set(r.GetRationales())
+			reloadVariants()
 		}()
 	})
 
@@ -351,11 +365,11 @@ func AdminApp() ui.Node {
 				flash.Set("apply failed")
 				return
 			}
-			canonical.Set(t)
+			// The base résumé is permanent (diff baseline) — Apply only sets the active /resume.
 			tailored.Set(nil)
 			jobAnalysis.Set(nil)
 			rationales.Set(nil)
-			flash.Set("applied — this is now your active résumé (/resume updated)")
+			flash.Set("applied — this variant is now your active /resume (base résumé unchanged)")
 		}()
 	})
 	onCancel := ui.UseEvent(func() {
@@ -365,10 +379,49 @@ func AdminApp() ui.Node {
 		flash.Set("")
 	})
 
+	// selectVariant re-opens a saved variant for review / re-tweaking.
+	selectVariant := func(meta *sitepb.TailoringMeta) {
+		jobURL.Set(meta.GetJobUrl())
+		flash.Set("loaded a saved variant — reanalyze to refresh it against the posting")
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			r, err := c.GetTailoring(ctx, &sitepb.TailoringId{Id: meta.GetId()})
+			if onAuthErr(err) || err != nil || r.GetResume() == nil {
+				return
+			}
+			tailored.Set(r.GetResume())
+			jobAnalysis.Set(r.GetJob())
+			rationales.Set(r.GetRationales())
+		}()
+	}
+	// deleteVariant removes a saved variant and refreshes the list.
+	deleteVariant := func(id int64) {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if _, err := c.DeleteTailoring(ctx, &sitepb.TailoringId{Id: id}); err != nil {
+				if onAuthErr(err) {
+					return
+				}
+				return
+			}
+			reloadVariants()
+		}()
+	}
+
 	var content ui.Node
 	switch view.Get() {
 	case "resume":
-		content = resumeView(jobURL, onTailor, onApply, onCancel, canonical.Get(), tailored.Get(), jobAnalysis.Get(), rationales.Get())
+		content = resumeView(jobURL, onTailor, onApply, onCancel, canonical.Get(), tailored.Get(), jobAnalysis.Get(), rationales.Get(), variants.Get(), selectVariant, deleteVariant)
 	case "settings":
 		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
 	default:

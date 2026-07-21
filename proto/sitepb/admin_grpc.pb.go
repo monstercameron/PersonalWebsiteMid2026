@@ -32,6 +32,10 @@ const (
 	AdminService_SaveSettings_FullMethodName     = "/site.v1.AdminService/SaveSettings"
 	AdminService_ListModels_FullMethodName       = "/site.v1.AdminService/ListModels"
 	AdminService_GetLastTailoring_FullMethodName = "/site.v1.AdminService/GetLastTailoring"
+	AdminService_GetBaseResume_FullMethodName    = "/site.v1.AdminService/GetBaseResume"
+	AdminService_ListTailorings_FullMethodName   = "/site.v1.AdminService/ListTailorings"
+	AdminService_GetTailoring_FullMethodName     = "/site.v1.AdminService/GetTailoring"
+	AdminService_DeleteTailoring_FullMethodName  = "/site.v1.AdminService/DeleteTailoring"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -73,6 +77,14 @@ type AdminServiceClient interface {
 	ListModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelList, error)
 	// GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
 	GetLastTailoring(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TailorResult, error)
+	// GetBaseResume returns the permanent canonical résumé (the diff baseline; never overwritten).
+	GetBaseResume(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Resume, error)
+	// ListTailorings returns saved tailoring variants (metadata only), newest first.
+	ListTailorings(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TailoringList, error)
+	// GetTailoring loads one saved variant's full result by id (for re-opening / re-tweaking).
+	GetTailoring(ctx context.Context, in *TailoringId, opts ...grpc.CallOption) (*TailorResult, error)
+	// DeleteTailoring removes a saved variant by id.
+	DeleteTailoring(ctx context.Context, in *TailoringId, opts ...grpc.CallOption) (*Ack, error)
 }
 
 type adminServiceClient struct {
@@ -213,6 +225,46 @@ func (c *adminServiceClient) GetLastTailoring(ctx context.Context, in *Empty, op
 	return out, nil
 }
 
+func (c *adminServiceClient) GetBaseResume(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Resume, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Resume)
+	err := c.cc.Invoke(ctx, AdminService_GetBaseResume_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListTailorings(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TailoringList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TailoringList)
+	err := c.cc.Invoke(ctx, AdminService_ListTailorings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetTailoring(ctx context.Context, in *TailoringId, opts ...grpc.CallOption) (*TailorResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TailorResult)
+	err := c.cc.Invoke(ctx, AdminService_GetTailoring_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteTailoring(ctx context.Context, in *TailoringId, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_DeleteTailoring_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -252,6 +304,14 @@ type AdminServiceServer interface {
 	ListModels(context.Context, *Empty) (*ModelList, error)
 	// GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
 	GetLastTailoring(context.Context, *Empty) (*TailorResult, error)
+	// GetBaseResume returns the permanent canonical résumé (the diff baseline; never overwritten).
+	GetBaseResume(context.Context, *Empty) (*Resume, error)
+	// ListTailorings returns saved tailoring variants (metadata only), newest first.
+	ListTailorings(context.Context, *Empty) (*TailoringList, error)
+	// GetTailoring loads one saved variant's full result by id (for re-opening / re-tweaking).
+	GetTailoring(context.Context, *TailoringId) (*TailorResult, error)
+	// DeleteTailoring removes a saved variant by id.
+	DeleteTailoring(context.Context, *TailoringId) (*Ack, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -300,6 +360,18 @@ func (UnimplementedAdminServiceServer) ListModels(context.Context, *Empty) (*Mod
 }
 func (UnimplementedAdminServiceServer) GetLastTailoring(context.Context, *Empty) (*TailorResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetLastTailoring not implemented")
+}
+func (UnimplementedAdminServiceServer) GetBaseResume(context.Context, *Empty) (*Resume, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBaseResume not implemented")
+}
+func (UnimplementedAdminServiceServer) ListTailorings(context.Context, *Empty) (*TailoringList, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTailorings not implemented")
+}
+func (UnimplementedAdminServiceServer) GetTailoring(context.Context, *TailoringId) (*TailorResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTailoring not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteTailoring(context.Context, *TailoringId) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteTailoring not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -556,6 +628,78 @@ func _AdminService_GetLastTailoring_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetBaseResume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetBaseResume(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetBaseResume_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetBaseResume(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListTailorings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListTailorings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListTailorings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListTailorings(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetTailoring_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TailoringId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetTailoring(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetTailoring_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetTailoring(ctx, req.(*TailoringId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteTailoring_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TailoringId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteTailoring(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteTailoring_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteTailoring(ctx, req.(*TailoringId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -614,6 +758,22 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetLastTailoring",
 			Handler:    _AdminService_GetLastTailoring_Handler,
+		},
+		{
+			MethodName: "GetBaseResume",
+			Handler:    _AdminService_GetBaseResume_Handler,
+		},
+		{
+			MethodName: "ListTailorings",
+			Handler:    _AdminService_ListTailorings_Handler,
+		},
+		{
+			MethodName: "GetTailoring",
+			Handler:    _AdminService_GetTailoring_Handler,
+		},
+		{
+			MethodName: "DeleteTailoring",
+			Handler:    _AdminService_DeleteTailoring_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

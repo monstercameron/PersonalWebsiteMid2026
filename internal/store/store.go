@@ -67,6 +67,8 @@ func migrate(db *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS tailorings (
 			id         INTEGER PRIMARY KEY AUTOINCREMENT,
 			job_url    TEXT    NOT NULL DEFAULT '',
+			title      TEXT    NOT NULL DEFAULT '',
+			company    TEXT    NOT NULL DEFAULT '',
 			result     TEXT    NOT NULL,
 			created_at INTEGER NOT NULL
 		)`,
@@ -75,6 +77,14 @@ func migrate(db *sql.DB) error {
 		if _, err := db.Exec(s); err != nil {
 			return err
 		}
+	}
+	// Best-effort column additions for databases created before these columns existed (SQLite has
+	// no ADD COLUMN IF NOT EXISTS, so a duplicate-column error here is expected and ignored).
+	for _, alter := range []string{
+		`ALTER TABLE tailorings ADD COLUMN title TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE tailorings ADD COLUMN company TEXT NOT NULL DEFAULT ''`,
+	} {
+		_, _ = db.Exec(alter)
 	}
 	return nil
 }

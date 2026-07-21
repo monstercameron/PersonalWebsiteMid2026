@@ -41,6 +41,33 @@ service AdminService {
   rpc ListModels(Empty) returns (ModelList);
   // GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
   rpc GetLastTailoring(Empty) returns (TailorResult);
+  // GetBaseResume returns the permanent canonical résumé (the diff baseline; never overwritten).
+  rpc GetBaseResume(Empty) returns (Resume);
+  // ListTailorings returns saved tailoring variants (metadata only), newest first.
+  rpc ListTailorings(Empty) returns (TailoringList);
+  // GetTailoring loads one saved variant's full result by id (for re-opening / re-tweaking).
+  rpc GetTailoring(TailoringId) returns (TailorResult);
+  // DeleteTailoring removes a saved variant by id.
+  rpc DeleteTailoring(TailoringId) returns (Ack);
+}
+
+// TailoringId identifies a saved variant.
+message TailoringId {
+  int64 id = 1;
+}
+
+// TailoringMeta is the glanceable summary of a saved variant (no résumé payload).
+message TailoringMeta {
+  int64 id = 1;
+  string job_url = 2;
+  string title = 3;
+  string company = 4;
+  int64 created_at = 5; // unix seconds
+}
+
+// TailoringList is the saved variants, newest first.
+message TailoringList {
+  repeated TailoringMeta items = 1;
 }
 
 // Settings is the web-editable configuration. On GetSettings the key is never populated (only

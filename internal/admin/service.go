@@ -197,9 +197,10 @@ func (s *Service) TailorResume(ctx context.Context, req *sitepb.TailorRequest) (
 	for _, r := range res.Rationales {
 		out.Rationales = append(out.Rationales, &sitepb.Rationale{Focus: r.Focus, Reason: r.Reason})
 	}
-	// Persist the result (it cost an OpenAI call) so it survives restarts and can be re-opened.
+	// Persist the variant (it cost an OpenAI call) with glanceable metadata so it survives restarts,
+	// shows in the list, and can be re-opened.
 	if data, err := protojson.Marshal(out); err == nil {
-		_ = s.store.SaveTailoring(ctx, req.GetJobUrl(), string(data), time.Now().Unix())
+		_, _ = s.store.SaveTailoring(ctx, req.GetJobUrl(), res.Job.Title, res.Job.Company, string(data), time.Now().Unix())
 	}
 	return out, nil
 }
@@ -210,11 +211,53 @@ func (s *Service) GetLastTailoring(ctx context.Context, _ *sitepb.Empty) (*sitep
 	if err != nil || !ok {
 		return &sitepb.TailorResult{}, nil
 	}
-	var out sitepb.TailorResult
-	if err := protojson.Unmarshal([]byte(t.Result), &out); err != nil {
+	return unmarshalResult(t.Result), nil
+}
+
+// GetBaseResume returns the permanent canonical résumé (the diff baseline; never overwritten).
+func (s *Service) GetBaseResume(_ context.Context, _ *sitepb.Empty) (*sitepb.Resume, error) {
+	return resumeToProto(resume.Data()), nil
+}
+
+// ListTailorings returns saved variants (metadata only), newest first.
+func (s *Service) ListTailorings(ctx context.Context, _ *sitepb.Empty) (*sitepb.TailoringList, error) {
+	list, err := s.store.ListTailorings(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list failed: %v", err)
+	}
+	out := &sitepb.TailoringList{}
+	for _, t := range list {
+		out.Items = append(out.Items, &sitepb.TailoringMeta{
+			Id: t.ID, JobUrl: t.JobURL, Title: t.Title, Company: t.Company, CreatedAt: t.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+// GetTailoring loads one saved variant's full result by id.
+func (s *Service) GetTailoring(ctx context.Context, req *sitepb.TailoringId) (*sitepb.TailorResult, error) {
+	t, ok, err := s.store.GetTailoring(ctx, req.GetId())
+	if err != nil || !ok {
 		return &sitepb.TailorResult{}, nil
 	}
-	return &out, nil
+	return unmarshalResult(t.Result), nil
+}
+
+// DeleteTailoring removes a saved variant by id.
+func (s *Service) DeleteTailoring(ctx context.Context, req *sitepb.TailoringId) (*sitepb.Ack, error) {
+	if err := s.store.DeleteTailoring(ctx, req.GetId()); err != nil {
+		return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+	}
+	return &sitepb.Ack{Ok: true}, nil
+}
+
+// unmarshalResult decodes a stored TailorResult (protojson), returning an empty result on error.
+func unmarshalResult(data string) *sitepb.TailorResult {
+	var out sitepb.TailorResult
+	if err := protojson.Unmarshal([]byte(data), &out); err != nil {
+		return &sitepb.TailorResult{}
+	}
+	return &out
 }
 
 // trackedToProto maps a stored tracked show to the wire DTO.

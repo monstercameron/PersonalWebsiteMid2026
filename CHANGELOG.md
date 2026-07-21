@@ -5,6 +5,13 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Résumé variants library**: the base résumé is permanent (the diff baseline, never overwritten).
+  Each tailoring is saved as a variant linked to its job URL + title/company + date, shown as
+  designed, scannable cards (accent stripe, domain source-chip, date) in a **CRUD list** at the
+  bottom of the résumé tool — **view / PDF** opens the variant's print page (`/resume?variant=<id>`,
+  Save as PDF), **tweak** re-opens it in the workspace, **delete** removes it, and **Apply** sets the
+  active `/resume`. Over gRPC: `GetBaseResume`/`ListTailorings`/`GetTailoring`/`DeleteTailoring`;
+  variants + title/company persisted in SQLite. Delete + variant page verified in-browser.
 - Project scaffolding: planning docs (README, DESIGN, PROJECT_LAYOUT, DEPLOYMENT, TODOS, DEVLOG),
   agent guides (AGENTS.md, CLAUDE.md), and the `karpathy-guidelines` skill.
 - Interactive design mockup (`design/mockup.html`).

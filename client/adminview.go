@@ -3,7 +3,10 @@
 package main
 
 import (
+	"net/url"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/monstercameron/GoWebComponents/v4/css"
 	. "github.com/monstercameron/GoWebComponents/v4/css/u"
@@ -128,12 +131,12 @@ func animeCardNode(a *sitepb.Anime, trackFn func(int32, bool)) ui.Node {
 // resumeView renders the tailor form; when a tailoring is pending it shows the extracted job
 // signals, the rationales, a git-diff of the proposed changes, and Apply/Reanalyze/Cancel; otherwise
 // it live-renders the active résumé.
-func resumeView(jobURL ui.State[string], onTailor, onApply, onCancel ui.Handler, canonical, tailored *sitepb.Resume, job *sitepb.JobAnalysis, rationales []*sitepb.Rationale) ui.Node {
+func resumeView(jobURL ui.State[string], onTailor, onApply, onCancel ui.Handler, canonical, tailored *sitepb.Resume, job *sitepb.JobAnalysis, rationales []*sitepb.Rationale, variants []*sitepb.TailoringMeta, onSelect func(*sitepb.TailoringMeta), onDelete func(int64)) ui.Node {
 	onURL := ui.WrapHandler(func(e ui.Event) { jobURL.Set(e.GetValue()) })
 	sections := []any{Class(Flex, FlexCol, Gap(Spacing4)),
 		P(Class(Fg(theme.Dim), TextSize(TextSm)),
-			"Paste a job URL to tailor a variant. Your active résumé is at ",
-			A(Class(Fg(theme.Accent2)), Props{Href: "/resume", Target: "_blank", Rel: "noopener"}, "/resume"), " (save as PDF)."),
+			"Your ", Span(Class(FontSemibold, Fg(theme.Fg)), "base résumé"), " is permanent. Tailor it against a job URL to create a variant — the active one is served at ",
+			A(Class(Fg(theme.Accent2)), Props{Href: "/resume", Target: "_blank", Rel: "noopener"}, "/resume"), "."),
 		Div(Class(Flex, Gap(Spacing2)),
 			growInput(jobURL.Get(), onURL, "paste a job-posting URL…"),
 			primaryButton("Tailor résumé", onTailor),
@@ -150,7 +153,7 @@ func resumeView(jobURL ui.State[string], onTailor, onApply, onCancel ui.Handler,
 			}
 			sections = append(sections, Div(panels...))
 		}
-		sections = append(sections, sectionLabel("proposed changes"))
+		sections = append(sections, sectionLabel("proposed changes (vs base résumé)"))
 		if canonical != nil {
 			sections = append(sections, diffView(canonical, tailored))
 		}
@@ -160,10 +163,76 @@ func resumeView(jobURL ui.State[string], onTailor, onApply, onCancel ui.Handler,
 			ghostButton("Cancel", onCancel),
 		))
 	} else if canonical != nil {
-		sections = append(sections, sectionLabel("live résumé"), resumeDocument(canonical))
+		sections = append(sections, sectionLabel("base résumé"), resumeDocument(canonical))
 	}
+	sections = append(sections, sectionLabel("saved variants"), variantsList(variants, onSelect, onDelete))
 	return Div(sections...)
 }
+
+// variantsList renders the saved tailoring variants as a glanceable, CRUD-able grid.
+func variantsList(variants []*sitepb.TailoringMeta, onSelect func(*sitepb.TailoringMeta), onDelete func(int64)) ui.Node {
+	if len(variants) == 0 {
+		return P(Class(Fg(theme.Dim), TextSize(TextSm)), "No saved variants yet — tailor against a job posting to create one.")
+	}
+	nodes := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(300px,1fr))"))}
+	for _, m := range variants {
+		nodes = append(nodes, variantCard(m, onSelect, onDelete))
+	}
+	return Div(nodes...)
+}
+
+// variantCard renders one saved variant as a scannable card: the role + company, a source chip
+// (the posting's domain, linked), the date, and actions — view/PDF (opens the variant's print page),
+// tweak (re-open in the workspace), and delete.
+func variantCard(m *sitepb.TailoringMeta, onSelect func(*sitepb.TailoringMeta), onDelete func(int64)) ui.Node {
+	title := m.GetTitle()
+	if title == "" {
+		title = "Tailored variant"
+	}
+	date := time.Unix(m.GetCreatedAt(), 0).Format("Jan 2 · 3:04 pm")
+	open := ui.WrapHandler(func() { onSelect(m) })
+	del := ui.WrapHandler(func() { onDelete(m.GetId()) })
+	viewURL := "/resume?variant=" + strconv.FormatInt(m.GetId(), 10)
+
+	head := []any{Class(Flex, FlexCol, Gap(Spacing1)), Span(Class(FontSemibold, Fg(theme.Fg)), title)}
+	if c := m.GetCompany(); c != "" {
+		head = append(head, Span(Class(Fg(theme.Accent2), TextSize(TextSm)), c))
+	}
+
+	return Div(Class(Flex, FlexCol, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4),
+		css.Raw("border-left", "3px solid "+accentHex), Transition(PropAll, Ms(160), Ease), Hover(Border(theme.Accent))),
+		Div(head...),
+		Div(Class(Flex, ItemsCenter, Gap(Spacing2), css.Raw("flex-wrap", "wrap")),
+			A(Class(TextSize(TextSm), Fg(theme.Accent2), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2), PadY(Spacing1)),
+				Props{Href: m.GetJobUrl(), Target: "_blank", Rel: "noopener"}, "↗ "+hostOf(m.GetJobUrl())),
+			Span(Class(Fg(theme.Dim), TextSize(TextSm)), date),
+		),
+		Div(Class(Flex, Gap(Spacing4), ItemsCenter),
+			A(Class(TextSize(TextSm), FontSemibold, Fg(theme.Accent)), Props{Href: viewURL, Target: "_blank", Rel: "noopener"}, "view / PDF ↗"),
+			linkButton("tweak", open, theme.Fg),
+			linkButton("delete", del, theme.Red),
+		),
+	)
+}
+
+// linkButton renders a borderless text button that changes color on hover (subtle inline action).
+func linkButton(label string, onClick ui.Handler, hover css.Color) ui.Node {
+	return Button(Class(TextSize(TextSm), FontSemibold, Fg(theme.Dim), css.Raw("background", "transparent"),
+		css.Raw("border", "0"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(hover))),
+		Props{OnClick: onClick}, label)
+}
+
+// hostOf returns a posting URL's bare host (for the source chip), or "posting" if unparseable.
+func hostOf(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return "posting"
+	}
+	return strings.TrimPrefix(u.Host, "www.")
+}
+
+// accentHex is the Ubuntu-orange accent (matches theme.Accent) for raw-CSS fragments.
+const accentHex = "#e95420"
 
 // diffOp is one line in a git-style diff: kind -1 removed, 0 unchanged, +1 added.
 type diffOp struct {

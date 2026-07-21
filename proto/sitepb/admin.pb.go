@@ -21,6 +21,173 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// TailoringId identifies a saved variant.
+type TailoringId struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TailoringId) Reset() {
+	*x = TailoringId{}
+	mi := &file_admin_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TailoringId) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TailoringId) ProtoMessage() {}
+
+func (x *TailoringId) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TailoringId.ProtoReflect.Descriptor instead.
+func (*TailoringId) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *TailoringId) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+// TailoringMeta is the glanceable summary of a saved variant (no résumé payload).
+type TailoringMeta struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	JobUrl        string                 `protobuf:"bytes,2,opt,name=job_url,json=jobUrl,proto3" json:"job_url,omitempty"`
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Company       string                 `protobuf:"bytes,4,opt,name=company,proto3" json:"company,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // unix seconds
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TailoringMeta) Reset() {
+	*x = TailoringMeta{}
+	mi := &file_admin_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TailoringMeta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TailoringMeta) ProtoMessage() {}
+
+func (x *TailoringMeta) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TailoringMeta.ProtoReflect.Descriptor instead.
+func (*TailoringMeta) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TailoringMeta) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *TailoringMeta) GetJobUrl() string {
+	if x != nil {
+		return x.JobUrl
+	}
+	return ""
+}
+
+func (x *TailoringMeta) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *TailoringMeta) GetCompany() string {
+	if x != nil {
+		return x.Company
+	}
+	return ""
+}
+
+func (x *TailoringMeta) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+// TailoringList is the saved variants, newest first.
+type TailoringList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*TailoringMeta       `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TailoringList) Reset() {
+	*x = TailoringList{}
+	mi := &file_admin_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TailoringList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TailoringList) ProtoMessage() {}
+
+func (x *TailoringList) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TailoringList.ProtoReflect.Descriptor instead.
+func (*TailoringList) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *TailoringList) GetItems() []*TailoringMeta {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 // Settings is the web-editable configuration. On GetSettings the key is never populated (only
 // key_set); on SaveSettings a non-empty openai_api_key is stored and a blank one is ignored.
 type Settings struct {
@@ -34,7 +201,7 @@ type Settings struct {
 
 func (x *Settings) Reset() {
 	*x = Settings{}
-	mi := &file_admin_proto_msgTypes[0]
+	mi := &file_admin_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +213,7 @@ func (x *Settings) String() string {
 func (*Settings) ProtoMessage() {}
 
 func (x *Settings) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[0]
+	mi := &file_admin_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +226,7 @@ func (x *Settings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Settings.ProtoReflect.Descriptor instead.
 func (*Settings) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{0}
+	return file_admin_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Settings) GetOpenaiApiKey() string {
@@ -93,7 +260,7 @@ type ModelList struct {
 
 func (x *ModelList) Reset() {
 	*x = ModelList{}
-	mi := &file_admin_proto_msgTypes[1]
+	mi := &file_admin_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -105,7 +272,7 @@ func (x *ModelList) String() string {
 func (*ModelList) ProtoMessage() {}
 
 func (x *ModelList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[1]
+	mi := &file_admin_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -118,7 +285,7 @@ func (x *ModelList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModelList.ProtoReflect.Descriptor instead.
 func (*ModelList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{1}
+	return file_admin_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ModelList) GetModels() []string {
@@ -137,7 +304,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_admin_proto_msgTypes[2]
+	mi := &file_admin_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +316,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[2]
+	mi := &file_admin_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,7 +329,7 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{2}
+	return file_admin_proto_rawDescGZIP(), []int{5}
 }
 
 // LoginRequest carries the admin username + password.
@@ -176,7 +343,7 @@ type LoginRequest struct {
 
 func (x *LoginRequest) Reset() {
 	*x = LoginRequest{}
-	mi := &file_admin_proto_msgTypes[3]
+	mi := &file_admin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -188,7 +355,7 @@ func (x *LoginRequest) String() string {
 func (*LoginRequest) ProtoMessage() {}
 
 func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[3]
+	mi := &file_admin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -201,7 +368,7 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{3}
+	return file_admin_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LoginRequest) GetUsername() string {
@@ -229,7 +396,7 @@ type LoginReply struct {
 
 func (x *LoginReply) Reset() {
 	*x = LoginReply{}
-	mi := &file_admin_proto_msgTypes[4]
+	mi := &file_admin_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -241,7 +408,7 @@ func (x *LoginReply) String() string {
 func (*LoginReply) ProtoMessage() {}
 
 func (x *LoginReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[4]
+	mi := &file_admin_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -254,7 +421,7 @@ func (x *LoginReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginReply.ProtoReflect.Descriptor instead.
 func (*LoginReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{4}
+	return file_admin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *LoginReply) GetOk() bool {
@@ -281,7 +448,7 @@ type SearchRequest struct {
 
 func (x *SearchRequest) Reset() {
 	*x = SearchRequest{}
-	mi := &file_admin_proto_msgTypes[5]
+	mi := &file_admin_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -293,7 +460,7 @@ func (x *SearchRequest) String() string {
 func (*SearchRequest) ProtoMessage() {}
 
 func (x *SearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[5]
+	mi := &file_admin_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -306,7 +473,7 @@ func (x *SearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
 func (*SearchRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{5}
+	return file_admin_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SearchRequest) GetQuery() string {
@@ -326,7 +493,7 @@ type AnimeId struct {
 
 func (x *AnimeId) Reset() {
 	*x = AnimeId{}
-	mi := &file_admin_proto_msgTypes[6]
+	mi := &file_admin_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -338,7 +505,7 @@ func (x *AnimeId) String() string {
 func (*AnimeId) ProtoMessage() {}
 
 func (x *AnimeId) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[6]
+	mi := &file_admin_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -351,7 +518,7 @@ func (x *AnimeId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnimeId.ProtoReflect.Descriptor instead.
 func (*AnimeId) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{6}
+	return file_admin_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AnimeId) GetAnilistId() int32 {
@@ -371,7 +538,7 @@ type CheckReply struct {
 
 func (x *CheckReply) Reset() {
 	*x = CheckReply{}
-	mi := &file_admin_proto_msgTypes[7]
+	mi := &file_admin_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -383,7 +550,7 @@ func (x *CheckReply) String() string {
 func (*CheckReply) ProtoMessage() {}
 
 func (x *CheckReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[7]
+	mi := &file_admin_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -396,7 +563,7 @@ func (x *CheckReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckReply.ProtoReflect.Descriptor instead.
 func (*CheckReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{7}
+	return file_admin_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CheckReply) GetUpdated() int32 {
@@ -423,7 +590,7 @@ type Anime struct {
 
 func (x *Anime) Reset() {
 	*x = Anime{}
-	mi := &file_admin_proto_msgTypes[8]
+	mi := &file_admin_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -435,7 +602,7 @@ func (x *Anime) String() string {
 func (*Anime) ProtoMessage() {}
 
 func (x *Anime) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[8]
+	mi := &file_admin_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -448,7 +615,7 @@ func (x *Anime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Anime.ProtoReflect.Descriptor instead.
 func (*Anime) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{8}
+	return file_admin_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Anime) GetAnilistId() int32 {
@@ -517,7 +684,7 @@ type AnimeList struct {
 
 func (x *AnimeList) Reset() {
 	*x = AnimeList{}
-	mi := &file_admin_proto_msgTypes[9]
+	mi := &file_admin_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +696,7 @@ func (x *AnimeList) String() string {
 func (*AnimeList) ProtoMessage() {}
 
 func (x *AnimeList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[9]
+	mi := &file_admin_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +709,7 @@ func (x *AnimeList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnimeList.ProtoReflect.Descriptor instead.
 func (*AnimeList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{9}
+	return file_admin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *AnimeList) GetItems() []*Anime {
@@ -572,7 +739,7 @@ type Resume struct {
 
 func (x *Resume) Reset() {
 	*x = Resume{}
-	mi := &file_admin_proto_msgTypes[10]
+	mi := &file_admin_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -584,7 +751,7 @@ func (x *Resume) String() string {
 func (*Resume) ProtoMessage() {}
 
 func (x *Resume) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[10]
+	mi := &file_admin_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +764,7 @@ func (x *Resume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resume.ProtoReflect.Descriptor instead.
 func (*Resume) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{10}
+	return file_admin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Resume) GetName() string {
@@ -690,7 +857,7 @@ type ResumeJob struct {
 
 func (x *ResumeJob) Reset() {
 	*x = ResumeJob{}
-	mi := &file_admin_proto_msgTypes[11]
+	mi := &file_admin_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -702,7 +869,7 @@ func (x *ResumeJob) String() string {
 func (*ResumeJob) ProtoMessage() {}
 
 func (x *ResumeJob) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[11]
+	mi := &file_admin_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -715,7 +882,7 @@ func (x *ResumeJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeJob.ProtoReflect.Descriptor instead.
 func (*ResumeJob) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{11}
+	return file_admin_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ResumeJob) GetRole() string {
@@ -757,7 +924,7 @@ type ResumeSkill struct {
 
 func (x *ResumeSkill) Reset() {
 	*x = ResumeSkill{}
-	mi := &file_admin_proto_msgTypes[12]
+	mi := &file_admin_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -769,7 +936,7 @@ func (x *ResumeSkill) String() string {
 func (*ResumeSkill) ProtoMessage() {}
 
 func (x *ResumeSkill) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[12]
+	mi := &file_admin_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -782,7 +949,7 @@ func (x *ResumeSkill) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeSkill.ProtoReflect.Descriptor instead.
 func (*ResumeSkill) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{12}
+	return file_admin_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ResumeSkill) GetLabel() string {
@@ -810,7 +977,7 @@ type ResumeProject struct {
 
 func (x *ResumeProject) Reset() {
 	*x = ResumeProject{}
-	mi := &file_admin_proto_msgTypes[13]
+	mi := &file_admin_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -822,7 +989,7 @@ func (x *ResumeProject) String() string {
 func (*ResumeProject) ProtoMessage() {}
 
 func (x *ResumeProject) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[13]
+	mi := &file_admin_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -835,7 +1002,7 @@ func (x *ResumeProject) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeProject.ProtoReflect.Descriptor instead.
 func (*ResumeProject) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{13}
+	return file_admin_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ResumeProject) GetName() string {
@@ -862,7 +1029,7 @@ type TailorRequest struct {
 
 func (x *TailorRequest) Reset() {
 	*x = TailorRequest{}
-	mi := &file_admin_proto_msgTypes[14]
+	mi := &file_admin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -874,7 +1041,7 @@ func (x *TailorRequest) String() string {
 func (*TailorRequest) ProtoMessage() {}
 
 func (x *TailorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[14]
+	mi := &file_admin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -887,7 +1054,7 @@ func (x *TailorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailorRequest.ProtoReflect.Descriptor instead.
 func (*TailorRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{14}
+	return file_admin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *TailorRequest) GetJobUrl() string {
@@ -910,7 +1077,7 @@ type TailorResult struct {
 
 func (x *TailorResult) Reset() {
 	*x = TailorResult{}
-	mi := &file_admin_proto_msgTypes[15]
+	mi := &file_admin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -922,7 +1089,7 @@ func (x *TailorResult) String() string {
 func (*TailorResult) ProtoMessage() {}
 
 func (x *TailorResult) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[15]
+	mi := &file_admin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -935,7 +1102,7 @@ func (x *TailorResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailorResult.ProtoReflect.Descriptor instead.
 func (*TailorResult) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{15}
+	return file_admin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *TailorResult) GetResume() *Resume {
@@ -972,7 +1139,7 @@ type JobAnalysis struct {
 
 func (x *JobAnalysis) Reset() {
 	*x = JobAnalysis{}
-	mi := &file_admin_proto_msgTypes[16]
+	mi := &file_admin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -984,7 +1151,7 @@ func (x *JobAnalysis) String() string {
 func (*JobAnalysis) ProtoMessage() {}
 
 func (x *JobAnalysis) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[16]
+	mi := &file_admin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -997,7 +1164,7 @@ func (x *JobAnalysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobAnalysis.ProtoReflect.Descriptor instead.
 func (*JobAnalysis) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{16}
+	return file_admin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *JobAnalysis) GetTitle() string {
@@ -1039,7 +1206,7 @@ type Rationale struct {
 
 func (x *Rationale) Reset() {
 	*x = Rationale{}
-	mi := &file_admin_proto_msgTypes[17]
+	mi := &file_admin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1051,7 +1218,7 @@ func (x *Rationale) String() string {
 func (*Rationale) ProtoMessage() {}
 
 func (x *Rationale) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[17]
+	mi := &file_admin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1064,7 +1231,7 @@ func (x *Rationale) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rationale.ProtoReflect.Descriptor instead.
 func (*Rationale) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{17}
+	return file_admin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *Rationale) GetFocus() string {
@@ -1086,7 +1253,18 @@ var File_admin_proto protoreflect.FileDescriptor
 const file_admin_proto_rawDesc = "" +
 	"\n" +
 	"\vadmin.proto\x12\asite.v1\x1a\n" +
-	"site.proto\"l\n" +
+	"site.proto\"\x1d\n" +
+	"\vTailoringId\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"\x87\x01\n" +
+	"\rTailoringMeta\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\ajob_url\x18\x02 \x01(\tR\x06jobUrl\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
+	"\acompany\x18\x04 \x01(\tR\acompany\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\x03R\tcreatedAt\"=\n" +
+	"\rTailoringList\x12,\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.site.v1.TailoringMetaR\x05items\"l\n" +
 	"\bSettings\x12$\n" +
 	"\x0eopenai_api_key\x18\x01 \x01(\tR\fopenaiApiKey\x12!\n" +
 	"\fopenai_model\x18\x02 \x01(\tR\vopenaiModel\x12\x17\n" +
@@ -1162,7 +1340,7 @@ const file_admin_proto_rawDesc = "" +
 	"\frequirements\x18\x04 \x03(\tR\frequirements\"9\n" +
 	"\tRationale\x12\x14\n" +
 	"\x05focus\x18\x01 \x01(\tR\x05focus\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason2\xb2\x05\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason2\x92\a\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x129\n" +
 	"\vSearchAnime\x12\x16.site.v1.SearchRequest\x1a\x12.site.v1.AnimeList\x121\n" +
@@ -1178,7 +1356,11 @@ const file_admin_proto_rawDesc = "" +
 	"\fSaveSettings\x12\x11.site.v1.Settings\x1a\f.site.v1.Ack\x120\n" +
 	"\n" +
 	"ListModels\x12\x0e.site.v1.Empty\x1a\x12.site.v1.ModelList\x129\n" +
-	"\x10GetLastTailoring\x12\x0e.site.v1.Empty\x1a\x15.site.v1.TailorResultB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
+	"\x10GetLastTailoring\x12\x0e.site.v1.Empty\x1a\x15.site.v1.TailorResult\x120\n" +
+	"\rGetBaseResume\x12\x0e.site.v1.Empty\x1a\x0f.site.v1.Resume\x128\n" +
+	"\x0eListTailorings\x12\x0e.site.v1.Empty\x1a\x16.site.v1.TailoringList\x12;\n" +
+	"\fGetTailoring\x12\x14.site.v1.TailoringId\x1a\x15.site.v1.TailorResult\x125\n" +
+	"\x0fDeleteTailoring\x12\x14.site.v1.TailoringId\x1a\f.site.v1.AckB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -1192,67 +1374,79 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_admin_proto_goTypes = []any{
-	(*Settings)(nil),      // 0: site.v1.Settings
-	(*ModelList)(nil),     // 1: site.v1.ModelList
-	(*Empty)(nil),         // 2: site.v1.Empty
-	(*LoginRequest)(nil),  // 3: site.v1.LoginRequest
-	(*LoginReply)(nil),    // 4: site.v1.LoginReply
-	(*SearchRequest)(nil), // 5: site.v1.SearchRequest
-	(*AnimeId)(nil),       // 6: site.v1.AnimeId
-	(*CheckReply)(nil),    // 7: site.v1.CheckReply
-	(*Anime)(nil),         // 8: site.v1.Anime
-	(*AnimeList)(nil),     // 9: site.v1.AnimeList
-	(*Resume)(nil),        // 10: site.v1.Resume
-	(*ResumeJob)(nil),     // 11: site.v1.ResumeJob
-	(*ResumeSkill)(nil),   // 12: site.v1.ResumeSkill
-	(*ResumeProject)(nil), // 13: site.v1.ResumeProject
-	(*TailorRequest)(nil), // 14: site.v1.TailorRequest
-	(*TailorResult)(nil),  // 15: site.v1.TailorResult
-	(*JobAnalysis)(nil),   // 16: site.v1.JobAnalysis
-	(*Rationale)(nil),     // 17: site.v1.Rationale
-	(*Ack)(nil),           // 18: site.v1.Ack
+	(*TailoringId)(nil),   // 0: site.v1.TailoringId
+	(*TailoringMeta)(nil), // 1: site.v1.TailoringMeta
+	(*TailoringList)(nil), // 2: site.v1.TailoringList
+	(*Settings)(nil),      // 3: site.v1.Settings
+	(*ModelList)(nil),     // 4: site.v1.ModelList
+	(*Empty)(nil),         // 5: site.v1.Empty
+	(*LoginRequest)(nil),  // 6: site.v1.LoginRequest
+	(*LoginReply)(nil),    // 7: site.v1.LoginReply
+	(*SearchRequest)(nil), // 8: site.v1.SearchRequest
+	(*AnimeId)(nil),       // 9: site.v1.AnimeId
+	(*CheckReply)(nil),    // 10: site.v1.CheckReply
+	(*Anime)(nil),         // 11: site.v1.Anime
+	(*AnimeList)(nil),     // 12: site.v1.AnimeList
+	(*Resume)(nil),        // 13: site.v1.Resume
+	(*ResumeJob)(nil),     // 14: site.v1.ResumeJob
+	(*ResumeSkill)(nil),   // 15: site.v1.ResumeSkill
+	(*ResumeProject)(nil), // 16: site.v1.ResumeProject
+	(*TailorRequest)(nil), // 17: site.v1.TailorRequest
+	(*TailorResult)(nil),  // 18: site.v1.TailorResult
+	(*JobAnalysis)(nil),   // 19: site.v1.JobAnalysis
+	(*Rationale)(nil),     // 20: site.v1.Rationale
+	(*Ack)(nil),           // 21: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
-	8,  // 0: site.v1.AnimeList.items:type_name -> site.v1.Anime
-	11, // 1: site.v1.Resume.jobs:type_name -> site.v1.ResumeJob
-	12, // 2: site.v1.Resume.skills:type_name -> site.v1.ResumeSkill
-	13, // 3: site.v1.Resume.projects:type_name -> site.v1.ResumeProject
-	10, // 4: site.v1.TailorResult.resume:type_name -> site.v1.Resume
-	16, // 5: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
-	17, // 6: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
-	3,  // 7: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
-	5,  // 8: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
-	2,  // 9: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
-	6,  // 10: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
-	6,  // 11: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
-	2,  // 12: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
-	2,  // 13: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
-	10, // 14: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
-	14, // 15: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
-	2,  // 16: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
-	0,  // 17: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
-	2,  // 18: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
-	2,  // 19: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
-	4,  // 20: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	9,  // 21: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	9,  // 22: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	18, // 23: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	18, // 24: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	7,  // 25: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	10, // 26: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	18, // 27: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	15, // 28: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	0,  // 29: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	18, // 30: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	1,  // 31: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	15, // 32: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	20, // [20:33] is the sub-list for method output_type
-	7,  // [7:20] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	1,  // 0: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
+	11, // 1: site.v1.AnimeList.items:type_name -> site.v1.Anime
+	14, // 2: site.v1.Resume.jobs:type_name -> site.v1.ResumeJob
+	15, // 3: site.v1.Resume.skills:type_name -> site.v1.ResumeSkill
+	16, // 4: site.v1.Resume.projects:type_name -> site.v1.ResumeProject
+	13, // 5: site.v1.TailorResult.resume:type_name -> site.v1.Resume
+	19, // 6: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
+	20, // 7: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
+	6,  // 8: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
+	8,  // 9: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
+	5,  // 10: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
+	9,  // 11: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
+	9,  // 12: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
+	5,  // 13: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
+	5,  // 14: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
+	13, // 15: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
+	17, // 16: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
+	5,  // 17: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
+	3,  // 18: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
+	5,  // 19: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
+	5,  // 20: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
+	5,  // 21: site.v1.AdminService.GetBaseResume:input_type -> site.v1.Empty
+	5,  // 22: site.v1.AdminService.ListTailorings:input_type -> site.v1.Empty
+	0,  // 23: site.v1.AdminService.GetTailoring:input_type -> site.v1.TailoringId
+	0,  // 24: site.v1.AdminService.DeleteTailoring:input_type -> site.v1.TailoringId
+	7,  // 25: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	12, // 26: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	12, // 27: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	21, // 28: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	21, // 29: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	10, // 30: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	13, // 31: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	21, // 32: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	18, // 33: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	3,  // 34: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	21, // 35: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	4,  // 36: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	18, // 37: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	13, // 38: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	2,  // 39: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	18, // 40: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	21, // 41: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	25, // [25:42] is the sub-list for method output_type
+	8,  // [8:25] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_admin_proto_init() }
@@ -1267,7 +1461,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
