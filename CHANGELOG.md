@@ -21,7 +21,10 @@ Semantic Versioning once released.
   mounts over the SSR site with typed CSS (verified rendering in-browser).
 - Terminal (wasm): macOS-style window — traffic-light chrome, boot log, neofetch identity splash,
   and prompt with cursor — styled with typed CSS from theme tokens; screenshot-verified against
-  the mockup. Static for now; the interactive engine + gRPC programs are next.
+  the mockup.
+- Terminal is now **interactive**: a controlled input (GWC `UseState`/`UseEvent`) runs faux
+  programs — `help`, `about`, `projects`, `open <id>`, `neofetch`, `links`, `ls`, `contact`,
+  `echo`, `clear` — and the window **expands/shrinks** to a fullscreen modal (green/red lights).
 ### Changed
 - Standard site reworked to match the mockup: hero-first order (orange-dash eyebrow, accent
   headline, sans-serif lede, glyphed social, orange launch CTA), then the terminal; boot log with

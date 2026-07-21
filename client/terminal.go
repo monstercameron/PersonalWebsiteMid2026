@@ -3,6 +3,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/monstercameron/GoWebComponents/v4/css"
 	. "github.com/monstercameron/GoWebComponents/v4/css/u"
 	. "github.com/monstercameron/GoWebComponents/v4/html/shorthand"
@@ -11,41 +13,148 @@ import (
 	"github.com/monstercameron/earlcameron/internal/theme"
 )
 
-// Terminal renders the macOS-style terminal window: chrome (traffic lights + title), a boot
-// log, a neofetch identity splash, and a prompt. Static for now (Stage A — the visual); the
-// interactive engine and gRPC programs land next.
+// Terminal is the interactive macOS-style terminal: it boots, takes typed commands, runs faux
+// programs, and can expand into a fullscreen modal (green light / shrink with the red light).
 func Terminal() ui.Node {
-	return Div(Class(Flex, JustifyCenter, PadX(Spacing6), PadY(Spacing8)),
-		Div(Class(WFull, MaxWidth(Px(900)), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl),
-			css.Property("box-shadow", "0 40px 90px -40px rgba(0,0,0,.8)"), css.Property("overflow", "hidden")),
-			titleBar(),
-			termBody(),
-		),
-	)
+	scrollback := ui.UseState([]ui.Node{})
+	input := ui.UseState("")
+	expanded := ui.UseState(false)
+	booted := ui.UseRef(false)
+
+	// Seed the boot log + neofetch once, after mount.
+	ui.UseEffect(func() func() {
+		if !booted.Get() {
+			booted.Set(true)
+			scrollback.Set(bootScrollback())
+		}
+		return nil
+	}, true)
+
+	onInput := ui.UseEvent(func(e ui.Event) { input.Set(e.GetValue()) })
+	onKey := ui.UseEvent(func(e ui.Event) {
+		if e.GetKey() == "Enter" {
+			e.PreventDefault()
+			v := input.Get()
+			input.Set("")
+			runCommand(v, scrollback)
+		}
+	})
+	onExpand := ui.UseEvent(func() { expanded.Set(true) })
+	onShrink := ui.UseEvent(func() { expanded.Set(false) })
+
+	return windowFrame(expanded.Get(), onExpand, onShrink, scrollback.Get(), input.Get(), onInput, onKey)
 }
 
-// titleBar renders the traffic-light window controls and the session title.
-func titleBar() ui.Node {
+// runCommand echoes the command and appends its program output to the scrollback. `clear` wipes it.
+func runCommand(raw string, scrollback ui.State[[]ui.Node]) {
+	cmd := strings.TrimSpace(raw)
+	if cmd == "" {
+		return
+	}
+	if cmd == "clear" {
+		scrollback.Set([]ui.Node{})
+		return
+	}
+	fields := strings.Fields(cmd)
+	out := programOutput(fields[0], fields[1:])
+	scrollback.Update(func(prev []ui.Node) []ui.Node {
+		next := append([]ui.Node{}, prev...)
+		next = append(next, echoLine(cmd))
+		next = append(next, out...)
+		next = append(next, gap())
+		return next
+	})
+}
+
+// windowFrame renders the terminal window, inline or as a fullscreen modal when expanded.
+func windowFrame(expanded bool, onExpand, onShrink ui.Handler, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
+	rules := []any{WFull, Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl),
+		css.Property("box-shadow", "0 40px 90px -40px rgba(0,0,0,.8)"), css.Property("overflow", "hidden"),
+		css.Property("display", "flex"), css.Property("flex-direction", "column")}
+	if expanded {
+		rules = append(rules, css.Property("position", "fixed"), css.Property("inset", "24px"),
+			css.Property("z-index", "60"), css.Property("max-height", "calc(100vh - 48px)"))
+	} else {
+		rules = append(rules, MaxWidth(Px(900)))
+	}
+	frame := Div(Class(rules...),
+		titleBar(onExpand, onShrink, expanded),
+		termBody(expanded, sb, inputVal, onInput, onKey),
+	)
+	if expanded {
+		scrim := Div(Class(css.Property("position", "fixed"), css.Property("inset", "0"),
+			css.Property("background", "rgba(9,3,7,.6)"), css.Property("z-index", "55")))
+		return Div(scrim, frame)
+	}
+	return Div(Class(Flex, JustifyCenter, PadX(Spacing6), PadY(Spacing2)), frame)
+}
+
+// titleBar renders the traffic lights (red = shrink, green = expand), title, and status.
+func titleBar(onExpand, onShrink ui.Handler, expanded bool) ui.Node {
 	return Div(Class(Flex, ItemsCenter, Gap(Spacing2), PadX(Spacing4), PadY(Spacing3),
 		css.Property("border-bottom", "1px solid #3a1b2e")),
-		light("#ff5f56"), light("#ffbd2e"), light("#27c93f"),
+		lightBtn("#ff5f56", onShrink), light("#ffbd2e"), lightBtn("#27c93f", onExpand),
 		Span(Class(css.Property("flex", "1"), css.Property("text-align", "center"), Fg(theme.Dim), FontSize(Rem(0.82))),
 			"cameron — zsh — 80×24"),
 		Span(Class(Fg(theme.Dim), FontSize(Rem(0.75))),
-			Span(Class(Fg(theme.Green)), "● "), "live · interactive"),
+			Span(Class(Fg(theme.Green)), "● "), pick(expanded, "click red to shrink", "live · interactive")),
 	)
 }
 
-// light renders one traffic-light dot of the given color.
+// light renders a static traffic-light dot.
 func light(hex string) ui.Node {
 	return Span(Class(css.Property("width", "12px"), css.Property("height", "12px"),
-		css.Property("border-radius", "50%"), css.Property("display", "inline-block"),
-		css.Property("background", hex)))
+		css.Property("border-radius", "50%"), css.Property("display", "inline-block"), css.Property("background", hex)))
 }
 
-// termBody renders the scrollback: boot log, neofetch, and the prompt line.
-func termBody() ui.Node {
-	return Div(Class(Pad(Spacing5), Flex, FlexCol, Gap(Spacing2), FontSize(Rem(0.95)), LineHeight(Num(1.6))),
+// lightBtn renders a clickable traffic-light dot.
+func lightBtn(hex string, on ui.Handler) ui.Node {
+	cls := css.New(css.Property("width", "12px"), css.Property("height", "12px"), css.Property("border-radius", "50%"),
+		css.Property("display", "inline-block"), css.Property("cursor", "pointer"), css.Property("background", hex))
+	return Span(Props{Class: string(cls), OnClick: on})
+}
+
+// termBody renders the scrollback and the live input line.
+func termBody(expanded bool, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
+	rules := []any{Pad(Spacing5), Flex, FlexCol, Gap(Spacing2), FontSize(Rem(0.95)), LineHeight(Num(1.6))}
+	if expanded {
+		rules = append(rules, css.Property("flex", "1"), css.Property("overflow-y", "auto"))
+	} else {
+		rules = append(rules, css.Property("max-height", "460px"), css.Property("overflow-y", "auto"))
+	}
+	return Div(Class(rules...), sb, inputLine(inputVal, onInput, onKey))
+}
+
+// inputLine renders the prompt plus the controlled text input.
+func inputLine(value string, onInput, onKey ui.Handler) ui.Node {
+	inputCls := css.New(css.Property("background", "transparent"), css.Property("border", "none"),
+		css.Property("outline", "none"), css.Property("color", "#f3e9e6"), css.Property("flex", "1"),
+		css.Property("font", "inherit"), css.Property("margin-left", "8px"), css.Property("caret-color", "#e95420"))
+	return Div(Class(Flex, ItemsCenter),
+		promptSigil(),
+		Input(Props{Class: string(inputCls), Value: value, Placeholder: "type a command…",
+			AutoFocus: true, OnInput: onInput, OnKeyDown: onKey}),
+	)
+}
+
+// promptSigil renders the "cameron@portfolio:~$" prompt.
+func promptSigil() ui.Node {
+	return Span(Class(Flex, Gap(Spacing1)),
+		Span(Class(Fg(theme.Green)), "cameron@portfolio"),
+		Span(Class(Fg(theme.Dim)), ":"),
+		Span(Class(Fg(theme.Accent2)), "~"),
+		Span(Class(Fg(theme.Accent)), "$"),
+	)
+}
+
+// echoLine renders the echoed command after the prompt.
+func echoLine(c string) ui.Node {
+	return Div(Class(Flex, ItemsCenter, Gap(Spacing1)), promptSigil(), Span(Class(Fg(theme.Fg)), " "+c))
+}
+
+// bootScrollback is the initial scrollback: boot log, neofetch, and a welcome line.
+func bootScrollback() []ui.Node {
+	return []ui.Node{
 		bootLine("loading runtime", "wasm · 4.2 mb"),
 		bootLine("dialing /socket", "gRPC-over-ws"),
 		bootLine("tunnel established", "14 ms"),
@@ -53,12 +162,12 @@ func termBody() ui.Node {
 		gap(),
 		neofetch(),
 		gap(),
-		promptLine(),
-		Div(Class(Fg(theme.Faint), FontSize(Rem(0.85))), "type `help` to explore — interactive terminal coming online"),
-	)
+		Div(Class(Fg(theme.Faint), FontSize(Rem(0.85))),
+			"Welcome. Type ", key("help"), " to explore — try ", key("projects"), ", ", key("neofetch"), ", ", key("about"), "."),
+	}
 }
 
-// bootLine renders one "[ok] label · value" boot entry.
+// bootLine renders one "OK label ........ value" boot entry.
 func bootLine(label, val string) ui.Node {
 	return Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
 		Span(Class(Fg(theme.Green), FontSize(Rem(0.7)), css.Property("border", "1px solid #3a1b2e"),
@@ -89,18 +198,16 @@ func neofetch() ui.Node {
 	)
 }
 
-// promptLine renders the shell prompt with a blinking-style cursor block.
-func promptLine() ui.Node {
-	return Div(Class(Flex, ItemsCenter, Gap(Spacing1)),
-		Span(Class(Fg(theme.Green)), "cameron@portfolio"),
-		Span(Class(Fg(theme.Dim)), ":"),
-		Span(Class(Fg(theme.Accent2)), "~"),
-		Span(Class(Fg(theme.Accent)), "$"),
-		Span(Class(css.Property("width", "9px"), css.Property("height", "1.05em"),
-			css.Property("display", "inline-block"), css.Property("margin-left", "6px"),
-			css.Property("background", "#e95420"))),
-	)
-}
+// key renders a highlighted command name (visual hint).
+func key(s string) ui.Node { return Span(Class(Fg(theme.Accent2)), s) }
 
 // gap renders a blank scrollback line.
 func gap() ui.Node { return Div(Class(css.Property("height", "0.5rem")), " ") }
+
+// pick returns a when cond is true, else b.
+func pick(cond bool, a, b string) string {
+	if cond {
+		return a
+	}
+	return b
+}
