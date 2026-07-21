@@ -41,6 +41,8 @@ func programOutput(name string, args []string) []ui.Node {
 		return linksOut()
 	case "resume":
 		return resumeOut()
+	case "anime":
+		return animeOut()
 	case "contact":
 		return contactOut()
 	default:
@@ -57,6 +59,7 @@ func helpOut() []ui.Node {
 		{"neofetch", "the identity splash"},
 		{"links", "github · linkedin · youtube · email"},
 		{"resume", "summary + PDF download"},
+		{"anime", "release radar + RSS feeds"},
 		{"contact", "how to reach me"},
 		{"ls", "list files"},
 		{"clear", "clear the screen"},
@@ -132,6 +135,22 @@ func resumeOut() []ui.Node {
 		Div(Class(Fg(theme.Dim)), "UKG (2020–present) · Go · C# · React · agents & AI infra · on-device LLMs"),
 		Div("full breakdown: ", Span(Class(Fg(theme.Accent2)), "cat notes/experience.md")),
 		Div(Class(Fg(theme.Dim)), "read + save as PDF: ", Span(Class(Fg(theme.Accent2)), "/resume")),
+	}
+}
+
+// animeOut prints the anime release-radar RSS feeds (a personal feature; config is owner-gated).
+func animeOut() []ui.Node {
+	return []ui.Node{
+		Div(Class(FontSemibold, Fg(theme.Accent)), "anime — release radar"),
+		Div(Class(Fg(theme.Dim)), "I track shows and publish two RSS feeds anyone can subscribe to:"),
+		Div(Class(Flex, Gap(Spacing3)),
+			Span(Class(Fg(theme.Accent2), css.Raw("min-width", "150px")), "/anime.xml"),
+			Span(Class(Fg(theme.Dim)), "Release Radar — new episodes I'm tracking"),
+		),
+		Div(Class(Flex, Gap(Spacing3)),
+			Span(Class(Fg(theme.Accent2), css.Raw("min-width", "150px")), "/anime/qotd.xml"),
+			Span(Class(Fg(theme.Dim)), "Question of the Day — a daily anime prompt"),
+		),
 	}
 }
 

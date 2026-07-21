@@ -24,6 +24,7 @@ func Page(_ *sitepb.About, projects []*sitepb.Project) ui.Node {
 			work(projects),
 			how(),
 			elsewhere(),
+			animeRadar(),
 			contact(),
 			footer(),
 		),
@@ -97,8 +98,10 @@ func hero() ui.Node {
 			Span(Class(Fg(theme.Fg), FontSemibold), "This whole site is the proof"),
 			" — rendered by a UI framework I wrote, talking to a Go backend over a gRPC bridge I built.",
 		),
-		Div(Class(Flex, Gap(Spacing5), TextSize(TextSm)),
+		Div(Class(Flex, Gap(Spacing5), TextSize(TextSm), css.Raw("flex-wrap", "wrap")),
 			socialLink("https://github.com/monstercameron", "◆", "github"),
+			socialLink("/resume", "⬇", "résumé"),
+			socialLink("https://www.linkedin.com/in/earl-cameron/", "in", "linkedin"),
 			socialLink("https://www.earlcameron.com", "✦", "earlcameron.com"),
 			socialLink("mailto:mr.e.cameron@gmail.com", "✉", "email"),
 		),
@@ -217,6 +220,33 @@ func elsewhere() ui.Node {
 	)
 }
 
+// animeRadar renders the public anime-release RSS feeds (a personal feature): the Release Radar
+// (episodes I'm tracking) and the daily Question-of-the-Day prompt feed. These are document-plane
+// RSS (HTTP GET), safe to link publicly — the config that drives them stays owner-gated at /admin.
+func animeRadar() ui.Node {
+	feed := func(href, glyph, title, sub string) ui.Node {
+		return A(Class(Flex, ItemsCenter, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg),
+			Pad(Spacing4), css.Raw("transition", "border-color .18s"), Hover(Border(theme.Accent))),
+			Props{Href: href},
+			Span(Class(Fg(theme.Accent2), FontSize(Rem(1.25)), css.Raw("min-width", "24px")), glyph),
+			Div(Class(Flex, FlexCol),
+				Span(Class(FontSemibold, Fg(theme.Fg)), title),
+				Span(Class(sansFont, Fg(theme.Dim), TextSize(TextSm)), sub),
+			),
+		)
+	}
+	grid := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(230px,1fr))"))}
+	grid = append(grid,
+		feed("/anime.xml", "◈", "Release Radar", "RSS · new episodes I'm tracking"),
+		feed("/anime/qotd.xml", "✎", "Question of the Day", "RSS · a daily anime prompt"),
+	)
+	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
+		label("~/anime · release radar"),
+		sectionH2("Anime, on RSS."),
+		Div(grid...),
+	)
+}
+
 // contact renders the contact section (mailto for the no-JS path; the terminal has a live form).
 func contact() ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing6)),
@@ -229,11 +259,14 @@ func contact() ui.Node {
 	)
 }
 
-// footer renders the site footer.
+// footer renders the site footer, including a discreet owner entry to the password-gated admin.
 func footer() ui.Node {
-	return Div(Class(Flex, FlexCol, Gap(Spacing2), Md(FlexRow, JustifyBetween), PadY(Spacing8), Border(theme.Border), Fg(theme.Dim), TextSize(TextSm)),
+	return Div(Class(Flex, FlexCol, Gap(Spacing2), Md(FlexRow, JustifyBetween, ItemsCenter), PadY(Spacing8), Border(theme.Border), Fg(theme.Dim), TextSize(TextSm)),
 		Span("built with GoWebComponents · Go · gRPC"),
-		Span("© 2026 Earl Cameron"),
+		Div(Class(Flex, Gap(Spacing4), ItemsCenter),
+			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent2))), Props{Href: "/admin"}, "admin"),
+			Span("© 2026 Earl Cameron"),
+		),
 	)
 }
 

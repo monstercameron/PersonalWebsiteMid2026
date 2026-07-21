@@ -36,6 +36,10 @@ Semantic Versioning once released.
   `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
   (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
   The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
+- Discoverability for the new features (the links were buried/absent): résumé + LinkedIn added to
+  the hero link row (github · résumé · linkedin · earlcameron.com · email); a public **"Anime, on
+  RSS"** section links the two feeds; a discreet **`admin`** link in the footer (still
+  password-gated); and an **`anime`** command in the terminal that prints the feed URLs.
 - Recruiter notes in the terminal's `notes/` folder — `cat notes/about.md`, `experience.md`,
   `skills.md`, `projects.md`, `working-style.md`: professional, tech-fit content for curious
   recruiters exploring the shell (VFS cache bumped to v2).
