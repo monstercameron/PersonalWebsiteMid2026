@@ -57,19 +57,23 @@ func Tailor(ctx context.Context, apiKey, model, jobText string, base Resume) (Ta
 		"you emphasized/reworded and reason ties it to a specific job signal. Be concrete and honest."
 	user := "RÉSUMÉ JSON (the only facts you may use):\n" + string(baseJSON) + "\n\nJOB POSTING:\n" + jobText
 
+	// Uses the OpenAI Responses API (/v1/responses): `input` (not `messages`) and `text.format` for
+	// the JSON-object output. temperature is intentionally omitted — newer models only accept the
+	// default and reject any explicit value.
 	reqBody, err := json.Marshal(map[string]any{
 		"model": model,
-		"messages": []map[string]string{
+		"input": []map[string]string{
 			{"role": "system", "content": system},
 			{"role": "user", "content": user},
 		},
-		"response_format": map[string]string{"type": "json_object"},
-		"temperature":     0.2,
+		"text": map[string]any{
+			"format": map[string]string{"type": "json_object"},
+		},
 	})
 	if err != nil {
 		return TailorResult{}, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.openai.com/v1/chat/completions", bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.openai.com/v1/responses", bytes.NewReader(reqBody))
 	if err != nil {
 		return TailorResult{}, err
 	}
@@ -87,17 +91,34 @@ func Tailor(ctx context.Context, apiKey, model, jobText string, base Resume) (Ta
 		_, _ = eb.ReadFrom(body)
 		return TailorResult{}, fmt.Errorf("openai status %d: %s", resp.StatusCode, truncate(eb.String(), 300))
 	}
+	// Responses API: prefer the aggregated output_text, else concatenate the message items' text.
 	var out struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
+		OutputText string `json:"output_text"`
+		Output     []struct {
+			Type    string `json:"type"`
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"output"`
 	}
 	if err := json.NewDecoder(body).Decode(&out); err != nil {
 		return TailorResult{}, err
 	}
-	if len(out.Choices) == 0 {
+	content := out.OutputText
+	if content == "" {
+		for _, item := range out.Output {
+			if item.Type != "message" {
+				continue
+			}
+			for _, c := range item.Content {
+				if c.Type == "output_text" {
+					content += c.Text
+				}
+			}
+		}
+	}
+	if content == "" {
 		return TailorResult{}, fmt.Errorf("openai: empty response")
 	}
 
@@ -114,7 +135,7 @@ func Tailor(ctx context.Context, apiKey, model, jobText string, base Resume) (Ta
 			Reason string `json:"reason"`
 		} `json:"rationales"`
 	}
-	if err := json.Unmarshal([]byte(out.Choices[0].Message.Content), &parsed); err != nil {
+	if err := json.Unmarshal([]byte(content), &parsed); err != nil {
 		return TailorResult{}, fmt.Errorf("could not parse tailoring result: %w", err)
 	}
 

@@ -70,6 +70,9 @@ Semantic Versioning once released.
   history/less/nano/curl/ssh/tar/man) with pipes `|`, chaining `&&`, `>` redirect, a cwd-aware
   prompt, and **Tab completion** (commands + paths). Verified end-to-end via chromedp (9 checks).
 ### Changed
+- Résumé tailoring now calls the OpenAI **Responses API** (`/v1/responses`, `input` + `text.format`)
+  instead of Chat Completions, and **omits `temperature`** so newer models (o-series, gpt-5, …) that
+  only accept the default no longer 400. Verified end-to-end against a live posting.
 - **Admin is now a WASM client over gRPC — no longer server-rendered.** The admin console (login,
   anime tracker, résumé tailor, settings) is a GoWebComponents/WASM app (`client/admin.go`,
   `adminview.go`, `grpc.go`) that consumes `AdminService` over the GoGRPCBridge WebSocket tunnel.
