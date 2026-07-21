@@ -28,6 +28,12 @@ the proof of work: hand-built Go, top to bottom. See `README.md`, `documents/DES
    codebases — e.g. `modernc.org/sqlite` (not `mattn/go-sqlite3`), `buf` (not a protoc binary).
    Keeps cross-compilation trivial (ARM64 dev → Linux deploy) and the single-binary deploy clean.
    Reach for cgo only if there is genuinely no pure-Go option, and flag it when you do.
+6. **Little-to-no JavaScript.** All UI logic is Go→WASM. The ONLY JS allowed is the necessary
+   wasm bootstrap glue (`wasm_exec.js` + a tiny loader). No JS frameworks, no hand-written JS
+   logic. If you think you need JS, you almost certainly need a GWC component instead.
+7. **Style with GWC, never raw CSS.** Use GWC's typed CSS + `tw` funcs for ALL styling. Do NOT
+   hand-write `.css` files or inline raw CSS strings — the styling system is typed and
+   compile-checked for a reason. (Learned the hard way 2026-07-21.)
 
 ## Tool routing — local vs backend-routed
 Every terminal program is one of:
@@ -110,6 +116,10 @@ not just big new screens. If you're editing something a user sees, the skill loa
 Then follow the locked design language in `documents/DESIGN.md`: macOS chrome, Ubuntu-souled
 "Aubergine" palette, two voices (mono = machine, sans = Cam), motion-with-restraint,
 `prefers-reduced-motion`, and the keyboard/a11y floor.
+
+**Keep the dev server running for UI work.** Whenever you build or change GWC/UI, (re)build and
+run the server in the background so Cam can check your work live in the browser. Tell him the
+URL (`http://127.0.0.1:8095`) and to hard-refresh. Never leave UI changes unviewable.
 
 ## Docs discipline
 - **NEVER create a new `.md` file without Cam's explicit instruction.** Update the existing docs
