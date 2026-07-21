@@ -23,6 +23,7 @@ func Page(_ *sitepb.About, projects []*sitepb.Project) ui.Node {
 			termMount(),
 			work(projects),
 			how(),
+			elsewhere(),
 			contact(),
 			footer(),
 		),
@@ -186,6 +187,33 @@ func how() ui.Node {
 			row("02", "gRPC bridge", "the browser speaks gRPC-over-WebSocket through GoGRPCBridge. One same-origin socket."),
 			row("03", "Go backend", "a real gRPC server streams content, stores messages, powers live status."),
 		),
+	)
+}
+
+// elsewhere renders the links section: résumé, LinkedIn, YouTube, GitHub.
+func elsewhere() ui.Node {
+	card := func(href, glyph, title, sub string) ui.Node {
+		return A(Class(Flex, ItemsCenter, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg),
+			Pad(Spacing4), css.Raw("transition", "border-color .18s,transform .18s"), Hover(Border(theme.Accent))),
+			Props{Href: href, Target: "_blank", Rel: "noopener"},
+			Span(Class(Fg(theme.Accent2), FontSize(Rem(1.25)), css.Raw("min-width", "24px")), glyph),
+			Div(Class(Flex, FlexCol),
+				Span(Class(FontSemibold, Fg(theme.Fg)), title),
+				Span(Class(sansFont, Fg(theme.Dim), TextSize(TextSm)), sub),
+			),
+		)
+	}
+	grid := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(230px,1fr))"))}
+	grid = append(grid,
+		card("https://www.earlcameron.com/resume/EarlCameron.pdf", "⬇", "Résumé", "download the PDF"),
+		card("https://github.com/monstercameron", "◆", "GitHub", "open-source work"),
+		card("https://www.linkedin.com/in/earl-cameron/", "in", "LinkedIn", "experience & network"),
+		card("https://www.youtube.com/@EarlCameron007", "▶", "YouTube", "builds & demos"),
+	)
+	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
+		label("~/elsewhere"),
+		sectionH2("Find me around."),
+		Div(grid...),
 	)
 }
 

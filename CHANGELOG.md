@@ -25,6 +25,8 @@ Semantic Versioning once released.
 - Terminal is now **interactive**: a controlled input (GWC `UseState`/`UseEvent`) runs the
   portfolio programs (`help`/`about`/`projects`/`open`/`neofetch`/`links`/`contact`) and the
   window **expands/shrinks** to a fullscreen modal (green/red lights).
+- "Elsewhere" section on the standard site + terminal `links`/`resume`: résumé download,
+  LinkedIn (`earl-cameron`), YouTube (`@EarlCameron007`), GitHub — ported from the current site.
 - Recruiter notes in the terminal's `notes/` folder — `cat notes/about.md`, `experience.md`,
   `skills.md`, `projects.md`, `working-style.md`: professional, tech-fit content for curious
   recruiters exploring the shell (VFS cache bumped to v2).

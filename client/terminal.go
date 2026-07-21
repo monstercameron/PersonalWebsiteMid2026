@@ -126,7 +126,7 @@ func runCommand(raw string, scrollback ui.State[[]ui.Node], sh *shell) {
 // isPortfolio reports whether a command is a styled portfolio program (vs a shell command).
 func isPortfolio(name string) bool {
 	switch name {
-	case "help", "about", "whoami", "projects", "open", "neofetch", "links", "contact":
+	case "help", "about", "whoami", "projects", "open", "neofetch", "links", "resume", "contact":
 		return true
 	}
 	return false

@@ -39,6 +39,8 @@ func programOutput(name string, args []string) []ui.Node {
 		return []ui.Node{neofetch()}
 	case "links":
 		return linksOut()
+	case "resume":
+		return resumeOut()
 	case "contact":
 		return contactOut()
 	default:
@@ -53,7 +55,8 @@ func helpOut() []ui.Node {
 		{"projects", "browse featured work"},
 		{"open <id>", "a project in detail"},
 		{"neofetch", "the identity splash"},
-		{"links", "github · site · email"},
+		{"links", "github · linkedin · youtube · email"},
+		{"resume", "summary + PDF download"},
 		{"contact", "how to reach me"},
 		{"ls", "list files"},
 		{"clear", "clear the screen"},
@@ -61,7 +64,7 @@ func helpOut() []ui.Node {
 	out := []ui.Node{Div(Class(Fg(theme.Dim)), "available programs")}
 	for _, r := range rows {
 		out = append(out, Div(Class(Flex, Gap(Spacing3)),
-			Span(Class(Fg(theme.Accent2), css.Property("min-width", "96px")), r[0]),
+			Span(Class(Fg(theme.Accent2), css.Raw("min-width", "96px")), r[0]),
 			Span(Class(Fg(theme.Dim)), r[1]),
 		))
 	}
@@ -82,8 +85,8 @@ func projectsOut() []ui.Node {
 	out := []ui.Node{Div(Class(Fg(theme.Dim)), "featured — `open <id>` for detail")}
 	for _, p := range termProjects {
 		out = append(out, Div(Class(Flex, Gap(Spacing3)),
-			Span(Class(Fg(theme.Accent2), css.Property("min-width", "150px")), p.id),
-			Span(Class(Fg(theme.Fg), css.Property("min-width", "180px")), p.name),
+			Span(Class(Fg(theme.Accent2), css.Raw("min-width", "150px")), p.id),
+			Span(Class(Fg(theme.Fg), css.Raw("min-width", "180px")), p.name),
 			Span(Class(Fg(theme.Green)), p.status),
 		))
 	}
@@ -110,13 +113,25 @@ func openOut(args []string) []ui.Node {
 func linksOut() []ui.Node {
 	row := func(k, v string) ui.Node {
 		return Div(Class(Flex, Gap(Spacing3)),
-			Span(Class(Fg(theme.Accent2), css.Property("min-width", "56px")), k),
+			Span(Class(Fg(theme.Accent2), css.Raw("min-width", "56px")), k),
 			Span(Class(Fg(theme.Dim)), v))
 	}
 	return []ui.Node{
 		row("github", "github.com/monstercameron"),
+		row("linkedin", "linkedin.com/in/earl-cameron"),
+		row("youtube", "youtube.com/@EarlCameron007"),
 		row("site", "earlcameron.com"),
 		row("email", "mr.e.cameron@gmail.com"),
+	}
+}
+
+// resumeOut prints a résumé summary + download link.
+func resumeOut() []ui.Node {
+	return []ui.Node{
+		Div(Class(FontSemibold, Fg(theme.Accent)), "Earl Cameron — Senior Software Engineer"),
+		Div(Class(Fg(theme.Dim)), "UKG (2020–present) · Go · C# · React · agents & AI infra · on-device LLMs"),
+		Div("full breakdown: ", Span(Class(Fg(theme.Accent2)), "cat notes/experience.md")),
+		Div(Class(Fg(theme.Dim)), "download: https://www.earlcameron.com/resume/EarlCameron.pdf"),
 	}
 }
 
