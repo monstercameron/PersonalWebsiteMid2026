@@ -62,3 +62,13 @@ Semantic Versioning once released.
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.
 - `/admin` config page is gated by a single password (`ADMIN_PASSWORD` env) behind an HMAC-signed,
   HttpOnly session cookie; disabled entirely when no password is set.
+- Admin auth hardening (from commit review): random per-process session secret when `ADMIN_SECRET`
+  is unset (no forgeable known-key fallback), `Secure` cookie on https origins, and login
+  rate-limiting (5 failures → 15-min lockout → 429).
+- Résumé tailoring tool hardened (from review): the URL fetch blocks SSRF (dialer rejects
+  loopback/private/link-local/unspecified IPs, ports 80/443 only, redirect hops re-validated,
+  credentials/non-http schemes refused); the tailor endpoint is POST-only (kills CSRF-driven SSRF
+  via `SameSite=Lax` GET navigation); and the model output is constrained to the canonical résumé
+  skeleton (only the summary and bounded, reworded bullets can change — employers, titles, dates,
+  skills, projects, and education can't be fabricated by a prompt-injecting job posting). Covered
+  by unit tests.
