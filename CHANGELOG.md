@@ -17,7 +17,11 @@ Semantic Versioning once released.
 - `ContactService` + pure-Go SQLite store (modernc.org/sqlite): validated messages persisted.
 - Standard site rendered server-side as GWC components with typed CSS (`css/u`), mobile-first
   responsive, served at `/` (SEO + no-WASM failsafe), rendered once at startup.
+- WASM terminal pipeline: the GWC client builds to wasm, boots via a minimal glue script, and
+  mounts over the SSR site with typed CSS (verified rendering in-browser). Placeholder terminal
+  for now; the interactive engine + gRPC programs are next.
 ### Changed
 - Colors centralized into `internal/theme` design tokens (quick-ref: DESIGN.md §16).
+- Minimal bootstrap `<style>` (reset + base bg + mono font-family) added to the SSR shell.
 ### Security
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.

@@ -37,8 +37,22 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project) (string, error)
 	}
 	head := `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
 		`<meta name="viewport" content="width=device-width,initial-scale=1">` +
-		`<title>Earl Cameron — AI-native systems engineer</title>` + css.StyleBlock() + `</head><body>`
-	return head + markup + `</body></html>`, nil
+		`<title>Earl Cameron — AI-native systems engineer</title>` +
+		// Minimal bootstrap glue (permitted): reset, base bg/fg to avoid a flash, and the mono
+		// font-family the typed CSS system can't express. Everything else is typed css/u.
+		`<style>*{box-sizing:border-box}html,body{margin:0}body{background:#17040f;color:#f3e9e6;` +
+		`font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code","JetBrains Mono",monospace}</style>` +
+		css.StyleBlock() + `</head><body>`
+	// #term-root is where the wasm terminal mounts; the standard-site markup follows as the
+	// no-JS failsafe. The two <script> lines are the only JavaScript in the project: the wasm
+	// bootstrap glue.
+	mount := `<div id="term-root"></div>`
+	boot := `<script src="/static/wasm_exec.js"></script>` +
+		`<script>const go=new Go();` +
+		`WebAssembly.instantiateStreaming(fetch("/static/app.wasm"),go.importObject)` +
+		`.then(function(r){go.run(r.instance);})` +
+		`.catch(function(e){console.error("wasm boot failed",e);});</script>`
+	return head + mount + markup + boot + `</body></html>`, nil
 }
 
 // center wraps children in a max-width column, horizontally centered by a flex parent.
@@ -69,7 +83,9 @@ func hero(about *sitepb.About) ui.Node {
 
 // work renders the featured-projects section.
 func work(projects []*sitepb.Project) ui.Node {
-	cards := []any{Class(Flex, FlexCol, Gap(Spacing4))}
+	// Responsive auto-fill grid: as many ~260px columns as fit, collapsing to one on mobile.
+	// grid-template-columns isn't in css/u, so use the typed css.Prop escape hatch (not raw CSS).
+	cards := []any{Class(Grid, Gap(Spacing4), css.Property("grid-template-columns", "repeat(auto-fill,minmax(260px,1fr))"))}
 	for _, p := range projects {
 		cards = append(cards, card(p))
 	}
