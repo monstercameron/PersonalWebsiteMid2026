@@ -60,6 +60,10 @@ func migrate(db *sql.DB) error {
 			site_url    TEXT    NOT NULL DEFAULT '',
 			updated_at  INTEGER NOT NULL
 		)`,
+		`CREATE TABLE IF NOT EXISTS settings (
+			key   TEXT PRIMARY KEY,
+			value TEXT NOT NULL DEFAULT ''
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

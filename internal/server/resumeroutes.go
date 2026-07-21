@@ -31,7 +31,8 @@ func (s *Server) adminResume(w http.ResponseWriter, r *http.Request) {
 	if !s.requireAdmin(w, r) {
 		return
 	}
-	page, err := adminui.ResumeTool(s.cfg.OpenAIKey != "", "")
+	key, _ := s.openAI(r.Context())
+	page, err := adminui.ResumeTool(key != "", "")
 	writeHTML(w, page, err)
 }
 
@@ -46,8 +47,9 @@ func (s *Server) adminResumeTailor(w http.ResponseWriter, r *http.Request) {
 	if !s.requireAdmin(w, r) {
 		return
 	}
-	if s.cfg.OpenAIKey == "" {
-		page, err := adminui.ResumeTool(false, "Tailoring is disabled — set OPENAI_API_KEY.")
+	key, model := s.openAI(r.Context())
+	if key == "" {
+		page, err := adminui.ResumeTool(false, "Tailoring is disabled — add an OpenAI API key in settings.")
 		writeHTML(w, page, err)
 		return
 	}
@@ -63,7 +65,7 @@ func (s *Server) adminResumeTailor(w http.ResponseWriter, r *http.Request) {
 		writeHTML(w, page, rerr)
 		return
 	}
-	tailored, err := resume.Tailor(r.Context(), s.cfg.OpenAIKey, s.cfg.OpenAIModel, jobText, resume.Data())
+	tailored, err := resume.Tailor(r.Context(), key, model, jobText, resume.Data())
 	if err != nil {
 		page, rerr := adminui.ResumeTool(true, "Tailoring failed: "+err.Error())
 		writeHTML(w, page, rerr)

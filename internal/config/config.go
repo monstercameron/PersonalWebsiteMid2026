@@ -1,8 +1,8 @@
 // Package config loads runtime configuration from the environment.
 //
-// Non-secret settings will also be editable live via the admin console (added later) and read
-// here without a restart. Secrets (OpenAI key, signing keys) come from the environment only and
-// are never web-editable.
+// Values here are startup defaults. Some are also editable live via the admin settings page
+// (stored in the DB, which overrides the env value without a restart) — currently the OpenAI key
+// and model. Signing keys and the admin password remain environment-only.
 package config
 
 import (

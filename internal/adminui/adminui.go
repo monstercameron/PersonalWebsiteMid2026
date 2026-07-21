@@ -125,7 +125,8 @@ func ResumeTool(enabled bool, msg string) (string, error) {
 			body = append(body, Div(Class(Fg(theme.Dim), TextSize(TextSm)), msg))
 		}
 		if !enabled {
-			body = append(body, P(Class(Fg(theme.Dim), TextSize(TextSm)), "Set the OPENAI_API_KEY environment variable to enable tailoring."))
+			body = append(body, P(Class(Fg(theme.Dim), TextSize(TextSm)),
+				"Add your OpenAI API key in ", A(Class(Fg(theme.Accent2)), Props{Href: "/admin/settings"}, "settings"), " to enable tailoring."))
 		} else {
 			body = append(body,
 				Form(Class(Flex, Gap(Spacing2)), Props{Method: "post", Action: "/admin/resume/tailor"},
@@ -138,6 +139,56 @@ func ResumeTool(enabled bool, msg string) (string, error) {
 		}
 		return page(body...)
 	})
+}
+
+// SettingsPage renders the settings form: OpenAI API key + model, stored server-side so secrets can
+// be configured without env vars / SSH. keySet reflects whether a key is already stored; the field
+// never renders the stored key. msg is an optional status line.
+func SettingsPage(keySet bool, model, msg string) (string, error) {
+	return render("settings", func() ui.Node {
+		keyPlaceholder := "sk-…"
+		if keySet {
+			keyPlaceholder = "a key is set — leave blank to keep it"
+		}
+		body := []ui.Node{
+			header("settings"),
+			P(Class(Fg(theme.Dim), TextSize(TextSm)),
+				"Configure secrets here instead of environment variables — stored in the site database on the server."),
+		}
+		if msg != "" {
+			body = append(body, Div(Class(Fg(theme.Accent2), TextSize(TextSm)), msg))
+		}
+		body = append(body,
+			Form(Class(Flex, FlexCol, Gap(Spacing4), MaxWidth(Px(520))), Props{Method: "post", Action: "/admin/settings/save"},
+				settingRow("OpenAI API key", "openai key ("+keyStatus(keySet)+")", settingInput("openai_api_key", "password", keyPlaceholder, "")),
+				settingRow("OpenAI model", "used by résumé tailoring", settingInput("openai_model", "text", "gpt-4o-mini", model)),
+				primaryBtn("Save settings"),
+			),
+		)
+		return page(body...)
+	})
+}
+
+// settingRow renders a labeled settings field with a short hint.
+func settingRow(label, hint string, input ui.Node) ui.Node {
+	return Div(Class(Flex, FlexCol, Gap(Spacing2)),
+		Div(Class(FontSemibold, TextSize(TextSm)), label),
+		Div(Class(Fg(theme.Dim), TextSize(TextSm)), hint),
+		input,
+	)
+}
+
+// settingInput renders a full-width settings input (optionally pre-filled with value).
+func settingInput(name, typ, placeholder, value string) ui.Node {
+	return Input(inputClass(fullWidth), Props{Name: name, Type: typ, Placeholder: placeholder, Value: value, AutoComplete: "off"})
+}
+
+// keyStatus describes whether a secret is configured.
+func keyStatus(set bool) string {
+	if set {
+		return "configured"
+	}
+	return "not set"
 }
 
 // --- shared building blocks ---
@@ -165,6 +216,7 @@ func header(active string) ui.Node {
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter),
 			tab("/admin/anime", "anime"),
 			tab("/admin/resume", "résumé"),
+			tab("/admin/settings", "settings"),
 			Form(Class(inlineFlex), Props{Method: "post", Action: "/admin/logout"}, ghostBtn("logout")),
 		),
 	)

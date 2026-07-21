@@ -36,6 +36,10 @@ Semantic Versioning once released.
   `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
   (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
   The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
+- **Settings page** (`/admin/settings`): configure the **OpenAI API key + model** from the admin UI
+  (stored in the site database), so secrets no longer require env vars / SSH. A DB setting overrides
+  the env default and is read live — a key added here enables the résumé tailoring tool with **no
+  restart**. The key field never renders the stored value.
 - **AdminService (gRPC)** — the owner-gated admin control plane now lives on the gRPC data plane
   (over the GoGRPCBridge WS tunnel), not ad-hoc HTTP: `Login`, `SearchAnime`, `ListTracked`,
   `TrackAnime`, `UntrackAnime`, `RunReleaseCheck`, `GetResume`, `TailorResume`. A unary interceptor

@@ -40,6 +40,9 @@ type Server struct {
 	anime    *anime.Service
 	sessions *admin.Sessions
 	login    *loginLimiter // brute-force throttle for /admin/login
+	// openAI resolves the effective OpenAI key + model (a DB setting from the settings page overrides
+	// the env default), read live per request so changes apply without a restart.
+	openAI func(context.Context) (key, model string)
 }
 
 // New opens the store, builds the gRPC server, registers the services, and wraps them in the
@@ -56,12 +59,25 @@ func New(cfg config.Config) (*Server, error) {
 	animeSvc := anime.New(st)
 	// Cookies are marked Secure when the public origin is HTTPS (production behind nginx).
 	sessions := admin.NewSessions(cfg.AdminUsername, cfg.AdminPassword, cfg.AdminSecret, strings.HasPrefix(cfg.BaseURL, "https://"))
+
+	// resolveOpenAI reads the effective OpenAI config: a DB setting (settings page) overrides the env.
+	resolveOpenAI := func(ctx context.Context) (string, string) {
+		key, model := cfg.OpenAIKey, cfg.OpenAIModel
+		if v, _ := st.GetSetting(ctx, store.SettingOpenAIKey); v != "" {
+			key = v
+		}
+		if v, _ := st.GetSetting(ctx, store.SettingOpenAIModel); v != "" {
+			model = v
+		}
+		return key, model
+	}
+
 	// The auth interceptor gates AdminService methods (all but Login) on a valid session token in
 	// gRPC metadata; the public services (Content/Contact) pass through.
 	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))
 	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
-	sitepb.RegisterAdminServiceServer(grpcSrv, admin.NewService(animeSvc, sessions, cfg.OpenAIKey, cfg.OpenAIModel))
+	sitepb.RegisterAdminServiceServer(grpcSrv, admin.NewService(animeSvc, sessions, resolveOpenAI))
 
 	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
 		CheckOrigin: originChecker(cfg.AllowedOrigins),
@@ -78,7 +94,7 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, login: newLoginLimiter()}, nil
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, login: newLoginLimiter(), openAI: resolveOpenAI}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket

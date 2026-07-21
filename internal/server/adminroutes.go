@@ -100,6 +100,8 @@ func (s *Server) registerAdminRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/anime/track", s.adminTrack)
 	mux.HandleFunc("/admin/anime/untrack", s.adminUntrack)
 	mux.HandleFunc("/admin/anime/check", s.adminCheck)
+	mux.HandleFunc("/admin/settings", s.adminSettings)          // gated settings
+	mux.HandleFunc("/admin/settings/save", s.adminSettingsSave) // POST save
 }
 
 // animeFeed serves the tracked-releases RSS feed.
@@ -188,6 +190,40 @@ func (s *Server) adminAnime(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := adminui.AnimeConsole(q, mediaCards(results, tracked), trackedCards(list))
 	writeHTML(w, page, err)
+}
+
+// adminSettings renders the settings page (OpenAI key/model), reflecting the effective config.
+func (s *Server) adminSettings(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	key, model := s.openAI(r.Context())
+	msg := ""
+	if r.URL.Query().Get("saved") == "1" {
+		msg = "Settings saved."
+	}
+	page, err := adminui.SettingsPage(key != "", model, msg)
+	writeHTML(w, page, err)
+}
+
+// adminSettingsSave persists submitted settings. A blank field leaves the existing value untouched
+// (so saving the form doesn't wipe a key you didn't retype). POST only.
+func (s *Server) adminSettingsSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	ctx := r.Context()
+	if k := strings.TrimSpace(r.FormValue("openai_api_key")); k != "" {
+		_ = s.store.SetSetting(ctx, store.SettingOpenAIKey, k)
+	}
+	if m := strings.TrimSpace(r.FormValue("openai_model")); m != "" {
+		_ = s.store.SetSetting(ctx, store.SettingOpenAIModel, m)
+	}
+	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
 }
 
 // adminTrack tracks an anime by AniList id.
