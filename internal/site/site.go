@@ -19,6 +19,7 @@ import (
 func Page(_ *sitepb.About, projects []*sitepb.Project) ui.Node {
 	return Div(Class(Fg(theme.Fg)),
 		center(
+			topNav(),
 			hero(),
 			termMount(),
 			work(projects),
@@ -76,6 +77,25 @@ func center(children ...ui.Node) ui.Node {
 // sansFont is Cam's voice (proportional sans) for prose, contrasted with the mono machine voice.
 // font-family isn't in css/u, so use the typed css.Property escape hatch.
 var sansFont = css.Raw("font-family", `-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif`)
+
+// topNav renders the site navigation so the single home page indexes every page: the on-page
+// sections (work, anime, contact) plus the standalone pages (the résumé document and the admin
+// console). It's the "all links live on one page" index.
+func topNav() ui.Node {
+	link := func(href, text string) ui.Node {
+		return A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)), Props{Href: href}, text)
+	}
+	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), PadY(Spacing4), css.Raw("flex-wrap", "wrap")),
+		A(Class(FontSemibold, Fg(theme.Accent)), Props{Href: "/"}, "~/earlcameron"),
+		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
+			link("#work", "work"),
+			link("/resume", "résumé"),
+			link("#anime", "anime"),
+			link("#contact", "contact"),
+			link("/admin", "admin"),
+		),
+	)
+}
 
 // hero renders the identity block: eyebrow, headline (with accent), thesis (sans), social links,
 // and the launch CTA — matching the mockup. The terminal mounts immediately below (see Page).
@@ -143,7 +163,7 @@ func work(projects []*sitepb.Project) ui.Node {
 	for _, p := range projects {
 		cards = append(cards, card(p))
 	}
-	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
+	return Div(FromProps(Props{ID: "work"}), Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
 		label("~/projects · featured"),
 		sectionH2("Selected work."),
 		Div(cards...),
@@ -240,7 +260,7 @@ func animeRadar() ui.Node {
 		feed("/anime.xml", "◈", "Release Radar", "RSS · new episodes I'm tracking"),
 		feed("/anime/qotd.xml", "✎", "Question of the Day", "RSS · a daily anime prompt"),
 	)
-	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
+	return Div(FromProps(Props{ID: "anime"}), Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
 		label("~/anime · release radar"),
 		sectionH2("Anime, on RSS."),
 		Div(grid...),
@@ -249,7 +269,7 @@ func animeRadar() ui.Node {
 
 // contact renders the contact section (mailto for the no-JS path; the terminal has a live form).
 func contact() ui.Node {
-	return Div(Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing6)),
+	return Div(FromProps(Props{ID: "contact"}), Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing6)),
 		label("./contact"),
 		sectionH2("Let's build something."),
 		P(Class(Fg(theme.Dim)),
