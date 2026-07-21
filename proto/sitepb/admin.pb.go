@@ -897,6 +897,190 @@ func (x *TailorRequest) GetJobUrl() string {
 	return ""
 }
 
+// TailorResult is the full output of a tailoring pass: the tailored résumé, the signals the tool
+// extracted from the posting, and the rationale for each choice.
+type TailorResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resume        *Resume                `protobuf:"bytes,1,opt,name=resume,proto3" json:"resume,omitempty"`
+	Job           *JobAnalysis           `protobuf:"bytes,2,opt,name=job,proto3" json:"job,omitempty"`
+	Rationales    []*Rationale           `protobuf:"bytes,3,rep,name=rationales,proto3" json:"rationales,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TailorResult) Reset() {
+	*x = TailorResult{}
+	mi := &file_admin_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TailorResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TailorResult) ProtoMessage() {}
+
+func (x *TailorResult) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TailorResult.ProtoReflect.Descriptor instead.
+func (*TailorResult) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *TailorResult) GetResume() *Resume {
+	if x != nil {
+		return x.Resume
+	}
+	return nil
+}
+
+func (x *TailorResult) GetJob() *JobAnalysis {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+func (x *TailorResult) GetRationales() []*Rationale {
+	if x != nil {
+		return x.Rationales
+	}
+	return nil
+}
+
+// JobAnalysis is what the tool pulled out of the job posting.
+type JobAnalysis struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Company       string                 `protobuf:"bytes,2,opt,name=company,proto3" json:"company,omitempty"`
+	Keywords      []string               `protobuf:"bytes,3,rep,name=keywords,proto3" json:"keywords,omitempty"`         // key skills/terms the posting emphasizes
+	Requirements  []string               `protobuf:"bytes,4,rep,name=requirements,proto3" json:"requirements,omitempty"` // key requirements / responsibilities
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JobAnalysis) Reset() {
+	*x = JobAnalysis{}
+	mi := &file_admin_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobAnalysis) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobAnalysis) ProtoMessage() {}
+
+func (x *JobAnalysis) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobAnalysis.ProtoReflect.Descriptor instead.
+func (*JobAnalysis) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *JobAnalysis) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *JobAnalysis) GetCompany() string {
+	if x != nil {
+		return x.Company
+	}
+	return ""
+}
+
+func (x *JobAnalysis) GetKeywords() []string {
+	if x != nil {
+		return x.Keywords
+	}
+	return nil
+}
+
+func (x *JobAnalysis) GetRequirements() []string {
+	if x != nil {
+		return x.Requirements
+	}
+	return nil
+}
+
+// Rationale explains one tailoring decision: what was emphasized and why.
+type Rationale struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Focus         string                 `protobuf:"bytes,1,opt,name=focus,proto3" json:"focus,omitempty"`   // what changed / was emphasized (e.g. "Summary", "UKG bullet on React")
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"` // why, tied to a job signal
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Rationale) Reset() {
+	*x = Rationale{}
+	mi := &file_admin_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Rationale) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Rationale) ProtoMessage() {}
+
+func (x *Rationale) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Rationale.ProtoReflect.Descriptor instead.
+func (*Rationale) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *Rationale) GetFocus() string {
+	if x != nil {
+		return x.Focus
+	}
+	return ""
+}
+
+func (x *Rationale) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 var File_admin_proto protoreflect.FileDescriptor
 
 const file_admin_proto_rawDesc = "" +
@@ -964,7 +1148,21 @@ const file_admin_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x02 \x01(\tR\x04desc\"(\n" +
 	"\rTailorRequest\x12\x17\n" +
-	"\ajob_url\x18\x01 \x01(\tR\x06jobUrl2\xc3\x04\n" +
+	"\ajob_url\x18\x01 \x01(\tR\x06jobUrl\"\x93\x01\n" +
+	"\fTailorResult\x12'\n" +
+	"\x06resume\x18\x01 \x01(\v2\x0f.site.v1.ResumeR\x06resume\x12&\n" +
+	"\x03job\x18\x02 \x01(\v2\x14.site.v1.JobAnalysisR\x03job\x122\n" +
+	"\n" +
+	"rationales\x18\x03 \x03(\v2\x12.site.v1.RationaleR\n" +
+	"rationales\"}\n" +
+	"\vJobAnalysis\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x18\n" +
+	"\acompany\x18\x02 \x01(\tR\acompany\x12\x1a\n" +
+	"\bkeywords\x18\x03 \x03(\tR\bkeywords\x12\"\n" +
+	"\frequirements\x18\x04 \x03(\tR\frequirements\"9\n" +
+	"\tRationale\x12\x14\n" +
+	"\x05focus\x18\x01 \x01(\tR\x05focus\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason2\xc9\x04\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x129\n" +
 	"\vSearchAnime\x12\x16.site.v1.SearchRequest\x1a\x12.site.v1.AnimeList\x121\n" +
@@ -973,8 +1171,8 @@ const file_admin_proto_rawDesc = "" +
 	"TrackAnime\x12\x10.site.v1.AnimeId\x1a\f.site.v1.Ack\x12.\n" +
 	"\fUntrackAnime\x12\x10.site.v1.AnimeId\x1a\f.site.v1.Ack\x126\n" +
 	"\x0fRunReleaseCheck\x12\x0e.site.v1.Empty\x1a\x13.site.v1.CheckReply\x12,\n" +
-	"\tGetResume\x12\x0e.site.v1.Empty\x1a\x0f.site.v1.Resume\x127\n" +
-	"\fTailorResume\x12\x16.site.v1.TailorRequest\x1a\x0f.site.v1.Resume\x120\n" +
+	"\tGetResume\x12\x0e.site.v1.Empty\x1a\x0f.site.v1.Resume\x12=\n" +
+	"\fTailorResume\x12\x16.site.v1.TailorRequest\x1a\x15.site.v1.TailorResult\x120\n" +
 	"\vGetSettings\x12\x0e.site.v1.Empty\x1a\x11.site.v1.Settings\x12/\n" +
 	"\fSaveSettings\x12\x11.site.v1.Settings\x1a\f.site.v1.Ack\x120\n" +
 	"\n" +
@@ -992,7 +1190,7 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_admin_proto_goTypes = []any{
 	(*Settings)(nil),      // 0: site.v1.Settings
 	(*ModelList)(nil),     // 1: site.v1.ModelList
@@ -1009,40 +1207,46 @@ var file_admin_proto_goTypes = []any{
 	(*ResumeSkill)(nil),   // 12: site.v1.ResumeSkill
 	(*ResumeProject)(nil), // 13: site.v1.ResumeProject
 	(*TailorRequest)(nil), // 14: site.v1.TailorRequest
-	(*Ack)(nil),           // 15: site.v1.Ack
+	(*TailorResult)(nil),  // 15: site.v1.TailorResult
+	(*JobAnalysis)(nil),   // 16: site.v1.JobAnalysis
+	(*Rationale)(nil),     // 17: site.v1.Rationale
+	(*Ack)(nil),           // 18: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
 	8,  // 0: site.v1.AnimeList.items:type_name -> site.v1.Anime
 	11, // 1: site.v1.Resume.jobs:type_name -> site.v1.ResumeJob
 	12, // 2: site.v1.Resume.skills:type_name -> site.v1.ResumeSkill
 	13, // 3: site.v1.Resume.projects:type_name -> site.v1.ResumeProject
-	3,  // 4: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
-	5,  // 5: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
-	2,  // 6: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
-	6,  // 7: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
-	6,  // 8: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
-	2,  // 9: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
-	2,  // 10: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
-	14, // 11: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
-	2,  // 12: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
-	0,  // 13: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
-	2,  // 14: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
-	4,  // 15: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	9,  // 16: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	9,  // 17: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	15, // 18: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	15, // 19: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	7,  // 20: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	10, // 21: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	10, // 22: site.v1.AdminService.TailorResume:output_type -> site.v1.Resume
-	0,  // 23: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	15, // 24: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	1,  // 25: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	15, // [15:26] is the sub-list for method output_type
-	4,  // [4:15] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	10, // 4: site.v1.TailorResult.resume:type_name -> site.v1.Resume
+	16, // 5: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
+	17, // 6: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
+	3,  // 7: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
+	5,  // 8: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
+	2,  // 9: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
+	6,  // 10: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
+	6,  // 11: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
+	2,  // 12: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
+	2,  // 13: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
+	14, // 14: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
+	2,  // 15: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
+	0,  // 16: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
+	2,  // 17: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
+	4,  // 18: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	9,  // 19: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	9,  // 20: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	18, // 21: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	18, // 22: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	7,  // 23: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	10, // 24: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	15, // 25: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	0,  // 26: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	18, // 27: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	1,  // 28: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	18, // [18:29] is the sub-list for method output_type
+	7,  // [7:18] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_admin_proto_init() }
@@ -1057,7 +1261,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

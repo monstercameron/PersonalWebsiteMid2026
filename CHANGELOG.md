@@ -36,6 +36,12 @@ Semantic Versioning once released.
   `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
   (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
   The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
+- Admin **sub-routing**: `/admin/anime`, `/admin/resume`, `/admin/settings` deep-link to the right
+  view, the URL updates on navigation (history API), and browser back/forward works.
+- Résumé tool is now a **live workspace**: a live document render of the résumé (mirrors the `/resume`
+  PDF), the **signals extracted from the job posting** (title/company, keywords, requirements), and a
+  **rationale for each tailoring choice**. `TailorResume` returns a `TailorResult` (résumé + job
+  analysis + rationales); the model is prompted to extract + explain, the résumé stays constrained.
 - Settings: a **"reload models"** button that fetches the models available to the OpenAI key (saving
   the key first if it was just typed) and turns the model field into a **dropdown** of those models.
 - **Settings page** (`/admin/settings`): configure the **OpenAI API key + model** from the admin UI

@@ -57,9 +57,10 @@ type AdminServiceClient interface {
 	RunReleaseCheck(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CheckReply, error)
 	// GetResume returns the canonical résumé data (the source the tailor refines).
 	GetResume(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Resume, error)
-	// TailorResume fetches a job posting and returns a résumé re-emphasized to fit it. The result
-	// is constrained to the canonical résumé — the model cannot fabricate employers/skills/etc.
-	TailorResume(ctx context.Context, in *TailorRequest, opts ...grpc.CallOption) (*Resume, error)
+	// TailorResume fetches a job posting and returns the tailored résumé plus the signals extracted
+	// from the posting and the rationale for each tailoring choice. The résumé is constrained to the
+	// canonical one — the model cannot fabricate employers/skills/etc.
+	TailorResume(ctx context.Context, in *TailorRequest, opts ...grpc.CallOption) (*TailorResult, error)
 	// GetSettings returns the current settings (the API key is never returned — only whether one is set).
 	GetSettings(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Settings, error)
 	// SaveSettings persists settings. A blank openai_api_key leaves the stored key unchanged.
@@ -146,9 +147,9 @@ func (c *adminServiceClient) GetResume(ctx context.Context, in *Empty, opts ...g
 	return out, nil
 }
 
-func (c *adminServiceClient) TailorResume(ctx context.Context, in *TailorRequest, opts ...grpc.CallOption) (*Resume, error) {
+func (c *adminServiceClient) TailorResume(ctx context.Context, in *TailorRequest, opts ...grpc.CallOption) (*TailorResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Resume)
+	out := new(TailorResult)
 	err := c.cc.Invoke(ctx, AdminService_TailorResume_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -211,9 +212,10 @@ type AdminServiceServer interface {
 	RunReleaseCheck(context.Context, *Empty) (*CheckReply, error)
 	// GetResume returns the canonical résumé data (the source the tailor refines).
 	GetResume(context.Context, *Empty) (*Resume, error)
-	// TailorResume fetches a job posting and returns a résumé re-emphasized to fit it. The result
-	// is constrained to the canonical résumé — the model cannot fabricate employers/skills/etc.
-	TailorResume(context.Context, *TailorRequest) (*Resume, error)
+	// TailorResume fetches a job posting and returns the tailored résumé plus the signals extracted
+	// from the posting and the rationale for each tailoring choice. The résumé is constrained to the
+	// canonical one — the model cannot fabricate employers/skills/etc.
+	TailorResume(context.Context, *TailorRequest) (*TailorResult, error)
 	// GetSettings returns the current settings (the API key is never returned — only whether one is set).
 	GetSettings(context.Context, *Empty) (*Settings, error)
 	// SaveSettings persists settings. A blank openai_api_key leaves the stored key unchanged.
@@ -251,7 +253,7 @@ func (UnimplementedAdminServiceServer) RunReleaseCheck(context.Context, *Empty) 
 func (UnimplementedAdminServiceServer) GetResume(context.Context, *Empty) (*Resume, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetResume not implemented")
 }
-func (UnimplementedAdminServiceServer) TailorResume(context.Context, *TailorRequest) (*Resume, error) {
+func (UnimplementedAdminServiceServer) TailorResume(context.Context, *TailorRequest) (*TailorResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method TailorResume not implemented")
 }
 func (UnimplementedAdminServiceServer) GetSettings(context.Context, *Empty) (*Settings, error) {

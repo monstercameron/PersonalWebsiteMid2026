@@ -16,7 +16,7 @@ import (
 // AdminApp is the root admin component: a login gate, then the console (anime / résumé / settings).
 func AdminApp() ui.Node {
 	token := ui.UseState(loadToken())
-	view := ui.UseState("anime")
+	view := ui.UseState(currentAdminView())
 	flash := ui.UseState("")
 
 	username := ui.UseState("")
@@ -27,7 +27,9 @@ func AdminApp() ui.Node {
 	tracked := ui.UseState[[]*sitepb.Anime](nil)
 
 	jobURL := ui.UseState("")
-	tailored := ui.UseState[*sitepb.Resume](nil)
+	resumeData := ui.UseState[*sitepb.Resume](nil)
+	jobAnalysis := ui.UseState[*sitepb.JobAnalysis](nil)
+	rationales := ui.UseState[[]*sitepb.Rationale](nil)
 
 	keySet := ui.UseState(false)
 	model := ui.UseState("")
@@ -68,6 +70,23 @@ func AdminApp() ui.Node {
 				}
 				tracked.Set(list.GetItems())
 			}()
+		case "resume":
+			if resumeData.Get() == nil { // load the canonical résumé for the live render (once)
+				go func() {
+					c, err := adminClient()
+					if err != nil {
+						flash.Set("connection error")
+						return
+					}
+					ctx, cancel := callCtx(token.Get())
+					defer cancel()
+					r, err := c.GetResume(ctx, &sitepb.Empty{})
+					if onAuthErr(err) || err != nil {
+						return
+					}
+					resumeData.Set(r)
+				}()
+			}
 		case "settings":
 			go func() {
 				c, err := adminClient()
@@ -91,6 +110,11 @@ func AdminApp() ui.Node {
 		}
 		return nil
 	}, authed, view.Get())
+
+	// Sync the view when the user navigates back/forward in the browser.
+	ui.UseEffect(func() func() {
+		return onPopState(func() { view.Set(currentAdminView()) })
+	}, "popstate-mount")
 
 	if !authed {
 		onLogin := ui.UseEvent(func() {
@@ -121,7 +145,9 @@ func AdminApp() ui.Node {
 
 	// Console handlers.
 	onLogout := ui.UseEvent(func() { clearToken(); token.Set(""); results.Set(nil); tracked.Set(nil) })
-	navTo := func(v string) ui.Handler { return ui.WrapHandler(func() { flash.Set(""); view.Set(v) }) }
+	navTo := func(v string) ui.Handler {
+		return ui.WrapHandler(func() { flash.Set(""); pushAdminPath(v); view.Set(v) })
+	}
 
 	onSearch := ui.UseEvent(func() {
 		flash.Set("")
@@ -221,8 +247,10 @@ func AdminApp() ui.Node {
 				flash.Set("tailoring failed: " + status.Convert(err).Message())
 				return
 			}
-			flash.Set("")
-			tailored.Set(r)
+			flash.Set("tailored — review the extraction, rationale, and live résumé below")
+			resumeData.Set(r.GetResume())
+			jobAnalysis.Set(r.GetJob())
+			rationales.Set(r.GetRationales())
 		}()
 	})
 
@@ -297,7 +325,7 @@ func AdminApp() ui.Node {
 	var content ui.Node
 	switch view.Get() {
 	case "resume":
-		content = resumeView(jobURL, onTailor, tailored.Get())
+		content = resumeView(jobURL, onTailor, resumeData.Get(), jobAnalysis.Get(), rationales.Get())
 	case "settings":
 		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
 	default:

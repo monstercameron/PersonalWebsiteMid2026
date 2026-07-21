@@ -27,9 +27,10 @@ service AdminService {
   rpc RunReleaseCheck(Empty) returns (CheckReply);
   // GetResume returns the canonical résumé data (the source the tailor refines).
   rpc GetResume(Empty) returns (Resume);
-  // TailorResume fetches a job posting and returns a résumé re-emphasized to fit it. The result
-  // is constrained to the canonical résumé — the model cannot fabricate employers/skills/etc.
-  rpc TailorResume(TailorRequest) returns (Resume);
+  // TailorResume fetches a job posting and returns the tailored résumé plus the signals extracted
+  // from the posting and the rationale for each tailoring choice. The résumé is constrained to the
+  // canonical one — the model cannot fabricate employers/skills/etc.
+  rpc TailorResume(TailorRequest) returns (TailorResult);
   // GetSettings returns the current settings (the API key is never returned — only whether one is set).
   rpc GetSettings(Empty) returns (Settings);
   // SaveSettings persists settings. A blank openai_api_key leaves the stored key unchanged.
@@ -136,4 +137,26 @@ message ResumeProject {
 // TailorRequest carries the job-posting URL to tailor against.
 message TailorRequest {
   string job_url = 1;
+}
+
+// TailorResult is the full output of a tailoring pass: the tailored résumé, the signals the tool
+// extracted from the posting, and the rationale for each choice.
+message TailorResult {
+  Resume resume = 1;
+  JobAnalysis job = 2;
+  repeated Rationale rationales = 3;
+}
+
+// JobAnalysis is what the tool pulled out of the job posting.
+message JobAnalysis {
+  string title = 1;
+  string company = 2;
+  repeated string keywords = 3;     // key skills/terms the posting emphasizes
+  repeated string requirements = 4; // key requirements / responsibilities
+}
+
+// Rationale explains one tailoring decision: what was emphasized and why.
+message Rationale {
+  string focus = 1;  // what changed / was emphasized (e.g. "Summary", "UKG bullet on React")
+  string reason = 2; // why, tied to a job signal
 }

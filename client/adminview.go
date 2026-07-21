@@ -125,39 +125,122 @@ func animeCardNode(a *sitepb.Anime, trackFn func(int32, bool)) ui.Node {
 
 // --- résumé view ---
 
-// resumeView renders the job-URL tailor form and the tailored result.
-func resumeView(jobURL ui.State[string], onTailor ui.Handler, tailored *sitepb.Resume) ui.Node {
+// resumeView renders the tailor form, the extracted job signals + rationales (after a tailoring
+// pass), and a live document render of the résumé (canonical until tailored).
+func resumeView(jobURL ui.State[string], onTailor ui.Handler, res *sitepb.Resume, job *sitepb.JobAnalysis, rationales []*sitepb.Rationale) ui.Node {
 	onURL := ui.WrapHandler(func(e ui.Event) { jobURL.Set(e.GetValue()) })
 	sections := []any{Class(Flex, FlexCol, Gap(Spacing4)),
 		P(Class(Fg(theme.Dim), TextSize(TextSm)),
-			"Canonical résumé: ", A(Class(Fg(theme.Accent2)), Props{Href: "/resume", Target: "_blank", Rel: "noopener"}, "/resume"),
-			" — paste a job URL below to tailor a variant."),
+			"Paste a job URL to tailor a variant. The canonical résumé is at ",
+			A(Class(Fg(theme.Accent2)), Props{Href: "/resume", Target: "_blank", Rel: "noopener"}, "/resume"), " (save as PDF)."),
 		Div(Class(Flex, Gap(Spacing2)),
 			growInput(jobURL.Get(), onURL, "paste a job-posting URL…"),
 			primaryButton("Tailor résumé", onTailor),
 		),
 	}
-	if tailored != nil {
-		sections = append(sections, tailoredCard(tailored))
+	if job != nil || len(rationales) > 0 {
+		panels := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fit,minmax(280px,1fr))"))}
+		if job != nil {
+			panels = append(panels, jobAnalysisPanel(job))
+		}
+		if len(rationales) > 0 {
+			panels = append(panels, rationalesPanel(rationales))
+		}
+		sections = append(sections, Div(panels...))
+	}
+	if res != nil {
+		sections = append(sections, sectionLabel("live résumé"), resumeDocument(res))
 	}
 	return Div(sections...)
 }
 
-// tailoredCard renders the tailored résumé data for review.
-func tailoredCard(r *sitepb.Resume) ui.Node {
+// jobAnalysisPanel shows what the tool extracted from the posting.
+func jobAnalysisPanel(job *sitepb.JobAnalysis) ui.Node {
+	items := []any{Class(Flex, FlexCol, Gap(Spacing2), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4)),
+		Div(Class(FontSemibold, Fg(theme.Accent)), "extracted from the posting")}
+	if title := job.GetTitle(); title != "" || job.GetCompany() != "" {
+		if job.GetCompany() != "" {
+			title += " @ " + job.GetCompany()
+		}
+		items = append(items, Span(Class(TextSize(TextSm), FontSemibold), title))
+	}
+	if len(job.GetKeywords()) > 0 {
+		items = append(items, Span(Class(Fg(theme.Dim), TextSize(TextSm)), "keywords"), chipRow(job.GetKeywords()))
+	}
+	if len(job.GetRequirements()) > 0 {
+		items = append(items, Span(Class(Fg(theme.Dim), TextSize(TextSm)), "requirements"))
+		for _, r := range job.GetRequirements() {
+			items = append(items, Span(Class(TextSize(TextSm)), "• "+r))
+		}
+	}
+	return Div(items...)
+}
+
+// rationalesPanel explains each tailoring decision.
+func rationalesPanel(rationales []*sitepb.Rationale) ui.Node {
 	items := []any{Class(Flex, FlexCol, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4)),
-		Span(Class(FontSemibold, Fg(theme.Accent)), r.GetName()+" — "+r.GetTitle()),
-		Span(Class(Fg(theme.Dim), TextSize(TextSm)), r.GetSummary()),
+		Div(Class(FontSemibold, Fg(theme.Accent)), "why these choices")}
+	for _, r := range rationales {
+		items = append(items, Div(Class(Flex, FlexCol),
+			Span(Class(FontSemibold, TextSize(TextSm)), r.GetFocus()),
+			Span(Class(Fg(theme.Dim), TextSize(TextSm)), r.GetReason()),
+		))
+	}
+	return Div(items...)
+}
+
+// chipRow renders a wrapped row of pill chips.
+func chipRow(values []string) ui.Node {
+	nodes := []any{Class(Flex, css.Raw("flex-wrap", "wrap"), Gap(Spacing2))}
+	for _, v := range values {
+		nodes = append(nodes, Span(Class(TextSize(TextSm), Fg(theme.Fg), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2), PadY(Spacing1)), v))
+	}
+	return Div(nodes...)
+}
+
+// resumeDocument renders the résumé as a light "paper" preview, mirroring the /resume PDF layout.
+func resumeDocument(r *sitepb.Resume) ui.Node {
+	sec := func(t string) ui.Node {
+		return Div(Class(css.Raw("font-size", "11px"), css.Raw("letter-spacing", ".12em"), css.Raw("text-transform", "uppercase"),
+			css.Raw("color", "#c1440f"), css.Raw("font-weight", "700"), css.Raw("margin-top", "16px")), t)
+	}
+	items := []any{Class(css.Raw("background", "#ffffff"), css.Raw("color", "#1b1420"), Rounded(RadiusXl),
+		css.Raw("padding", "28px 32px"), css.Raw("font-family", "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"), css.Raw("line-height", "1.5")),
+		Div(Class(css.Raw("font-size", "24px"), css.Raw("font-weight", "700")), r.GetName()),
+		Div(Class(css.Raw("color", "#e95420"), css.Raw("font-weight", "600")), r.GetTitle()),
+		Div(Class(css.Raw("color", "#555"), css.Raw("font-size", "13px"), css.Raw("margin-top", "4px")),
+			r.GetLocation()+" · "+r.GetEmail()+" · "+r.GetGithub()+" · "+r.GetLinkedin()),
+		sec("Summary"), Div(r.GetSummary()),
+		sec("Experience"),
 	}
 	for _, j := range r.GetJobs() {
-		items = append(items, Span(Class(FontSemibold, TextSize(TextSm)), j.GetRole()+" · "+j.GetOrg()+" · "+j.GetDates()))
-		bl := []any{Class(Flex, FlexCol, Gap(Spacing2))}
+		items = append(items,
+			Div(Class(css.Raw("display", "flex"), css.Raw("justify-content", "space-between"), css.Raw("margin-top", "8px")),
+				Span(Class(css.Raw("font-weight", "700")), j.GetRole()),
+				Span(Class(css.Raw("color", "#666"), css.Raw("font-size", "13px")), j.GetDates())),
+			Div(Class(css.Raw("color", "#444"), css.Raw("font-size", "14px")), j.GetOrg()))
+		ul := []any{Class(css.Raw("margin", "4px 0 0"), css.Raw("padding-left", "18px"))}
 		for _, b := range j.GetBullets() {
-			bl = append(bl, Span(Class(Fg(theme.Dim), TextSize(TextSm)), "• "+b))
+			ul = append(ul, Tag("li", b))
 		}
-		items = append(items, Div(bl...))
+		items = append(items, Tag("ul", ul...))
 	}
-	items = append(items, P(Class(Fg(theme.Dim), TextSize(TextSm)), "Review carefully before use."))
+	items = append(items, sec("Skills"))
+	for _, sk := range r.GetSkills() {
+		items = append(items, Div(Class(css.Raw("font-size", "14px")),
+			Span(Class(css.Raw("color", "#e95420"), css.Raw("font-weight", "600")), sk.GetLabel()+": "), Span(sk.GetItems())))
+	}
+	items = append(items, sec("Selected Projects"))
+	pul := []any{Class(css.Raw("margin", "4px 0 0"), css.Raw("padding-left", "18px"))}
+	for _, p := range r.GetProjects() {
+		pul = append(pul, Tag("li", Span(Class(css.Raw("font-weight", "700")), p.GetName()), Span(" — "+p.GetDesc())))
+	}
+	items = append(items, Tag("ul", pul...), sec("Education"))
+	eul := []any{Class(css.Raw("margin", "4px 0 0"), css.Raw("padding-left", "18px"))}
+	for _, e := range r.GetEducation() {
+		eul = append(eul, Tag("li", e))
+	}
+	items = append(items, Tag("ul", eul...))
 	return Div(items...)
 }
 

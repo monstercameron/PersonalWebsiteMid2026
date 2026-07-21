@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"syscall/js"
 	"time"
 
@@ -47,6 +48,36 @@ func callCtx(token string) (context.Context, context.CancelFunc) {
 		ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
 	}
 	return ctx, cancel
+}
+
+// currentAdminView derives the active admin view from the URL path so /admin/resume, /admin/settings,
+// and /admin (or /admin/anime) deep-link to the right view.
+func currentAdminView() string {
+	p := js.Global().Get("location").Get("pathname").String()
+	switch {
+	case strings.HasSuffix(p, "/resume"):
+		return "resume"
+	case strings.HasSuffix(p, "/settings"):
+		return "settings"
+	default:
+		return "anime"
+	}
+}
+
+// pushAdminPath updates the browser URL to the sub-route for view without reloading (history API).
+func pushAdminPath(view string) {
+	js.Global().Get("history").Call("pushState", nil, "", "/admin/"+view)
+}
+
+// onPopState registers fn for browser back/forward navigation; the returned func unregisters it.
+func onPopState(fn func()) func() {
+	cb := js.FuncOf(func(js.Value, []js.Value) any { fn(); return nil })
+	win := js.Global().Get("window")
+	win.Call("addEventListener", "popstate", cb)
+	return func() {
+		win.Call("removeEventListener", "popstate", cb)
+		cb.Release()
+	}
 }
 
 // loadToken reads the stored admin JWT from localStorage.
