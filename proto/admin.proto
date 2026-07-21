@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package site.v1;
+
+option go_package = "github.com/monstercameron/earlcameron/proto/sitepb;sitepb";
+
+import "site.proto";
+
+// AdminService is the owner-gated control plane — the anime tracker and the résumé tailoring tool.
+// This is the data plane for the admin console (a GWC/WASM frontend talks to it over the same
+// GoGRPCBridge WebSocket tunnel as the public site). Every method except Login requires a valid
+// session token in the "authorization" request metadata (value: "Bearer <token>"); the server
+// enforces this with a unary interceptor. Documents (the RSS feeds and the résumé PDF page) stay
+// on the HTTP GET document plane and are not part of this service.
+service AdminService {
+  // Login exchanges the admin password for a signed session token used by every other method.
+  rpc Login(LoginRequest) returns (LoginReply);
+  // SearchAnime queries AniList and marks which results are already tracked.
+  rpc SearchAnime(SearchRequest) returns (AnimeList);
+  // ListTracked returns the currently tracked shows.
+  rpc ListTracked(Empty) returns (AnimeList);
+  // TrackAnime begins tracking an AniList id.
+  rpc TrackAnime(AnimeId) returns (Ack);
+  // UntrackAnime stops tracking an AniList id.
+  rpc UntrackAnime(AnimeId) returns (Ack);
+  // RunReleaseCheck refreshes tracked shows against AniList and reports how many changed.
+  rpc RunReleaseCheck(Empty) returns (CheckReply);
+  // GetResume returns the canonical résumé data (the source the tailor refines).
+  rpc GetResume(Empty) returns (Resume);
+  // TailorResume fetches a job posting and returns a résumé re-emphasized to fit it. The result
+  // is constrained to the canonical résumé — the model cannot fabricate employers/skills/etc.
+  rpc TailorResume(TailorRequest) returns (Resume);
+}
+
+// Empty is a no-argument request.
+message Empty {}
+
+// LoginRequest carries the admin password.
+message LoginRequest {
+  string password = 1;
+}
+
+// LoginReply returns a session token on success.
+message LoginReply {
+  bool ok = 1;
+  string token = 2;
+}
+
+// SearchRequest is an AniList search query.
+message SearchRequest {
+  string query = 1;
+}
+
+// AnimeId identifies one show by its AniList id.
+message AnimeId {
+  int32 anilist_id = 1;
+}
+
+// CheckReply reports how many tracked shows changed during a release check.
+message CheckReply {
+  int32 updated = 1;
+}
+
+// Anime is one show — an AniList search result or a tracked entry.
+message Anime {
+  int32 anilist_id = 1;
+  string title = 2;
+  string format = 3;
+  string status = 4;
+  int32 episodes = 5;
+  int32 season_year = 6;
+  string cover_image = 7;
+  bool tracked = 8;
+}
+
+// AnimeList is an ordered set of shows.
+message AnimeList {
+  repeated Anime items = 1;
+}
+
+// Resume is the structured résumé (wire DTO mirroring internal/resume.Resume).
+message Resume {
+  string name = 1;
+  string title = 2;
+  string location = 3;
+  string email = 4;
+  string github = 5;
+  string linkedin = 6;
+  string summary = 7;
+  repeated ResumeJob jobs = 8;
+  repeated ResumeSkill skills = 9;
+  repeated ResumeProject projects = 10;
+  repeated string education = 11;
+}
+
+// ResumeJob is one work entry.
+message ResumeJob {
+  string role = 1;
+  string org = 2;
+  string dates = 3;
+  repeated string bullets = 4;
+}
+
+// ResumeSkill is a labeled skills row.
+message ResumeSkill {
+  string label = 1;
+  string items = 2;
+}
+
+// ResumeProject is one selected project.
+message ResumeProject {
+  string name = 1;
+  string desc = 2;
+}
+
+// TailorRequest carries the job-posting URL to tailor against.
+message TailorRequest {
+  string job_url = 1;
+}

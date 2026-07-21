@@ -36,6 +36,13 @@ Semantic Versioning once released.
   `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
   (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
   The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
+- **AdminService (gRPC)** — the owner-gated admin control plane now lives on the gRPC data plane
+  (over the GoGRPCBridge WS tunnel), not ad-hoc HTTP: `Login`, `SearchAnime`, `ListTracked`,
+  `TrackAnime`, `UntrackAnime`, `RunReleaseCheck`, `GetResume`, `TailorResume`. A unary interceptor
+  enforces a signed session token (`authorization` metadata) on every method but `Login`. The
+  SSRF-guarded job fetch moved to `internal/resume`. Verified with a real bufconn client/server
+  test (login, interceptor rejection, authed call, disabled-tailoring precondition). The legacy
+  HTTP admin pages still render until the GWC/WASM admin console (next pass) replaces them.
 - Discoverability for the new features (the links were buried/absent): résumé + LinkedIn added to
   the hero link row (github · résumé · linkedin · earlcameron.com · email); a public **"Anime, on
   RSS"** section links the two feeds; a discreet **`admin`** link in the footer (still

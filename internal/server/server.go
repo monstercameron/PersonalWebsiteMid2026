@@ -56,9 +56,12 @@ func New(cfg config.Config) (*Server, error) {
 	animeSvc := anime.New(st)
 	// Cookies are marked Secure when the public origin is HTTPS (production behind nginx).
 	sessions := admin.NewSessions(cfg.AdminPassword, cfg.AdminSecret, strings.HasPrefix(cfg.BaseURL, "https://"))
-	grpcSrv := grpc.NewServer()
+	// The auth interceptor gates AdminService methods (all but Login) on a valid session token in
+	// gRPC metadata; the public services (Content/Contact) pass through.
+	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))
 	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
+	sitepb.RegisterAdminServiceServer(grpcSrv, admin.NewService(animeSvc, sessions, cfg.OpenAIKey, cfg.OpenAIModel))
 
 	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
 		CheckOrigin: originChecker(cfg.AllowedOrigins),

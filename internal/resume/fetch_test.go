@@ -1,4 +1,4 @@
-package server
+package resume
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func TestFetchJobTextBlocksInternalTargets(t *testing.T) {
 		"http://10.0.0.1/x",
 		"http://192.168.1.1/x",
 	} {
-		if _, err := fetchJobText(context.Background(), raw); err == nil {
+		if _, err := FetchJobText(context.Background(), raw); err == nil {
 			t.Errorf("expected %s to be blocked, got nil error", raw)
 		}
 	}
@@ -31,7 +31,7 @@ func TestFetchJobTextRejectsBadURLs(t *testing.T) {
 		"ftp://example.com/x",
 		"http://user:pass@example.com/",
 	} {
-		if _, err := fetchJobText(context.Background(), raw); err == nil {
+		if _, err := FetchJobText(context.Background(), raw); err == nil {
 			t.Errorf("expected %s to be rejected, got nil error", raw)
 		}
 	}
