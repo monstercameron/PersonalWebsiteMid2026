@@ -1,0 +1,2 @@
+# Build output directory. All compiled artifacts (server binary, wasm) land here and are
+# gitignored so they never pollute the tree. Only this .gitkeep is tracked.

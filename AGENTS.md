@@ -1,0 +1,127 @@
+# AGENTS.md — working guide for agents on earlcameron.com
+
+Canonical instructions for any AI agent (Claude or otherwise) working in this repo. Read this
+first. `CLAUDE.md` defers to this file.
+
+> **PHASE: PLANNING.** As of 2026-07-21 this is a **design/planning** repo — docs and a static
+> mockup only, **no application code yet**. Do **not** scaffold `go.mod` or write app code until
+> Cam explicitly says to start building. When in doubt, plan and document; don't build.
+
+## What we're building
+A personal portfolio that **is** a working terminal, plus a conventional standard site — two
+front doors from one page. Frontend is **GoWebComponents** (Go→WASM, Cam's framework); the
+browser talks to a **Go gRPC backend** over a **WebSocket bridge** (GoGRPCBridge). The site is
+the proof of work: hand-built Go, top to bottom. See `README.md`, `documents/DESIGN.md`,
+`documents/PROJECT_LAYOUT.md`, `documents/DEPLOYMENT.md`, `TODOS.md`.
+
+## Golden constraints (do not violate)
+1. **Data plane = gRPC-over-WebSocket only.** No ad-hoc REST API for the app. Published
+   documents (SSR pages, wasm, RSS, PDFs) are served over HTTP GET — that's the *document
+   plane* and is fine. See PROJECT_LAYOUT "Two planes".
+2. **Own stack, dogfooded.** GWC frontend (track the local v4.3.0 via `replace`), GoGRPCBridge
+   transport, Go backend. Being technically interesting is a requirement, not a nice-to-have.
+3. **Mostly-pure GWC with a failsafe.** The standard site is server-rendered and works with no
+   WASM/JS. The terminal enhances over it.
+4. **Secrets are env-only.** `OPENAI_API_KEY`, signing keys, owner IDs. Never in the DB, never
+   web-editable, never sent to the client.
+
+## Tool routing — local vs backend-routed
+Every terminal program is one of:
+- **Local** (default): runs entirely in WASM. `help`, `ls`, `clear`, `theme`, `neofetch`, nav.
+- **Backend-routed**: calls a gRPC service over the tunnel. Required whenever the browser
+  sandbox would bite — **CORS, secrets, cross-origin fetches, server capabilities**. `ask`,
+  `translate`, `contact`, `stats`, `blog`, `resume tailor`, all `admin`, `anime`.
+- **Default local; route through the backend the moment a browser limit or a secret is
+  involved.** Never expose a key or bypass CORS from the client.
+
+## Security — owner-only admin, enforced server-side
+Admin (backend + terminal admin programs) is gated to **one owner: Cam.**
+- **The terminal hiding admin commands is UX only. Authorization is enforced on EVERY
+  AdminService RPC, server-side. The client is never trusted.**
+- Auth: **WebAuthn/passkey** (recommended) or password + **TOTP**. Never a lone env password.
+- Owner allowlist (one identity), constant-time credential compare, short-lived sessions with
+  revoke-all, login rate-limit + lockout, TLS mandatory.
+- **Append-only audit log** on every mutation (who/what/when). Destructive actions need an
+  explicit confirm token. Validate all admin input server-side.
+
+## Quality bar — extreme quality, high performance
+This is Cam's flagship; it must read as senior work.
+- **Correctness first**, then clarity, then speed. No dead code, no TODO-rot, no copy-paste.
+- Small, single-purpose functions; explicit error handling; no swallowed errors.
+- `gofmt`/`goimports` clean; `go vet` + `golangci-lint` clean; no unused/exported-without-reason.
+- **Performance is a feature**: profile hot paths, benchmark them, keep the wasm bundle lean
+  (mind bundle size + boot time), avoid needless allocations on the render/stream paths.
+- **Tests**: unit-test pure logic; contract-test each service; e2e smoke the critical flows.
+  A change isn't done until it's tested.
+- Match the surrounding code's idioms; keep the two typographic/voice conventions (mono = the
+  machine, sans = Cam) intact in UI work.
+
+### Types & documentation (required)
+- **Strong shared types across every layer.** `proto/site.proto` is the single source of truth
+  for wire DTOs; the generated package is imported by **both** the Go server and the Go/WASM
+  client — one language, shared types end-to-end, no drift. Define explicit DTOs at every
+  boundary; **never** pass `map[string]any`, loose strings, or untyped blobs between layers.
+  Convert deliberately at the edges (wire DTO ↔ domain type); don't leak transport types into
+  the UI or domain types onto the wire.
+- **Document every function.** Every function and method — exported *and* unexported — gets a
+  Go-style doc comment (starts with the name) describing what it does, and why when non-obvious.
+  Same for every exported type/field and every package (`// Package x ...`). No undocumented
+  functions land.
+
+## Karpathy guidelines (required — skill installed)
+Load and follow the **`karpathy-guidelines`** skill (`.claude/skills/karpathy-guidelines/`,
+MIT, distilled from Andrej Karpathy's observations on LLM coding pitfalls) before writing or
+refactoring code. The four rules:
+1. **Think before coding** — state assumptions; surface tradeoffs; if multiple interpretations
+   exist, present them, don't pick silently; if something's unclear, stop and ask.
+2. **Simplicity first** — the minimum code that solves the problem; nothing speculative; no
+   abstractions for single-use code; no error handling for impossible cases. If 200 lines could
+   be 50, rewrite. Ask: "would a senior engineer call this overcomplicated?"
+3. **Surgical changes** — touch only what the task requires; match existing style even if you'd
+   do it differently; don't refactor what isn't broken; remove only the orphans *your* change
+   created; flag unrelated dead code, don't delete it. Every changed line traces to the request.
+4. **Goal-driven execution** — turn tasks into verifiable success criteria and loop until they
+   pass ("fix the bug" → write a failing test that reproduces it, then make it pass).
+
+**Reconciling with our ambition:** the large feature set is *Cam's product scope*, not a license
+to gold-plate. Simplicity + surgical apply to *how* each piece is built — implement exactly what
+a feature needs, simply, and no more. This composes with the review loop below: simplicity
+first, then try to break it, then harden.
+
+## Mandatory workflow — adversarial self-review
+For any **substantive** change (a feature, a service, a non-trivial refactor):
+1. Do the work to the quality bar above.
+2. **Spawn adversarial review subagent(s)** whose explicit job is to *aggressively try to break
+   your output* — hunt correctness bugs, security holes, perf regressions, and needless
+   complexity. Have them default to skepticism (assume the code is wrong until proven right).
+3. **Fix every real finding**, then re-review until it survives. Only then is it done.
+- Subagents run **sequentially, one at a time, on Sonnet — never in parallel** (Cam's standing
+  preference). Prefer a diverse-lens pass (correctness · security · performance · simplicity).
+- Trivial/mechanical edits are exempt; use judgment.
+
+## UI/UX work — ALWAYS use the design skill
+**Rule (no exceptions): load the `frontend-design` skill *before* touching ANY UI — every
+time.** This covers new components, small tweaks, CSS/layout, motion, and user-facing copy —
+not just big new screens. If you're editing something a user sees, the skill loads first.
+Then follow the locked design language in `documents/DESIGN.md`: macOS chrome, Ubuntu-souled
+"Aubergine" palette, two voices (mono = machine, sans = Cam), motion-with-restraint,
+`prefers-reduced-motion`, and the keyboard/a11y floor.
+
+## Docs discipline
+Keep `README.md`, `documents/DESIGN.md`, `documents/PROJECT_LAYOUT.md`, and `TODOS.md` in sync
+with every decision. Log decisions and their *why*, not just outcomes.
+
+## Version control, dev log & changelog
+- **Feature-atomic commits.** Each commit is ONE coherent, self-contained change (a feature,
+  fix, or refactor) that builds and passes on its own. **Never bundle unrelated features** — this
+  is the safety net: a bad change can be `git revert`ed in isolation **without wiping other
+  implemented features**. Conventional messages (`feat:`/`fix:`/`refactor:`/`docs:`/`test:`/
+  `chore:`); put the *why* in the body when non-obvious.
+- **Always buildable**: `go build` + `go vet` + tests green before every commit.
+- **Dev log** — `documents/DEVLOG.md`: append a dated entry every working session — what you
+  built, decisions and why, what broke and the fix, what's next. It's the narrative memory of the
+  build; log the failures too, honestly.
+- **Changelog** — `CHANGELOG.md` (Keep a Changelog): notable changes under Added / Changed /
+  Fixed / Removed, grouped by version.
+- Never commit secrets, `.env`, `*.db`, or build artifacts (see `.gitignore`; builds → `/bin`).
+- Public repo — local versioning is fine; never push Cam's private `future plans/` (unrelated).

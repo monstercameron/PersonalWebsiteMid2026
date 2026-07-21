@@ -1,0 +1,723 @@
+<style>
+  /* ============================================================
+     Earl Cameron — terminal portfolio  ·  design mockup v1
+     Chrome: macOS Terminal   Palette: "Aubergine" (Ubuntu-souled)
+     Two voices: mono = the machine, sans = Cam.
+     ============================================================ */
+
+  /* ---- tokens: Aubergine (dark, default) ---- */
+  :root{
+    --bg:#17040f;              /* deep near-black aubergine        */
+    --bg-2:#210a19;            /* raised ground                    */
+    --panel:rgba(30,10,23,.78);/* terminal glass                   */
+    --panel-solid:#1e0a17;
+    --fg:#f3e9e6;              /* warm off-white                   */
+    --dim:#a98ba0;             /* muted mauve                      */
+    --faint:#6f5364;
+    --border:#3a1b2e;          /* aubergine-tinted border          */
+    --accent:#e95420;          /* Ubuntu orange                    */
+    --accent-2:#be7be6;        /* purple                           */
+    --green:#8ae234;
+    --red:#ef5350;
+    --yellow:#f2b840;
+    --cyan:#4dd0e1;
+    --glow-a:rgba(190,123,230,.16);
+    --glow-b:rgba(233,84,32,.14);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code","JetBrains Mono","Roboto Mono",monospace;
+    --maxw:1080px;
+    color-scheme:dark;
+  }
+  /* ---- light "paper terminal" ---- */
+  :root[data-theme="light"]{
+    --bg:#f4eee9; --bg-2:#ece3db; --panel:rgba(255,252,249,.82); --panel-solid:#fffcf9;
+    --fg:#2b1420; --dim:#7a5c6e; --faint:#a892a0; --border:#e2d3cb;
+    --accent:#d1440f; --accent-2:#8a3fb0;
+    --green:#4e9a06; --red:#c0392b; --yellow:#b8860b; --cyan:#0f8ea6;
+    --glow-a:rgba(138,63,176,.10); --glow-b:rgba(209,68,15,.10);
+    color-scheme:light;
+  }
+  /* ---- Nord (bonus, via `theme nord`) ---- */
+  :root[data-theme="nord"]{
+    --bg:#242933; --bg-2:#2e3440; --panel:rgba(46,52,64,.82); --panel-solid:#2e3440;
+    --fg:#e5e9f0; --dim:#9aa5b8; --faint:#6b7488; --border:#3b4252;
+    --accent:#88c0d0; --accent-2:#b48ead;
+    --green:#a3be8c; --red:#bf616a; --yellow:#ebcb8b; --cyan:#8fbcbb;
+    --glow-a:rgba(180,142,173,.14); --glow-b:rgba(136,192,208,.12);
+    color-scheme:dark;
+  }
+  /* honor OS light unless the viewer/app forced a theme */
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme]){
+      --bg:#f4eee9; --bg-2:#ece3db; --panel:rgba(255,252,249,.82); --panel-solid:#fffcf9;
+      --fg:#2b1420; --dim:#7a5c6e; --faint:#a892a0; --border:#e2d3cb;
+      --accent:#d1440f; --accent-2:#8a3fb0;
+      --green:#4e9a06; --red:#c0392b; --yellow:#b8860b; --cyan:#0f8ea6;
+      --glow-a:rgba(138,63,176,.10); --glow-b:rgba(209,68,15,.10);
+      color-scheme:light;
+    }
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;line-height:1.6;overflow-x:hidden}
+  a{color:var(--accent-2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  ::selection{background:var(--accent);color:#fff}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+
+  /* ambient moody glows */
+  .bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(60vw 50vw at 12% -8%,var(--glow-a),transparent 60%),
+      radial-gradient(55vw 55vw at 105% 115%,var(--glow-b),transparent 55%);}
+  .bg::after{content:"";position:absolute;inset:0;opacity:.5;
+    background-image:radial-gradient(circle at 1px 1px,var(--border) 1px,transparent 0);
+    background-size:44px 44px;mask-image:radial-gradient(70% 60% at 50% 30%,#000,transparent);}
+
+  .wrap{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* =================== HERO =================== */
+  header.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+    gap:34px;padding:96px 0 64px}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent)}
+  .headline{font-family:var(--mono);font-weight:600;letter-spacing:-.01em;
+    font-size:clamp(30px,6vw,60px);line-height:1.05;margin:14px 0 0;text-wrap:balance}
+  .headline .amp{color:var(--accent)}
+  .lede{max-width:60ch;font-size:clamp(16px,2.1vw,19px);color:var(--dim);margin-top:18px}
+  .lede b{color:var(--fg);font-weight:600}
+
+  /* ---- the terminal (hero preview + fullscreen) ---- */
+  .term{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    backdrop-filter:blur(20px) saturate(1.25);-webkit-backdrop-filter:blur(20px) saturate(1.25);
+    box-shadow:0 44px 120px -34px rgba(0,0,0,.8),0 0 0 1px rgba(233,84,32,.06),0 2px 0 rgba(255,255,255,.04) inset;
+    display:flex;flex-direction:column;overflow:hidden;max-width:960px;width:100%;margin:0 auto;
+    transition:transform .18s ease}
+  .term__bar{display:flex;align-items:center;gap:8px;padding:11px 14px;
+    background:linear-gradient(var(--bg-2),transparent);border-bottom:1px solid var(--border);
+    font-family:var(--mono);font-size:12px;color:var(--dim);user-select:none}
+  .lights{display:flex;gap:8px;margin-right:8px}
+  .lights i{width:12px;height:12px;border-radius:50%;display:block;cursor:pointer;
+    border:1px solid rgba(0,0,0,.25)}
+  .lights .r{background:#ff5f56}.lights .y{background:#ffbd2e}.lights .g{background:#27c93f}
+  .term__title{flex:1;text-align:center;letter-spacing:.02em}
+  .term__title b{color:var(--fg);font-weight:500}
+  .term__hint{color:var(--faint);font-size:11px}
+  .term__body{font-family:var(--mono);font-size:14.5px;line-height:1.72;padding:24px 26px 18px;
+    height:clamp(420px,56vh,600px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .term__body::-webkit-scrollbar{width:9px}
+  .term__body::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+
+  /* scrollback */
+  .ln{white-space:pre-wrap;word-break:break-word}
+  .muted{color:var(--dim)} .accent{color:var(--accent)} .p2{color:var(--accent-2)}
+  .ok{color:var(--green)} .warn{color:var(--yellow)} .err{color:var(--red)} .cy{color:var(--cyan)}
+  .prompt-user{color:var(--green)} .prompt-path{color:var(--accent-2)} .prompt-sym{color:var(--accent)}
+  .cmd-echo{color:var(--fg)}
+  .asciilogo{color:var(--accent);text-shadow:0 0 18px rgba(233,84,32,.35)}
+  .kv{color:var(--dim)} .kv b{color:var(--fg);font-weight:500}
+  .card-t{color:var(--fg);font-weight:600}
+  .chip-i{display:inline-block;border:1px solid var(--border);border-radius:5px;padding:0 6px;
+    color:var(--dim);font-size:11.5px;margin:2px 4px 2px 0}
+  .link-cmd{color:var(--accent-2);cursor:pointer;border-bottom:1px dotted var(--accent-2)}
+  .link-cmd:hover{background:rgba(190,123,230,.12)}
+  .field input::placeholder{color:var(--faint);opacity:1}
+
+  /* neofetch — typographic, not cheesy ascii */
+  .neo{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;padding:2px 0 4px}
+  .neo__logo{margin:0;color:var(--accent);font-size:14px;line-height:1.18;white-space:pre;
+    text-shadow:0 0 26px rgba(233,84,32,.45);letter-spacing:1px}
+  .neo__info{min-width:230px}
+  .neo__name{color:var(--fg);font-weight:600;font-size:16px;letter-spacing:.2px}
+  .neo__sub{color:var(--accent);font-size:12.5px;margin:2px 0 12px}
+  .neo__row{display:flex;gap:14px;padding:1px 0}
+  .neo__row .k{color:var(--accent-2);width:58px;flex:0 0 58px;letter-spacing:.04em}
+  .neo__row .v{color:var(--fg)} .neo__row .v .mut{color:var(--dim)}
+  .neo__bar{display:flex;gap:6px;margin-top:14px}
+  .neo__bar i{width:26px;height:12px;border-radius:3px;display:block}
+
+  /* boot lines — aligned, with dot leaders */
+  .boot{display:flex;align-items:center;font-variant-numeric:tabular-nums;padding:1px 0}
+  .boot .tag{color:var(--green);font-size:11px;letter-spacing:.12em;border:1px solid var(--border);
+    border-radius:4px;padding:0 6px;margin-right:13px}
+  .boot .lbl{color:var(--fg)} .boot .val{color:var(--dim)}
+  .boot .lead{flex:1;border-bottom:1px dotted var(--faint);margin:0 12px;transform:translateY(-3px)}
+
+  /* enticing launch CTA */
+  .launch{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:0 auto;max-width:960px;width:100%}
+  .launch__pitch{font-family:var(--mono);font-size:13px;color:var(--dim);max-width:44ch}
+  .launch__pitch b{color:var(--fg)}
+  .btn--glow{position:relative;font-size:15px;padding:14px 24px;overflow:visible}
+  .btn--glow::before{content:"";position:absolute;inset:0;border-radius:8px;z-index:-1;
+    animation:breathe 3.2s ease-in-out infinite}
+  @keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(233,84,32,0)}50%{box-shadow:0 0 40px -4px var(--accent)}}
+  .type-nudge{font-family:var(--mono);font-size:12px;color:var(--accent);display:inline-flex;
+    align-items:center;gap:7px}
+  .type-nudge::before{content:"▸";animation:nudge 1.3s ease-in-out infinite}
+  @keyframes nudge{0%,100%{transform:translateX(0);opacity:.6}50%{transform:translateX(3px);opacity:1}}
+
+  /* project glyph + repo links + hover flourish */
+  .proj h3 .pg{color:var(--accent);margin-right:3px}
+  .plinks{display:flex;gap:16px;margin-top:2px}
+  .plink{font-family:var(--mono);font-size:12px;color:var(--accent-2)}
+  .plink:hover{color:var(--accent);text-decoration:none}
+  .proj::after{content:"↗";position:absolute;bottom:16px;right:18px;font-family:var(--mono);
+    color:var(--dim);opacity:0;transform:translate(-3px,3px);transition:.22s}
+  .proj:hover::after{opacity:.85;transform:none;color:var(--accent)}
+  /* social rows + footer links */
+  .social{display:flex;gap:20px;flex-wrap:wrap;font-family:var(--mono);font-size:13px;margin-top:14px}
+  .social a{color:var(--dim);display:inline-flex;gap:8px;align-items:center}
+  .social a:hover{color:var(--accent);text-decoration:none}
+  .social a .g{color:var(--accent-2)}
+  .footlinks a{color:var(--dim)} .footlinks a:hover{color:var(--accent)}
+  /* subtle cursor-glow flicker (moody) */
+  @media (prefers-reduced-motion:no-preference){
+    .curs{animation:blink 1.05s steps(1) infinite,flick 5s ease-in-out infinite}
+    @keyframes flick{0%,97%,100%{box-shadow:0 0 10px -2px var(--accent)}98%{box-shadow:none}}
+  }
+
+  /* input line */
+  .term__input{display:flex;align-items:baseline;gap:9px;padding:4px 26px 20px;
+    font-family:var(--mono);font-size:14.5px}
+  .ps1{white-space:nowrap}
+  .field{position:relative;flex:1;min-width:0}
+  .field input{width:100%;background:transparent;border:0;color:var(--fg);font:inherit;
+    caret-color:transparent;padding:0}
+  .field input:focus{outline:none}
+  .ghost{position:absolute;left:0;top:0;pointer-events:none;color:var(--faint);white-space:pre}
+  .ghost .typed{color:transparent}
+  .curs{display:inline-block;width:8px;height:1.15em;background:var(--accent);
+    transform:translateY(2px);animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .hero__cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:4px}
+  .btn{font-family:var(--mono);font-size:13px;border-radius:8px;padding:11px 16px;cursor:pointer;
+    border:1px solid var(--border);background:transparent;color:var(--fg);transition:.16s}
+  .btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .btn--primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .btn--primary:hover{box-shadow:0 10px 26px -10px var(--accent)}
+  .scrollcue{color:var(--faint);font-family:var(--mono);font-size:12px}
+
+  /* fullscreen terminal mode */
+  body.is-full{overflow:hidden}
+  body.is-full .term--main{position:fixed;inset:clamp(14px,3vw,40px);max-width:none;z-index:60;
+    height:auto;animation:zoom .42s cubic-bezier(.2,.8,.2,1)}
+  body.is-full .term--main .term__body{height:auto;flex:1}
+  @keyframes zoom{from{opacity:.4;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
+  .scrim{position:fixed;inset:0;background:rgba(9,3,7,.55);z-index:55;opacity:0;visibility:hidden;
+    transition:.3s;backdrop-filter:blur(3px)}
+  body.is-full .scrim{opacity:1;visibility:visible}
+
+  /* mobile command chips (inside fullscreen) */
+  .chips{display:none;gap:8px;padding:10px 14px;border-top:1px solid var(--border);
+    overflow-x:auto;background:var(--bg-2)}
+  .chips button{flex:0 0 auto;font-family:var(--mono);font-size:12.5px;border:1px solid var(--border);
+    background:transparent;color:var(--fg);border-radius:20px;padding:7px 13px;cursor:pointer}
+  .chips button:active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* =================== STANDARD SITE =================== */
+  main{position:relative;z-index:1}
+  section{padding:76px 0;border-top:1px solid var(--border)}
+  .sec-label{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:20px;display:flex;gap:10px;align-items:center}
+  .sec-label::before{content:"";width:22px;height:1px;background:var(--accent)}
+  h2{font-family:var(--mono);font-weight:600;font-size:clamp(22px,3.4vw,30px);margin:0 0 18px;
+    letter-spacing:-.01em;text-wrap:balance}
+  .prose{max-width:64ch;font-size:17px;color:var(--fg)}
+  .prose p{margin:0 0 16px} .prose .dim{color:var(--dim)}
+  .pull{font-family:var(--mono);font-size:clamp(17px,2.4vw,21px);line-height:1.5;
+    border-left:2px solid var(--accent);padding:6px 0 6px 20px;margin:26px 0;color:var(--fg)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .proj{border:1px solid var(--border);border-radius:12px;padding:20px;background:var(--bg-2);
+    transition:.18s;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+  .proj::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);
+    transform:scaleY(0);transform-origin:top;transition:.22s}
+  .proj:hover{transform:translateY(-3px);border-color:var(--accent)}
+  .proj:hover::before{transform:scaleY(1)}
+  .proj h3{font-family:var(--mono);font-size:16px;margin:0;display:flex;justify-content:space-between;gap:8px}
+  .proj h3 .st{font-size:11px;color:var(--green);font-weight:400}
+  .proj p{margin:0;color:var(--dim);font-size:14.5px;flex:1}
+  .tags{display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-family:var(--mono);font-size:11px;color:var(--dim);border:1px solid var(--border);
+    border-radius:5px;padding:2px 7px}
+
+  /* how-it-works strip */
+  .arch{display:grid;grid-template-columns:1fr;gap:0;font-family:var(--mono);font-size:13px;
+    border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg-2)}
+  .arch__row{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--border)}
+  .arch__row:last-child{border-bottom:0}
+  .arch__row .n{color:var(--accent);width:26px}
+  .arch__row b{color:var(--fg)} .arch__row span{color:var(--dim)}
+  .flow{color:var(--accent-2)}
+
+  /* contact */
+  .contact-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:start}
+  form.cf{display:flex;flex-direction:column;gap:12px}
+  .cf label{font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.04em}
+  .cf input,.cf textarea{font-family:var(--sans);font-size:15px;background:var(--bg-2);
+    border:1px solid var(--border);border-radius:9px;padding:12px;color:var(--fg);width:100%}
+  .cf input:focus,.cf textarea:focus{outline:none;border-color:var(--accent)}
+  .cf textarea{min-height:120px;resize:vertical}
+  .cf .row{display:flex;gap:12px}.cf .row>div{flex:1}
+  .sent{color:var(--green);font-family:var(--mono);font-size:13px}
+
+  footer{padding:40px 0 60px;border-top:1px solid var(--border);font-family:var(--mono);
+    font-size:12.5px;color:var(--dim);display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center}
+  .live{display:inline-flex;align-items:center;gap:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 var(--green);
+    animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(138,226,52,.5)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+  .banner{background:var(--bg-2);border:1px dashed var(--border);border-radius:10px;padding:12px 16px;
+    font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-bottom:26px}
+  .banner b{color:var(--accent)}
+
+  @media (max-width:720px){
+    header.hero{padding:72px 0 40px;gap:26px}
+    .contact-wrap{grid-template-columns:1fr;gap:24px}
+    .term__body{height:300px}
+    body.is-full .term--main{inset:0;border-radius:0}
+    body.is-full .chips{display:flex}
+    body.is-full .term__input{display:none} /* mobile: tap-first, keyboard optional */
+    .hero__desktop-only{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+    .curs{animation:none}
+  }
+</style>
+
+<div class="bg" aria-hidden="true"></div>
+<div class="scrim" id="scrim"></div>
+
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Earl Cameron · Lauderhill, FL</div>
+      <h1 class="headline">AI-native systems engineer.<br><span class="amp">I ship</span> ambitious things, fast.</h1>
+      <p class="lede">I pair real systems judgment — Go, WebAssembly, on-device ML, low-level performance — with <b>LLMs in the loop</b>. The result: I design, build, and ship at a pace that used to take a team. <b>This whole site is the proof</b> — rendered by a UI framework I wrote, talking to a Go backend over a gRPC bridge I built.</p>
+      <div class="social">
+        <a href="https://github.com/monstercameron" target="_blank" rel="noopener"><span class="g">◆</span> github</a>
+        <a href="https://www.earlcameron.com" target="_blank" rel="noopener"><span class="g">✦</span> earlcameron.com</a>
+        <a href="mailto:mr.e.cameron@gmail.com"><span class="g">✉</span> email</a>
+      </div>
+    </div>
+
+    <div class="launch">
+      <button class="btn btn--primary btn--glow" data-run="__open">▶ Launch the live terminal</button>
+      <div class="launch__pitch">Not a screenshot — a <b>real shell</b> wired to a Go backend over gRPC. Every command runs. <span class="type-nudge">type below to start</span></div>
+    </div>
+
+    <!-- the terminal: hero preview that grows into a full shell -->
+    <div class="term term--main" id="term">
+      <div class="term__bar">
+        <span class="lights">
+          <i class="r" title="close (exit terminal)" data-act="close"></i>
+          <i class="y" title="minimize"></i>
+          <i class="g" title="fullscreen" data-act="full"></i>
+        </span>
+        <span class="term__title"><b>cameron</b> — zsh — 80×24</span>
+        <span class="term__hint" id="barhint">● live · interactive</span>
+      </div>
+      <div class="term__body" id="screen" role="log" aria-live="polite" aria-label="terminal output"></div>
+      <div class="term__input" id="inputline">
+        <span class="ps1"><span class="prompt-user">cameron@portfolio</span><span class="muted">:</span><span class="prompt-path">~</span><span class="prompt-sym">$</span></span>
+        <label class="field" for="cmd" aria-label="type a command">
+          <div class="ghost" id="ghost" aria-hidden="true"></div>
+          <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" />
+        </label>
+      </div>
+      <div class="chips" id="chips" aria-label="quick commands"></div>
+    </div>
+
+    <div class="hero__cta">
+      <span class="scrollcue">quick start:</span>
+      <button class="btn" data-run="neofetch">neofetch</button>
+      <button class="btn" data-run="projects">projects</button>
+      <button class="btn" data-run="ask what makes you fast?">ask …</button>
+      <span class="scrollcue hero__desktop-only">· or just scroll ↓</span>
+    </div>
+  </header>
+</div>
+
+<main>
+  <div class="wrap">
+    <section id="about">
+      <div class="sec-label">whoami</div>
+      <h2>Judgment × leverage.</h2>
+      <div class="prose">
+        <p>I'm an <b>AI-first engineer</b>. I'm not here to tell you I'm a 10x savant — I'm here to tell you something more useful: I know what to build, and I use every tool I have, LLMs included, to build it well and quickly.</p>
+        <p class="dim">That combination is the whole point. Deep systems work — a Go→WASM UI framework, an on-device LLM stack on Snapdragon NPUs, a browser that runs WebAssembly with no JavaScript — paired with AI leverage that turns weeks into days. Breadth below isn't hobby-collecting; it's what velocity looks like.</p>
+        <div class="pull">"With the model in the loop, I operate like a small team — same taste, a fraction of the time."</div>
+      </div>
+    </section>
+
+    <section id="work">
+      <div class="sec-label">~/projects · featured</div>
+      <h2>Selected work.</h2>
+      <div class="grid" id="workgrid"></div>
+    </section>
+
+    <section id="how">
+      <div class="sec-label">uname -a · how this site works</div>
+      <h2>The medium is the résumé.</h2>
+      <div class="prose" style="margin-bottom:26px">
+        <p class="dim">Most portfolios are a template. This one is a working distributed system — every command you type is a real program fetching real data. No REST, no JavaScript framework. Here's the stack, top to bottom:</p>
+      </div>
+      <div class="arch">
+        <div class="arch__row"><span class="n">01</span><b>GoWebComponents</b><span>— the frontend is Go compiled to WebAssembly. A React-style framework I wrote. Zero npm.</span></div>
+        <div class="arch__row"><span class="n">02</span><b>gRPC bridge</b><span>— the browser speaks <span class="flow">gRPC-over-WebSocket</span> through GoGRPCBridge. One same-origin socket, no proxy.</span></div>
+        <div class="arch__row"><span class="n">03</span><b>Go backend</b><span>— a real gRPC server streams content, stores messages, and powers the live status you see below.</span></div>
+        <div class="arch__row"><span class="n">04</span><b>AI, on a leash</b><span>— <code>ask</code> runs a rate-limited nano model, hard-capped at $20/mo, grounded only in my work.</span></div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="sec-label">./contact</div>
+      <h2>Let's build something.</h2>
+      <div class="contact-wrap">
+        <div class="prose">
+          <p>Looking for an engineer who ships across the stack and moves fast without breaking the important things? That's the whole pitch.</p>
+          <p class="dim">Drop a note here — it goes straight to a Go backend over the same gRPC channel the terminal uses. Or reach me at <a href="mailto:mr.e.cameron@gmail.com">mr.e.cameron@gmail.com</a>.</p>
+        </div>
+        <form class="cf" id="cf">
+          <div class="row"><div><label>name</label><input required id="cf-n" placeholder="Ada Lovelace"></div>
+            <div><label>email</label><input required type="email" id="cf-e" placeholder="ada@example.com"></div></div>
+          <label>message</label><textarea required placeholder="What are you building?"></textarea>
+          <button class="btn btn--primary" type="submit" style="align-self:flex-start">Send message</button>
+          <div class="sent" id="cf-ok" hidden>✓ Sent. (mockup — the real form streams to ContactService.)</div>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <footer>
+      <span class="live"><span class="dot"></span> <span id="livetxt">connected · gRPC-over-ws · <b id="online">1</b> online</span></span>
+      <span>built with GoWebComponents v4.3.0 · Go · gRPC · <span id="commit">a1b2c3d</span></span>
+      <span>© 2026 Earl Cameron</span>
+    </footer>
+  </div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var screen=document.getElementById('screen'),
+      input=document.getElementById('cmd'),
+      ghost=document.getElementById('ghost'),
+      term=document.getElementById('term'),
+      barhint=document.getElementById('barhint'),
+      chips=document.getElementById('chips'),
+      body=document.body;
+  var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ---------- content (placeholders — swap for real) ---------- */
+  var GH='https://github.com/monstercameron/';
+  var PROJECTS=[
+    {id:'gwc',name:'GoWebComponents',status:'v4.3.0',glyph:'⟠',tags:['Go','WASM','framework'],
+      repo:GH+'GoWebComponents',demo:'https://monstercameron.github.io/GoWebComponents/',
+      blurb:'A React-style UI framework in Go→WASM. Hooks, a fiber runtime, SSR/hydration, typed HTML. This site runs on it.',
+      long:'The framework rendering the page you are reading — component model, reconciler, router, server functions, devtools. Benchmarked against React and winning on several axes. Zero npm.'},
+    {id:'cashflux',name:'CashFlux',status:'shipping',glyph:'◈',tags:['Go','WASM','gRPC','SQLite'],
+      repo:GH+'CashFlux',demo:'',
+      blurb:'Local-first budgeting suite — 40+ pages, live charts, a rules engine, an AI layer. All Go/WASM, no JS framework.',
+      long:'A full personal-finance app built entirely in Go compiled to WebAssembly on my own framework. Offline-first, enterprise-grade test suite, motion system, i18n. Runs live on this site — try `budget`.'},
+    {id:'wasibrowser',name:'WASIBrowser',status:'prototype',glyph:'◵',tags:['Go','wasmtime','C'],
+      repo:GH+'WASIBrowser',demo:'',
+      blurb:'A no-JavaScript browser. Renders WebAssembly apps directly via a custom ABI (Blitz + wasmtime).',
+      long:'A browser where pages are WASM, not HTML+JS — a reactified-C component ABI, a Go host, and a real storefront demo over authenticated RPC.'},
+    {id:'semanticscript',name:'SemanticScript',status:'research',glyph:'⧉',tags:['language','runtime','JIT'],
+      repo:GH+'SemanticScript',demo:'',
+      blurb:'An agent-first programming language — explicit, auditable source designed to be written and read by LLMs.',
+      long:'A language + toolchain betting that agent-authored code wants different ergonomics: checkable structure, module-scoped names, a JIT that links the native runtime with no build step.'},
+    {id:'semanticassembly',name:'SemanticAssembly',status:'research',glyph:'⎇',tags:['RISC-V','assembly','agents'],
+      repo:GH+'SemanticAssembly',demo:'',
+      blurb:'Agent-native assembly — a RISC-V-first layer with a soft semantic overlay that advises, never gates.',
+      long:'What assembly looks like when agents write it: RV32-first, additive semantics, and checks hardened against real agent mistakes at the metal level.'},
+    {id:'whispertome',name:'WhisperToMe',status:'shipping',glyph:'◍',tags:['NPU','Whisper','desktop'],
+      repo:GH+'WhisperToMe',demo:'https://monstercameron.github.io/WhisperToMe/',
+      blurb:'A desktop dictation agent that runs Whisper on the NPU — pinned there for all-day battery, not just speed.',
+      long:'On-device speech-to-text on the Hexagon NPU for all-day-battery dictation, wrapped in a clean desktop agent UX.'},
+    {id:'pathtracer',name:'Vulkan Path Tracer',status:'demo',glyph:'✦',tags:['Vulkan','GPU','graphics'],
+      repo:GH+'pathtracer',demo:'https://monstercameron.github.io/pathtracer/',
+      blurb:'A real-time path tracer — physically-based light transport on the GPU, with a live in-browser demo.',
+      long:'A from-scratch GPU path tracer: BVH acceleration, importance sampling, progressive refinement — running live in the browser.'},
+    {id:'semanticportrait',name:'SemanticPortrait',status:'prototype',glyph:'◮',tags:['local-LLM','graph','journaling'],
+      repo:GH+'SemanticPortrait',demo:'',
+      blurb:'A journaling app that turns entries into a living self-portrait graph via a local model.',
+      long:'A Windows journaling + self-portrait app: entries feed a local-model entry→graph loop, on a security-reviewed local-first store.'},
+    {id:'grpcbridge',name:'GoGRPCBridge',status:'v0.0.19',glyph:'⇄',tags:['Go','gRPC','WebSocket'],
+      repo:GH+'GoGRPCBridge',demo:'https://monstercameron.github.io/GoGRPCBridge/',
+      blurb:'gRPC over WebSockets for the browser — no Envoy, no proxy. This site talks to its backend through it.',
+      long:'The tunnel that lets a Go/WASM browser client speak real gRPC to a Go server over one same-origin socket. It carries every request on this site.'}
+  ];
+
+  /* build the standard-site work grid from the same data */
+  var grid=document.getElementById('workgrid');
+  PROJECTS.forEach(function(p){
+    var el=document.createElement('article');el.className='proj';el.tabIndex=0;
+    var links='<a href="'+p.repo+'" target="_blank" rel="noopener" class="plink">code ↗</a>'+
+      (p.demo?'<a href="'+p.demo+'" target="_blank" rel="noopener" class="plink">demo ↗</a>':'');
+    el.innerHTML='<h3><span class="pg">'+p.glyph+'</span> '+p.name+'<span class="st">'+p.status+'</span></h3>'+
+      '<p>'+p.blurb+'</p>'+
+      '<div class="tags">'+p.tags.map(function(t){return '<span class="tag">'+t+'</span>'}).join('')+'</div>'+
+      '<div class="plinks">'+links+'</div>';
+    el.addEventListener('click',function(e){if(e.target.closest('.plink'))return;openFull();run('open '+p.id);});
+    grid.appendChild(el);
+  });
+
+  /* ---------- terminal engine ---------- */
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function out(html,cls){var d=document.createElement('div');d.className='ln'+(cls?' '+cls:'');
+    d.innerHTML=html;screen.appendChild(d);screen.scrollTop=screen.scrollHeight;return d;}
+  function line(text,cls){return out(esc(text),cls);}
+  function blank(){out('&nbsp;');}
+  function promptEcho(cmd){out('<span class="prompt-user">cameron@portfolio</span><span class="muted">:</span><span class="prompt-path">~</span><span class="prompt-sym">$</span> <span class="cmd-echo">'+esc(cmd)+'</span>');}
+  function cmdLink(c,label){return '<span class="link-cmd" data-run="'+esc(c)+'">'+esc(label||c)+'</span>';}
+
+  var HELP=[
+    ['about / whoami','who I am and how I work','◆'],
+    ['projects','browse featured builds','⟠'],
+    ['open <name>','a project in detail','⧉'],
+    ['ask <question>','ask my AI assistant (rate-limited)','✦'],
+    ['links','github · site · email','↗'],
+    ['contact','send me a message','✉'],
+    ['stats','live server telemetry','▮'],
+    ['arch','how this site is built','⇄'],
+    ['neofetch','the splash','◍'],
+    ['theme <name>','aubergine · light · nord','◐'],
+    ['resume','download my CV','⬇'],
+    ['ls · clear · help','the usual','·']
+  ];
+
+  var LOGO='█████  █████\n█      █\n████   █\n█      █\n█████  █████';
+  function neofetchHTML(){
+    var rows=[
+      ['focus','Go · WASM · gRPC · on-device ML'],
+      ['site','rendered by <span class="accent">GoWebComponents</span> <span class="mut">(my framework)</span>'],
+      ['wire','<span class="p2">gRPC-over-WebSocket</span> · Go backend'],
+      ['stack','Go 1.26 · wasm · <span class="mut">zero JS framework</span>'],
+      ['mode','judgment <span class="accent">×</span> LLM leverage'],
+      ['proof','<span class="mut">everything here actually runs</span>']
+    ].map(function(r){return '<div class="neo__row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';}).join('');
+    return '<div class="neo"><pre class="neo__logo">'+LOGO+'</pre><div class="neo__info">'+
+      '<div class="neo__name">earl cameron</div><div class="neo__sub">~ AI-native systems engineer</div>'+rows+
+      '<div class="neo__bar"><i style="background:var(--accent)"></i><i style="background:var(--accent-2)"></i>'+
+      '<i style="background:var(--green)"></i><i style="background:var(--yellow)"></i>'+
+      '<i style="background:var(--cyan)"></i><i style="background:var(--red)"></i></div></div></div>';
+  }
+
+  var CMDS={
+    help:function(){blank();line('available programs','muted');blank();
+      HELP.forEach(function(h){out('  <span class="accent">'+(h[2]||'▸')+'</span> '+cmdLink(h[0].split(' ')[0],pad(h[0],16))+'<span class="muted">'+esc(h[1])+'</span>');});
+      blank();out('<span class="muted">tip: click any </span>'+cmdLink('projects','highlighted command')+'<span class="muted">, or just type it. easter egg: </span>'+cmdLink('matrix','matrix')+'<span class="muted"> 😉</span>');blank();},
+    about:function(){blank();
+      line("I'm an AI-first engineer. Not a 10x savant — something more useful:",'');
+      line("I know what to build, and I use every tool I have (LLMs included) to","");
+      line("build it well and fast.",'');blank();
+      out('<span class="muted">Deep systems work — a Go→WASM framework, on-device LLMs, a JS-free</span>');
+      out('<span class="muted">browser — paired with AI leverage that turns weeks into days.</span>');blank();
+      out('With the model in the loop I operate like a <span class="accent">small team</span>: same taste,');
+      out('a fraction of the time. Start with '+cmdLink('projects')+' or '+cmdLink('arch')+'.');blank();},
+    whoami:function(){CMDS.about();},
+    projects:function(){blank();line(PROJECTS.length+' builds — open one for detail','muted');blank();
+      PROJECTS.forEach(function(p){
+        out('  <span class="accent">'+p.glyph+'</span> '+cmdLink('open '+p.id,pad(p.name,22))+'<span class="muted">'+esc(p.status)+'</span>');
+      });blank();out('<span class="muted">→ </span>'+cmdLink('open gwc','open gwc')+'<span class="muted"> · </span>'+cmdLink('links','links')+'<span class="muted"> · or click a card below.</span>');blank();},
+    open:function(a){var p=byId(a[0]);if(!p){out('<span class="err">open: unknown project.</span> '+cmdLink('projects','list projects'));blank();return;}
+      blank();out('<span class="accent">'+p.glyph+'</span> <span class="card-t">'+esc(p.name)+'</span> <span class="ok">['+esc(p.status)+']</span>');
+      out('<span class="muted">'+'─'.repeat(Math.min(p.name.length+p.status.length+6,46))+'</span>');
+      wrap(p.long,60);blank();
+      out(p.tags.map(function(t){return '<span class="chip-i">'+esc(t)+'</span>'}).join(''));
+      out('<span class="kv">code </span><a href="'+p.repo+'" target="_blank" rel="noopener">'+esc(p.repo.replace('https://github.com/','github.com/'))+'</a> ↗'+(p.demo?'<span class="muted">   ·   </span><span class="kv">demo </span><a href="'+p.demo+'" target="_blank" rel="noopener">live ↗</a>':''));
+      blank();out('<span class="muted">↵ </span>'+cmdLink('ask tell me more about '+p.id,'ask about it')+'<span class="muted">  ·  </span>'+cmdLink('projects','back to list'));blank();},
+    ask:function(a,raw){var q=raw.replace(/^ask\s*/,'').trim();blank();
+      if(!q){out('<span class="muted">usage: </span>ask &lt;question&gt; <span class="muted">— e.g. </span>'+cmdLink('ask what makes you fast?','ask what makes you fast?'));blank();return;}
+      out('<span class="p2">assistant</span><span class="muted"> · nano · grounded in my work · rate-limited</span>');
+      var ans=answerFor(q);typeOut(ans);},
+    contact:function(){openFull();blank();line('contact — scroll down on the site for the full form, or:','muted');
+      out('  <span class="kv">email  </span><a href="mailto:mr.e.cameron@gmail.com">mr.e.cameron@gmail.com</a>');
+      out('  <span class="kv">msg    </span>streams to <span class="p2">ContactService</span> over gRPC (stored server-side)');blank();},
+    stats:function(){blank();line('server telemetry · live stream','muted');
+      out('  <span class="kv">uptime  </span>'+uptime());
+      out('  <span class="kv">commit  </span><span class="ok">'+commit+'</span> <span class="muted">(deployed)</span>');
+      out('  <span class="kv">online  </span><span class="accent">'+online+'</span> <span class="muted">right now</span>');
+      out('  <span class="kv">stack   </span>Go 1.26 · GWC v4.3.0 · wasm · gRPC-over-ws');
+      out('  <span class="kv">ai      </span>$'+aiSpent.toFixed(2)+' / $20.00 this month <span class="muted">('+aiCalls+' calls)</span>');blank();},
+    top:function(){CMDS.stats();},
+    arch:function(){blank();line('request path — browser to backend','muted');blank();
+      out('  <span class="accent">┌───────────────┐</span>');
+      out('  <span class="accent">│</span>  your browser <span class="accent">│</span>  <span class="muted">GoWebComponents (Go→WASM), zero JS framework</span>');
+      out('  <span class="accent">└───────┬───────┘</span>');
+      out('          <span class="p2">│  gRPC-over-WebSocket  (one same-origin socket)</span>');
+      out('  <span class="accent">┌───────┴───────┐</span>');
+      out('  <span class="accent">│</span>  GoGRPCBridge <span class="accent">│</span>  <span class="muted">my WS↔gRPC tunnel — no Envoy, no proxy</span>');
+      out('  <span class="accent">└───────┬───────┘</span>');
+      out('  <span class="accent">┌───────┴───────┐</span>');
+      out('  <span class="accent">│</span>  Go gRPC srv  <span class="accent">│</span>  <span class="muted">content · contact · live status · ask(nano)</span>');
+      out('  <span class="accent">└───────────────┘</span>');
+      blank();out('<span class="muted">the only HTTP is the first page load. everything after is gRPC.</span>');blank();},
+    neofetch:function(){blank();out(neofetchHTML());blank();},
+    links:function(){blank();line('find me','muted');blank();
+      out('  <span class="p2">◆</span> <span class="kv">github </span><a href="https://github.com/monstercameron" target="_blank" rel="noopener">github.com/monstercameron</a> ↗');
+      out('  <span class="p2">✦</span> <span class="kv">site   </span><a href="https://www.earlcameron.com" target="_blank" rel="noopener">earlcameron.com</a> ↗');
+      out('  <span class="p2">✉</span> <span class="kv">email  </span><a href="mailto:mr.e.cameron@gmail.com">mr.e.cameron@gmail.com</a>');
+      blank();},
+    social:function(){CMDS.links();},
+    matrix:function(){blank();if(reduce){out('<span class="ok">(the matrix has you — reduced motion on)</span>');blank();return;}
+      var g='01░▒▓◆◇⟠⧉⎇⇄∎✦',el=out('<span class="ok"></span>'),s=el.firstChild,f=0;
+      var t=setInterval(function(){var txt='';for(var r=0;r<6;r++){var row='';for(var c=0;c<34;c++)row+=Math.random()<.55?g[Math.floor(Math.random()*g.length)]:' ';txt+=row+'\n';}
+        s.textContent=txt;if(++f>=14){clearInterval(t);el.remove();out('<span class="muted">…wake up. </span>'+cmdLink('help','back to help'));blank();}},70);},
+    theme:function(a){var t=(a[0]||'').toLowerCase();var ok=['aubergine','light','nord'];
+      if(!t){out('<span class="muted">themes: </span>'+ok.map(function(x){return cmdLink('theme '+x,x)}).join('<span class="muted"> · </span>'));blank();return;}
+      if(ok.indexOf(t)<0){out('<span class="err">theme: no scheme "'+esc(t)+'"</span>');blank();return;}
+      if(t==='aubergine')document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme',t);
+      out('<span class="ok">✓</span> theme → <span class="accent">'+esc(t)+'</span>');blank();},
+    ls:function(){blank();out('<span class="p2">about.md</span>   <span class="p2">projects/</span>   contact.sh   resume.pdf   '+
+      '<span class="muted">.env</span>   <span class="muted">.secrets</span>');blank();},
+    cat:function(a){if((a[0]||'').indexOf('secret')>-1||a[0]==='.env'){out('<span class="err">cat: permission denied</span> <span class="muted">(nice try 😏)</span>');blank();return;}
+      CMDS.about();},
+    resume:function(){blank();out('<span class="ok">↓</span> resume.pdf <span class="muted">— (mockup) real build serves a static asset.</span>');blank();},
+    cv:function(){CMDS.resume();},
+    clear:function(){screen.innerHTML='';},
+    sudo:function(){blank();out('<span class="muted">cameron is not in the sudoers file. This incident will be reported. 🙂</span>');blank();},
+    exit:function(){closeFull();}
+  };
+
+  function answerFor(q){q=q.toLowerCase();
+    if(/fast|quick|speed|velocit/.test(q))return "Because I don't confuse motion with progress. I know the shape of the system before I start, then use LLMs to compress the mechanical middle — boilerplate, migrations, test scaffolds. The judgment is mine; the model is the force multiplier. This site (my framework, my gRPC bridge, a Go backend) went from idea to working in days, not weeks.";
+    if(/cashflux/.test(q))return "CashFlux is a local-first budgeting suite — 40+ pages, live charts, a rules engine, an AI layer — written entirely in Go compiled to WASM on my own framework. No JavaScript framework, offline-first, enterprise-grade tests.";
+    if(/gwc|framework|webcomponent/.test(q))return "GoWebComponents is a React-style framework in Go→WASM: hooks, a fiber reconciler, SSR/hydration, a router, server functions. It renders this page and benchmarks competitively against React.";
+    if(/snapdragon|npu|llm|model|on.?device/.test(q))return "I run 12–27B models on the Snapdragon X2 Elite's NPU and GPU — QNN conversion, fp16-overflow debugging, burst power modes, thermal-aware benchmarking. Getting real tok/s out of a fanless ARM64 laptop.";
+    if(/hire|work|available|contact|team/.test(q))return "I'm open to the right thing. I ship across the stack and move fast without breaking what matters. Type `contact`, or email mr.e.cameron@gmail.com.";
+    if(/who|about|you/.test(q))return "An AI-first systems engineer in Florida. Go, WASM, on-device ML, low-level performance. I build ambitious things quickly by pairing real judgment with LLM leverage.";
+    return "Good question. Short version: I'm a systems engineer who moves fast by pairing deep fundamentals with LLM leverage. Ask me about `cashflux`, `gwc`, `snapdragon`, or type `projects`. (The real assistant answers grounded in my content, rate-limited on a $20/mo budget.)";
+  }
+
+  /* helpers */
+  function pad(s,n){s=String(s);return s.length>=n?s+' ':s+' '.repeat(n-s.length);}
+  function clip(s,n){return s.length>n?s.slice(0,n-1)+'…':s;}
+  function byId(id){for(var i=0;i<PROJECTS.length;i++)if(PROJECTS[i].id===id)return PROJECTS[i];return null;}
+  function wrap(text,n){var w=text.split(' '),l='';w.forEach(function(x){if((l+x).length>n){out('<span class="muted">'+esc(l.trim())+'</span>');l='';}l+=x+' ';});if(l.trim())out('<span class="muted">'+esc(l.trim())+'</span>');}
+
+  var typing=false;
+  function typeOut(text){if(reduce){out('<span class="muted">'+esc(text)+'</span>');blank();return;}
+    typing=true;var d=out('<span class="muted"></span>');var span=d.firstChild,i=0;
+    (function tick(){if(i<=text.length){span.textContent=text.slice(0,i++);screen.scrollTop=screen.scrollHeight;
+      setTimeout(tick,12+Math.random()*18);}else{typing=false;blank();}})();}
+
+  /* live telemetry (faux) */
+  var online=1,aiSpent=0.37,aiCalls=14,commit='a1b2c3d',start=Date.now()-3*864e5-51e5;
+  function uptime(){var s=(Date.now()-start)/1000,d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+    return d+'d '+h+'h '+m+'m';}
+  function tickLive(){online=Math.max(1,online+(Math.random()<.5?-1:1));
+    var o=document.getElementById('online');if(o)o.textContent=online;}
+  setInterval(tickLive,3200);setTimeout(function(){online=7;var o=document.getElementById('online');if(o)o.textContent=online;},1500);
+
+  /* ---------- run a command ---------- */
+  function run(raw){raw=(raw||'').trim();if(!raw)return;promptEcho(raw);
+    hist.push(raw);hp=hist.length;
+    var parts=raw.split(/\s+/),name=parts[0].toLowerCase(),args=parts.slice(1);
+    if(name==='ask'){CMDS.ask(args,raw);return;}
+    if(CMDS[name]){CMDS[name](args,raw);}
+    else{out('<span class="err">'+esc(name)+': command not found.</span> '+
+      cmdLink('help','see commands')+'<span class="muted"> — or did you mean </span>'+cmdLink(guess(name),guess(name))+'<span class="muted">?</span>');blank();}
+  }
+  function guess(n){var all=Object.keys(CMDS).concat(['ask']);var best='help',bd=9;
+    all.forEach(function(c){var d=lev(n,c);if(d<bd){bd=d;best=c;}});return best;}
+  function lev(a,b){var m=[];for(var i=0;i<=b.length;i++)m[i]=[i];for(var j=0;j<=a.length;j++)m[0][j]=j;
+    for(i=1;i<=b.length;i++)for(j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:1+Math.min(m[i-1][j-1],m[i][j-1],m[i-1][j]);
+    return m[b.length][a.length];}
+
+  /* ---------- input: ghost autocomplete, history, enter ---------- */
+  var COMPLETE=['about','projects','links','open gwc','open cashflux','open wasibrowser',
+    'open semanticscript','open semanticassembly','open whispertome','open pathtracer',
+    'open semanticportrait','open grpcbridge','ask ','contact','stats','arch','neofetch','matrix',
+    'theme aubergine','theme light','theme nord','resume','ls','help','clear','whoami'];
+  var hist=[],hp=0;
+  function ghostFor(v){if(!v)return '';for(var i=0;i<COMPLETE.length;i++)if(COMPLETE[i].indexOf(v)===0&&COMPLETE[i]!==v)return COMPLETE[i];return '';}
+  function paintGhost(){var v=input.value,g=ghostFor(v);
+    ghost.innerHTML=g?'<span class="typed">'+esc(v)+'</span>'+esc(g.slice(v.length)):'';}
+  input.addEventListener('input',paintGhost);
+  input.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){var v=input.value;input.value='';paintGhost();if(!typing)run(v);}
+    else if(e.key==='Tab'){e.preventDefault();var g=ghostFor(input.value);if(g){input.value=g;paintGhost();}}
+    else if(e.key==='ArrowUp'){e.preventDefault();if(hp>0){hp--;input.value=hist[hp]||'';paintGhost();}}
+    else if(e.key==='ArrowDown'){e.preventDefault();if(hp<hist.length){hp++;input.value=hist[hp]||'';paintGhost();}}
+    else if(e.key==='l'&&e.ctrlKey){e.preventDefault();screen.innerHTML='';}
+  });
+
+  /* cursor block after input (visual) */
+  var cur=document.createElement('span');cur.className='curs';cur.setAttribute('aria-hidden','true');
+  document.getElementById('inputline').appendChild(cur);
+
+  /* ---------- fullscreen open/close ---------- */
+  var booted=false;
+  function openFull(){if(body.classList.contains('is-full'))return;body.classList.add('is-full');
+    barhint.textContent='esc to exit';setTimeout(function(){input.focus();},120);}
+  function closeFull(){body.classList.remove('is-full');barhint.textContent='● live · interactive';}
+  document.getElementById('scrim').addEventListener('click',closeFull);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeFull();});
+
+  /* traffic lights */
+  term.querySelectorAll('[data-act]').forEach(function(el){
+    el.addEventListener('click',function(){var a=el.getAttribute('data-act');
+      if(a==='full')openFull();if(a==='close')closeFull();});});
+
+  /* any element with data-run triggers a command (buttons, cards, links) */
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-run]');if(!t)return;
+    var c=t.getAttribute('data-run');
+    if(c==='__open'){openFull();return;}
+    openFull();if(!typing)run(c);
+  });
+
+  /* focusing/typing the hero prompt opens fullscreen */
+  input.addEventListener('focus',function(){if(!body.classList.contains('is-full')&&window.innerWidth>720)openFull();});
+
+  /* mobile chips */
+  ['about','projects','open cashflux','ask what makes you fast?','contact','stats','theme light','help'].forEach(function(c){
+    var b=document.createElement('button');b.textContent=c.length>16?c.split(' ')[0]:c;b.title=c;
+    b.addEventListener('click',function(){run(c);});chips.appendChild(b);});
+
+  /* idle prompt hint — signals interactivity */
+  var HINTS=["type a command…","try: projects","try: ask what makes you fast?","try: neofetch","try: theme light","try: arch"];
+  var hi=0;input.placeholder=HINTS[0];
+  if(!reduce)setInterval(function(){if(document.activeElement===input||input.value)return;
+    hi=(hi+1)%HINTS.length;input.placeholder=HINTS[hi];},2600);
+
+  /* ---------- boot sequence (the hero moment) ---------- */
+  var BOOT=[
+    {lbl:'loading runtime',val:'wasm · 4.2 mb',ms:60},
+    {lbl:'dialing /socket',val:'gRPC-over-ws',ms:440},
+    {lbl:'tunnel established',val:'14 ms',ms:200},
+    {lbl:'negotiating streams',val:'h2 · ok',ms:160},
+    {lbl:'session ready',val:'ok',ms:140}
+  ];
+  function bootLine(b){return '<div class="boot"><span class="tag">OK</span>'+
+    '<span class="lbl">'+esc(b.lbl)+'</span><span class="lead"></span>'+
+    '<span class="val">'+esc(b.val)+'</span></div>';}
+  function boot(){var i=0;(function step(){if(i<BOOT.length){out(bootLine(BOOT[i]));
+    var d=reduce?0:BOOT[i].ms;i++;setTimeout(step,d);}else{blank();
+      out('<span class="muted">Welcome. Type </span>'+cmdLink('help','help')+'<span class="muted"> — or try </span>'+
+        cmdLink('neofetch','neofetch')+'<span class="muted">, </span>'+cmdLink('projects','projects')+'<span class="muted">, </span>'+
+        cmdLink('ask what makes you fast?','ask …')+'<span class="muted">.</span>');
+      blank();CMDS.neofetch();}
+  })();}
+  function spinner(cb){var g='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏',i=0;
+    var d=out('<span class="accent"></span> <span class="muted">initializing runtime…</span>'),s=d.firstChild;
+    var t=setInterval(function(){s.textContent=g[i++%g.length];},80);
+    setTimeout(function(){clearInterval(t);d.remove();cb();},780);}
+  if(reduce){BOOT.forEach(function(b){out(bootLine(b));});blank();CMDS.neofetch();}
+  else spinner(boot);
+
+  /* contact form */
+  document.getElementById('cf').addEventListener('submit',function(e){e.preventDefault();
+    document.getElementById('cf-ok').hidden=false;this.reset();});
+})();
+</script>

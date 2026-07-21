@@ -1,0 +1,19 @@
+# build artifacts — all builds output to /bin (folder kept, contents ignored)
+/bin/*
+!/bin/.gitkeep
+*.exe
+*.wasm
+*.wasm.gz
+/web/static/wasm_exec.js
+
+# data & secrets — NEVER commit
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.log
