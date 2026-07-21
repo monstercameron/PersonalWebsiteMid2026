@@ -1162,7 +1162,7 @@ const file_admin_proto_rawDesc = "" +
 	"\frequirements\x18\x04 \x03(\tR\frequirements\"9\n" +
 	"\tRationale\x12\x14\n" +
 	"\x05focus\x18\x01 \x01(\tR\x05focus\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason2\xc9\x04\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason2\x84\x05\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x129\n" +
 	"\vSearchAnime\x12\x16.site.v1.SearchRequest\x1a\x12.site.v1.AnimeList\x121\n" +
@@ -1176,7 +1176,8 @@ const file_admin_proto_rawDesc = "" +
 	"\vGetSettings\x12\x0e.site.v1.Empty\x1a\x11.site.v1.Settings\x12/\n" +
 	"\fSaveSettings\x12\x11.site.v1.Settings\x1a\f.site.v1.Ack\x120\n" +
 	"\n" +
-	"ListModels\x12\x0e.site.v1.Empty\x1a\x12.site.v1.ModelListB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
+	"ListModels\x12\x0e.site.v1.Empty\x1a\x12.site.v1.ModelList\x129\n" +
+	"\x10GetLastTailoring\x12\x0e.site.v1.Empty\x1a\x15.site.v1.TailorResultB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -1231,19 +1232,21 @@ var file_admin_proto_depIdxs = []int32{
 	2,  // 15: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
 	0,  // 16: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
 	2,  // 17: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
-	4,  // 18: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	9,  // 19: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	9,  // 20: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	18, // 21: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	18, // 22: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	7,  // 23: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	10, // 24: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	15, // 25: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	0,  // 26: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	18, // 27: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	1,  // 28: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	18, // [18:29] is the sub-list for method output_type
-	7,  // [7:18] is the sub-list for method input_type
+	2,  // 18: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
+	4,  // 19: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	9,  // 20: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	9,  // 21: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	18, // 22: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	18, // 23: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	7,  // 24: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	10, // 25: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	15, // 26: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	0,  // 27: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	18, // 28: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	1,  // 29: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	15, // 30: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	19, // [19:31] is the sub-list for method output_type
+	7,  // [7:19] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name

@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/monstercameron/earlcameron/internal/anime"
 	"github.com/monstercameron/earlcameron/internal/openai"
@@ -177,7 +178,24 @@ func (s *Service) TailorResume(ctx context.Context, req *sitepb.TailorRequest) (
 	for _, r := range res.Rationales {
 		out.Rationales = append(out.Rationales, &sitepb.Rationale{Focus: r.Focus, Reason: r.Reason})
 	}
+	// Persist the result (it cost an OpenAI call) so it survives restarts and can be re-opened.
+	if data, err := protojson.Marshal(out); err == nil {
+		_ = s.store.SaveTailoring(ctx, req.GetJobUrl(), string(data), time.Now().Unix())
+	}
 	return out, nil
+}
+
+// GetLastTailoring returns the most recent saved tailoring (an empty result if none exists).
+func (s *Service) GetLastTailoring(ctx context.Context, _ *sitepb.Empty) (*sitepb.TailorResult, error) {
+	t, ok, err := s.store.LatestTailoring(ctx)
+	if err != nil || !ok {
+		return &sitepb.TailorResult{}, nil
+	}
+	var out sitepb.TailorResult
+	if err := protojson.Unmarshal([]byte(t.Result), &out); err != nil {
+		return &sitepb.TailorResult{}, nil
+	}
+	return &out, nil
 }
 
 // trackedToProto maps a stored tracked show to the wire DTO.

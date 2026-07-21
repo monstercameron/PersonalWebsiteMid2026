@@ -19,17 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminService_Login_FullMethodName           = "/site.v1.AdminService/Login"
-	AdminService_SearchAnime_FullMethodName     = "/site.v1.AdminService/SearchAnime"
-	AdminService_ListTracked_FullMethodName     = "/site.v1.AdminService/ListTracked"
-	AdminService_TrackAnime_FullMethodName      = "/site.v1.AdminService/TrackAnime"
-	AdminService_UntrackAnime_FullMethodName    = "/site.v1.AdminService/UntrackAnime"
-	AdminService_RunReleaseCheck_FullMethodName = "/site.v1.AdminService/RunReleaseCheck"
-	AdminService_GetResume_FullMethodName       = "/site.v1.AdminService/GetResume"
-	AdminService_TailorResume_FullMethodName    = "/site.v1.AdminService/TailorResume"
-	AdminService_GetSettings_FullMethodName     = "/site.v1.AdminService/GetSettings"
-	AdminService_SaveSettings_FullMethodName    = "/site.v1.AdminService/SaveSettings"
-	AdminService_ListModels_FullMethodName      = "/site.v1.AdminService/ListModels"
+	AdminService_Login_FullMethodName            = "/site.v1.AdminService/Login"
+	AdminService_SearchAnime_FullMethodName      = "/site.v1.AdminService/SearchAnime"
+	AdminService_ListTracked_FullMethodName      = "/site.v1.AdminService/ListTracked"
+	AdminService_TrackAnime_FullMethodName       = "/site.v1.AdminService/TrackAnime"
+	AdminService_UntrackAnime_FullMethodName     = "/site.v1.AdminService/UntrackAnime"
+	AdminService_RunReleaseCheck_FullMethodName  = "/site.v1.AdminService/RunReleaseCheck"
+	AdminService_GetResume_FullMethodName        = "/site.v1.AdminService/GetResume"
+	AdminService_TailorResume_FullMethodName     = "/site.v1.AdminService/TailorResume"
+	AdminService_GetSettings_FullMethodName      = "/site.v1.AdminService/GetSettings"
+	AdminService_SaveSettings_FullMethodName     = "/site.v1.AdminService/SaveSettings"
+	AdminService_ListModels_FullMethodName       = "/site.v1.AdminService/ListModels"
+	AdminService_GetLastTailoring_FullMethodName = "/site.v1.AdminService/GetLastTailoring"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -67,6 +68,8 @@ type AdminServiceClient interface {
 	SaveSettings(ctx context.Context, in *Settings, opts ...grpc.CallOption) (*Ack, error)
 	// ListModels returns the chat models available to the stored OpenAI key.
 	ListModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelList, error)
+	// GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
+	GetLastTailoring(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TailorResult, error)
 }
 
 type adminServiceClient struct {
@@ -187,6 +190,16 @@ func (c *adminServiceClient) ListModels(ctx context.Context, in *Empty, opts ...
 	return out, nil
 }
 
+func (c *adminServiceClient) GetLastTailoring(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TailorResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TailorResult)
+	err := c.cc.Invoke(ctx, AdminService_GetLastTailoring_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -222,6 +235,8 @@ type AdminServiceServer interface {
 	SaveSettings(context.Context, *Settings) (*Ack, error)
 	// ListModels returns the chat models available to the stored OpenAI key.
 	ListModels(context.Context, *Empty) (*ModelList, error)
+	// GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
+	GetLastTailoring(context.Context, *Empty) (*TailorResult, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -264,6 +279,9 @@ func (UnimplementedAdminServiceServer) SaveSettings(context.Context, *Settings) 
 }
 func (UnimplementedAdminServiceServer) ListModels(context.Context, *Empty) (*ModelList, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListModels not implemented")
+}
+func (UnimplementedAdminServiceServer) GetLastTailoring(context.Context, *Empty) (*TailorResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLastTailoring not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -484,6 +502,24 @@ func _AdminService_ListModels_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetLastTailoring_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetLastTailoring(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetLastTailoring_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetLastTailoring(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -534,6 +570,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListModels",
 			Handler:    _AdminService_ListModels_Handler,
+		},
+		{
+			MethodName: "GetLastTailoring",
+			Handler:    _AdminService_GetLastTailoring_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

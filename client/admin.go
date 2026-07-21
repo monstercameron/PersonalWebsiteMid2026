@@ -71,7 +71,7 @@ func AdminApp() ui.Node {
 				tracked.Set(list.GetItems())
 			}()
 		case "resume":
-			if resumeData.Get() == nil { // load the canonical résumé for the live render (once)
+			if resumeData.Get() == nil { // load once: the last saved tailoring, else the canonical résumé
 				go func() {
 					c, err := adminClient()
 					if err != nil {
@@ -80,6 +80,12 @@ func AdminApp() ui.Node {
 					}
 					ctx, cancel := callCtx(token.Get())
 					defer cancel()
+					if last, err := c.GetLastTailoring(ctx, &sitepb.Empty{}); err == nil && last.GetResume() != nil {
+						resumeData.Set(last.GetResume())
+						jobAnalysis.Set(last.GetJob())
+						rationales.Set(last.GetRationales())
+						return
+					}
 					r, err := c.GetResume(ctx, &sitepb.Empty{})
 					if onAuthErr(err) || err != nil {
 						return

@@ -36,6 +36,9 @@ Semantic Versioning once released.
   `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
   (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
   The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
+- **Tailoring results persist to SQLite** (`tailorings` table) — each pass (which costs an OpenAI
+  call) is saved and the latest reloads when you open the résumé tool (`GetLastTailoring`). Joins the
+  data already in SQLite: contact messages, tracked anime, and settings.
 - Admin **sub-routing**: `/admin/anime`, `/admin/resume`, `/admin/settings` deep-link to the right
   view, the URL updates on navigation (history API), and browser back/forward works.
 - Résumé tool is now a **live workspace**: a live document render of the résumé (mirrors the `/resume`

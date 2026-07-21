@@ -37,6 +37,8 @@ service AdminService {
   rpc SaveSettings(Settings) returns (Ack);
   // ListModels returns the chat models available to the stored OpenAI key.
   rpc ListModels(Empty) returns (ModelList);
+  // GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
+  rpc GetLastTailoring(Empty) returns (TailorResult);
 }
 
 // Settings is the web-editable configuration. On GetSettings the key is never populated (only

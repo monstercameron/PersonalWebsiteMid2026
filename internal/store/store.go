@@ -64,6 +64,12 @@ func migrate(db *sql.DB) error {
 			key   TEXT PRIMARY KEY,
 			value TEXT NOT NULL DEFAULT ''
 		)`,
+		`CREATE TABLE IF NOT EXISTS tailorings (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			job_url    TEXT    NOT NULL DEFAULT '',
+			result     TEXT    NOT NULL,
+			created_at INTEGER NOT NULL
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
