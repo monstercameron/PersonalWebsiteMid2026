@@ -46,11 +46,11 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project) (string, error)
 		`background:radial-gradient(60vw 50vw at 12% -8%,rgba(190,123,230,.16),transparent 60%),` +
 		`radial-gradient(55vw 55vw at 105% 115%,rgba(233,84,32,.14),transparent 55%),#17040f;` +
 		`background-attachment:fixed}` +
-		`#term-body{scrollbar-width:thin;scrollbar-color:#3a1b2e transparent}` +
+		`#term-body{scrollbar-width:thin;scrollbar-color:#4a4652 transparent}` +
 		`#term-body::-webkit-scrollbar{width:9px}` +
 		`#term-body::-webkit-scrollbar-track{background:transparent}` +
-		`#term-body::-webkit-scrollbar-thumb{background:#3a1b2e;border-radius:8px}` +
-		`#term-body::-webkit-scrollbar-thumb:hover{background:#5a2b44}</style>` +
+		`#term-body::-webkit-scrollbar-thumb{background:#4a4652;border-radius:8px}` +
+		`#term-body::-webkit-scrollbar-thumb:hover{background:#5c5866}</style>` +
 		css.StyleBlock() + `</head><body>`
 	// The wasm terminal mounts into #term-root (rendered inside the hero). The two <script> lines
 	// are the only JavaScript in the project: the wasm bootstrap glue.
@@ -73,15 +73,15 @@ func center(children ...ui.Node) ui.Node {
 
 // sansFont is Cam's voice (proportional sans) for prose, contrasted with the mono machine voice.
 // font-family isn't in css/u, so use the typed css.Property escape hatch.
-var sansFont = css.Property("font-family", `-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif`)
+var sansFont = css.Raw("font-family", `-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif`)
 
 // hero renders the identity block: eyebrow, headline (with accent), thesis (sans), social links,
 // and the launch CTA — matching the mockup. The terminal mounts immediately below (see Page).
 func hero() ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
 		Div(Class(Flex, ItemsCenter, Gap(Spacing3), TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.18))),
-			Span(Class(css.Property("width", "26px"), css.Property("height", "1px"),
-				css.Property("background", "#e95420"), css.Property("display", "inline-block"))),
+			Span(Class(css.Raw("width", "26px"), css.Raw("height", "1px"),
+				css.Raw("background", "#e95420"), css.Raw("display", "inline-block"))),
 			Span("EARL CAMERON · LAUDERHILL, FL"),
 		),
 		H1(Class(FontSize(Rem(2)), Md(FontSize(Rem(2.9))), FontBold, LineHeight(Num(1.06))),
@@ -107,9 +107,9 @@ func hero() ui.Node {
 
 // launchCTA renders the orange call-to-action + pitch that invites using the terminal below.
 func launchCTA() ui.Node {
-	return Div(Class(Flex, ItemsCenter, Gap(Spacing4), css.Property("flex-wrap", "wrap")),
+	return Div(Class(Flex, ItemsCenter, Gap(Spacing4), css.Raw("flex-wrap", "wrap")),
 		Div(Class(Bg(theme.Accent), Fg(Hex("#ffffff")), FontSemibold, Rounded(RadiusLg), PadX(Spacing5), PadY(Spacing3),
-			css.Property("cursor", "pointer")),
+			css.Raw("cursor", "pointer")),
 			"▶ Launch the live terminal"),
 		Div(Class(sansFont, Fg(theme.Dim), TextSize(TextSm), MaxWidth(Px(380))),
 			"Not a screenshot — a real shell wired to a Go backend over gRPC. Every command runs. ",
@@ -135,7 +135,7 @@ func termMount() ui.Node {
 func work(projects []*sitepb.Project) ui.Node {
 	// Responsive auto-fill grid: as many ~260px columns as fit, collapsing to one on mobile.
 	// grid-template-columns isn't in css/u, so use the typed css.Prop escape hatch (not raw CSS).
-	cards := []any{Class(Grid, Gap(Spacing4), css.Property("grid-template-columns", "repeat(auto-fill,minmax(260px,1fr))"))}
+	cards := []any{Class(Grid, Gap(Spacing4), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(260px,1fr))"))}
 	for _, p := range projects {
 		cards = append(cards, card(p))
 	}

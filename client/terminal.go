@@ -134,19 +134,19 @@ func shellLine(o outLine) ui.Node {
 	if o.isErr {
 		c = theme.Red
 	}
-	return Div(Class(Fg(c), css.Property("white-space", "pre-wrap")), strings.TrimRight(o.text, "\n"))
+	return Div(Class(Fg(c), css.Raw("white-space", "pre-wrap")), strings.TrimRight(o.text, "\n"))
 }
 
 // windowFrame renders the terminal window, inline or as a fullscreen modal when expanded.
 func windowFrame(expanded bool, onExpand, onShrink, onFocus ui.Handler, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
-	rules := []any{Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl),
-		css.Property("box-shadow", "0 40px 90px -40px rgba(0,0,0,.8)"), css.Property("overflow", "hidden"),
-		css.Property("display", "flex"), css.Property("flex-direction", "column")}
+	rules := []any{Bg(theme.TermBg), Border(theme.TermBorder), Rounded(RadiusXl),
+		css.Raw("box-shadow", "0 30px 70px -18px rgba(0,0,0,.9)"), css.Raw("overflow", "hidden"),
+		css.Raw("display", "flex"), css.Raw("flex-direction", "column")}
 	if expanded {
 		// Size purely from the four offsets so width never exceeds the viewport (no width:100%).
-		rules = append(rules, css.Property("position", "fixed"), css.Property("top", "24px"),
-			css.Property("left", "24px"), css.Property("right", "24px"), css.Property("bottom", "24px"),
-			css.Property("z-index", "60"))
+		rules = append(rules, css.Raw("position", "fixed"), css.Raw("top", "24px"),
+			css.Raw("left", "24px"), css.Raw("right", "24px"), css.Raw("bottom", "24px"),
+			css.Raw("z-index", "60"))
 	} else {
 		rules = append(rules, WFull, MaxWidth(Px(900)))
 	}
@@ -155,8 +155,8 @@ func windowFrame(expanded bool, onExpand, onShrink, onFocus ui.Handler, prompt s
 		termBody(expanded, onFocus, prompt, sb, inputVal, onInput, onKey),
 	)
 	if expanded {
-		scrim := Div(Class(css.Property("position", "fixed"), css.Property("inset", "0"),
-			css.Property("background", "rgba(9,3,7,.6)"), css.Property("z-index", "55")))
+		scrim := Div(Class(css.Raw("position", "fixed"), css.Raw("inset", "0"),
+			css.Raw("background", "rgba(9,3,7,.6)"), css.Raw("z-index", "55")))
 		return Div(scrim, frame)
 	}
 	return Div(Class(Flex, JustifyCenter, PadX(Spacing6), PadY(Spacing2)), frame)
@@ -164,10 +164,10 @@ func windowFrame(expanded bool, onExpand, onShrink, onFocus ui.Handler, prompt s
 
 // titleBar renders the traffic lights (red = shrink, green = expand), title, and status.
 func titleBar(onExpand, onShrink ui.Handler, expanded bool) ui.Node {
-	return Div(Class(Flex, ItemsCenter, Gap(Spacing2), PadX(Spacing4), PadY(Spacing3),
-		css.Property("border-bottom", "1px solid #3a1b2e")),
+	return Div(Class(Flex, ItemsCenter, Gap(Spacing2), PadX(Spacing4), PadY(Spacing3), Bg(theme.TermBar),
+		css.Raw("border-bottom", "1px solid #38343f")),
 		lightBtn("#ff5f56", "term-shrink", onShrink), light("#ffbd2e"), lightBtn("#27c93f", "term-expand", onExpand),
-		Span(Class(css.Property("flex", "1"), css.Property("text-align", "center"), Fg(theme.Dim), FontSize(Rem(0.82))),
+		Span(Class(css.Raw("flex", "1"), css.Raw("text-align", "center"), Fg(theme.Dim), FontSize(Rem(0.82))),
 			"cameron — zsh — 80×24"),
 		Span(Class(Fg(theme.Dim), FontSize(Rem(0.75))),
 			Span(Class(Fg(theme.Green)), "● "), pick(expanded, "click red to shrink", "live · interactive")),
@@ -176,14 +176,14 @@ func titleBar(onExpand, onShrink ui.Handler, expanded bool) ui.Node {
 
 // light renders a static traffic-light dot.
 func light(hex string) ui.Node {
-	return Span(Class(css.Property("width", "12px"), css.Property("height", "12px"),
-		css.Property("border-radius", "50%"), css.Property("display", "inline-block"), css.Property("background", hex)))
+	return Span(Class(css.Raw("width", "12px"), css.Raw("height", "12px"),
+		css.Raw("border-radius", "50%"), css.Raw("display", "inline-block"), css.Raw("background", hex)))
 }
 
 // lightBtn renders a clickable traffic-light dot with an id (for testability).
 func lightBtn(hex, id string, on ui.Handler) ui.Node {
-	cls := css.New(css.Property("width", "12px"), css.Property("height", "12px"), css.Property("border-radius", "50%"),
-		css.Property("display", "inline-block"), css.Property("cursor", "pointer"), css.Property("background", hex))
+	cls := css.New(css.Raw("width", "12px"), css.Raw("height", "12px"), css.Raw("border-radius", "50%"),
+		css.Raw("display", "inline-block"), css.Raw("cursor", "pointer"), css.Raw("background", hex))
 	return Span(Props{ID: id, Class: string(cls), OnClick: on})
 }
 
@@ -191,18 +191,18 @@ func lightBtn(hex, id string, on ui.Handler) ui.Node {
 func termBody(expanded bool, onFocus ui.Handler, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
 	rules := []any{Pad(Spacing5), Flex, FlexCol, Gap(Spacing2), FontSize(Rem(0.95)), LineHeight(Num(1.6))}
 	if expanded {
-		rules = append(rules, css.Property("flex", "1"), css.Property("overflow-y", "auto"))
+		rules = append(rules, css.Raw("flex", "1"), css.Raw("overflow-y", "auto"))
 	} else {
-		rules = append(rules, css.Property("max-height", "460px"), css.Property("overflow-y", "auto"))
+		rules = append(rules, css.Raw("max-height", "460px"), css.Raw("overflow-y", "auto"))
 	}
 	return Div(Class(rules...), FromProps(Props{ID: "term-body", OnClick: onFocus}), sb, inputLine(prompt, inputVal, onInput, onKey))
 }
 
 // inputLine renders the prompt plus the controlled text input.
 func inputLine(prompt, value string, onInput, onKey ui.Handler) ui.Node {
-	inputCls := css.New(css.Property("background", "transparent"), css.Property("border", "none"),
-		css.Property("outline", "none"), css.Property("color", "#f3e9e6"), css.Property("flex", "1"),
-		css.Property("font", "inherit"), css.Property("margin-left", "8px"), css.Property("caret-color", "#e95420"))
+	inputCls := css.New(css.Raw("background", "transparent"), css.Raw("border", "none"),
+		css.Raw("outline", "none"), css.Raw("color", "#f3e9e6"), css.Raw("flex", "1"),
+		css.Raw("font", "inherit"), css.Raw("margin-left", "8px"), css.Raw("caret-color", "#e95420"))
 	return Div(Class(Flex, ItemsCenter),
 		promptSigil(prompt),
 		Input(Props{ID: "term-input", Class: string(inputCls), Value: value, Placeholder: "type a command…",
@@ -244,11 +244,11 @@ func bootScrollback() []ui.Node {
 // bootLine renders one "OK label ........ value" boot entry.
 func bootLine(label, val string) ui.Node {
 	return Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
-		Span(Class(Fg(theme.Green), FontSize(Rem(0.7)), css.Property("border", "1px solid #3a1b2e"),
-			css.Property("border-radius", "4px"), css.Property("padding", "1px 6px"), css.Property("letter-spacing", "0.1em")), "OK"),
+		Span(Class(Fg(theme.Green), FontSize(Rem(0.7)), css.Raw("border", "1px solid #38343f"),
+			css.Raw("border-radius", "4px"), css.Raw("padding", "1px 6px"), css.Raw("letter-spacing", "0.1em")), "OK"),
 		Span(Class(FontSemibold, Fg(theme.Fg)), label),
-		Span(Class(css.Property("flex", "1"), css.Property("border-bottom", "1px dotted #6f5364"),
-			css.Property("height", "0"), css.Property("transform", "translateY(-3px)"))),
+		Span(Class(css.Raw("flex", "1"), css.Raw("border-bottom", "1px dotted #6f5364"),
+			css.Raw("height", "0"), css.Raw("transform", "translateY(-3px)"))),
 		Span(Class(Fg(theme.Dim)), val),
 	)
 }
@@ -276,7 +276,7 @@ func neofetch() ui.Node {
 func key(s string) ui.Node { return Span(Class(Fg(theme.Accent2)), s) }
 
 // gap renders a blank scrollback line.
-func gap() ui.Node { return Div(Class(css.Property("height", "0.5rem")), " ") }
+func gap() ui.Node { return Div(Class(css.Raw("height", "0.5rem")), " ") }
 
 // pick returns a when cond is true, else b.
 func pick(cond bool, a, b string) string {

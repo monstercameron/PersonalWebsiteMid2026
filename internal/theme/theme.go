@@ -25,3 +25,11 @@ var (
 	Yellow   = u.Hex("#f2b840") // warning
 	Cyan     = u.Hex("#4dd0e1") // info
 )
+
+// Terminal chrome — a near-black macOS-Terminal-style panel that stands out against the
+// aubergine page. Keep the hex values in sync with the raw css.Property borders in the client.
+var (
+	TermBg     = u.Hex("#121016") // near-black terminal background
+	TermBar    = u.Hex("#26242c") // title bar (mac-like dark gray)
+	TermBorder = u.Hex("#38343f") // terminal border
+)
