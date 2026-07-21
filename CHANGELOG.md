@@ -18,8 +18,10 @@ Semantic Versioning once released.
 - Standard site rendered server-side as GWC components with typed CSS (`css/u`), mobile-first
   responsive, served at `/` (SEO + no-WASM failsafe), rendered once at startup.
 - WASM terminal pipeline: the GWC client builds to wasm, boots via a minimal glue script, and
-  mounts over the SSR site with typed CSS (verified rendering in-browser). Placeholder terminal
-  for now; the interactive engine + gRPC programs are next.
+  mounts over the SSR site with typed CSS (verified rendering in-browser).
+- Terminal (wasm): macOS-style window — traffic-light chrome, boot log, neofetch identity splash,
+  and prompt with cursor — styled with typed CSS from theme tokens; screenshot-verified against
+  the mockup. Static for now; the interactive engine + gRPC programs are next.
 ### Changed
 - Colors centralized into `internal/theme` design tokens (quick-ref: DESIGN.md §16).
 - Minimal bootstrap `<style>` (reset + base bg + mono font-family) added to the SSR shell.

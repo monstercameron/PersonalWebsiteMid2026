@@ -6,28 +6,9 @@
 // GOOS=js GOARCH=wasm.
 package main
 
-import (
-	. "github.com/monstercameron/GoWebComponents/v4/css/u"
-	. "github.com/monstercameron/GoWebComponents/v4/html/shorthand"
-	"github.com/monstercameron/GoWebComponents/v4/ui"
-
-	"github.com/monstercameron/earlcameron/internal/theme"
-)
+import "github.com/monstercameron/GoWebComponents/v4/ui"
 
 // main mounts the terminal into the #term-root element placed by the SSR shell.
 func main() {
-	ui.Run("#term-root", root)
-}
-
-// root is the top-level terminal component. For now it proves the wasm + typed-CSS pipeline is
-// live; the interactive engine and gRPC programs land next.
-func root() ui.Node {
-	return Div(Class(Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4),
-		Fg(theme.Fg)),
-		Span(Class(Fg(theme.Green)), "cameron@portfolio"),
-		Span(Class(Fg(theme.Dim)), ":"),
-		Span(Class(Fg(theme.Accent2)), "~"),
-		Span(Class(Fg(theme.Accent)), "$ "),
-		Span("wasm terminal online — gRPC programs next"),
-	)
+	ui.Run("#term-root", Terminal)
 }
