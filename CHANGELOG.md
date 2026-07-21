@@ -59,10 +59,14 @@ Semantic Versioning once released.
   history/less/nano/curl/ssh/tar/man) with pipes `|`, chaining `&&`, `>` redirect, a cwd-aware
   prompt, and **Tab completion** (commands + paths). Verified end-to-end via chromedp (9 checks).
 ### Changed
-- **Admin console rebuilt as GoWebComponents** (`internal/adminui`) — typed `css/u` + `internal/theme`
-  tokens, the same design system as the public site (centered login card, console header/nav, cover-art
-  result cards). The hand-written admin HTML strings + the `adminCSS` blob are gone. Rendered per
-  request under a mutex (the css sink is process-global).
+- **Admin is now a WASM client over gRPC — no longer server-rendered.** The admin console (login,
+  anime tracker, résumé tailor, settings) is a GoWebComponents/WASM app (`client/admin.go`,
+  `adminview.go`, `grpc.go`) that consumes `AdminService` over the GoGRPCBridge WebSocket tunnel.
+  `/admin*` serves only a wasm bootstrap shell; all interactivity is client-side gRPC with the JWT
+  held in `localStorage` and sent in call metadata. The SSR admin (the short-lived `internal/adminui`
+  package) and every admin HTTP form endpoint are removed. `AdminService` gained `GetSettings` /
+  `SaveSettings` / `ListModels` so settings + the model dropdown work over gRPC. Verified end-to-end
+  in a real browser: login → authenticated `ListTracked` → console renders the tracked shows.
 - **Home page indexes every page**: a top nav (`work · résumé · anime · contact · admin`) plus section
   anchors, so all page links live on the single home page.
 - Standard site reworked to match the mockup: hero-first order (orange-dash eyebrow, accent

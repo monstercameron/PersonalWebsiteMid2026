@@ -1,14 +1,24 @@
 //go:build js && wasm
 
-// Command client is the GoWebComponents (Go→WASM) frontend. It mounts the interactive terminal
-// over the server-rendered standard site and (next) dials the backend via gRPC-over-WebSocket.
-// The only JavaScript in the project is the wasm bootstrap that loads this binary. Build:
-// GOOS=js GOARCH=wasm.
+// Command client is the GoWebComponents (Go→WASM) frontend. On the public site it mounts the
+// interactive terminal over the SSR shell; on /admin it mounts the admin console, which talks to
+// the backend purely over gRPC (AdminService via the GoGRPCBridge WebSocket tunnel). The only
+// JavaScript in the project is the wasm bootstrap that loads this binary. Build: GOOS=js GOARCH=wasm.
 package main
 
-import "github.com/monstercameron/GoWebComponents/v4/ui"
+import (
+	"strings"
+	"syscall/js"
 
-// main mounts the terminal into the #term-root element placed by the SSR shell.
+	"github.com/monstercameron/GoWebComponents/v4/ui"
+)
+
+// main mounts the right app for the current path: the admin console under /admin, else the terminal.
 func main() {
+	path := js.Global().Get("location").Get("pathname").String()
+	if strings.HasPrefix(path, "/admin") {
+		ui.Run("#admin-root", AdminApp)
+		return
+	}
 	ui.Run("#term-root", Terminal)
 }

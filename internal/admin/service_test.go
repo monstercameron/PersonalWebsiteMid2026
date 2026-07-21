@@ -28,9 +28,9 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	}
 	defer st.Close()
 
-	sessions := NewSessions("cam", "secret-pw", "test-secret", false)
+	sessions := NewSessions("cam", "secret-pw", "test-secret")
 	// empty OpenAI key → tailoring disabled
-	svc := NewService(anime.New(st), sessions, func(context.Context) (string, string) { return "", "gpt-4o-mini" })
+	svc := NewService(anime.New(st), sessions, st, func(context.Context) (string, string) { return "", "gpt-4o-mini" })
 
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))

@@ -30,6 +30,25 @@ service AdminService {
   // TailorResume fetches a job posting and returns a résumé re-emphasized to fit it. The result
   // is constrained to the canonical résumé — the model cannot fabricate employers/skills/etc.
   rpc TailorResume(TailorRequest) returns (Resume);
+  // GetSettings returns the current settings (the API key is never returned — only whether one is set).
+  rpc GetSettings(Empty) returns (Settings);
+  // SaveSettings persists settings. A blank openai_api_key leaves the stored key unchanged.
+  rpc SaveSettings(Settings) returns (Ack);
+  // ListModels returns the chat models available to the stored OpenAI key.
+  rpc ListModels(Empty) returns (ModelList);
+}
+
+// Settings is the web-editable configuration. On GetSettings the key is never populated (only
+// key_set); on SaveSettings a non-empty openai_api_key is stored and a blank one is ignored.
+message Settings {
+  string openai_api_key = 1;
+  string openai_model = 2;
+  bool key_set = 3;
+}
+
+// ModelList is the set of selectable model ids.
+message ModelList {
+  repeated string models = 1;
 }
 
 // Empty is a no-argument request.

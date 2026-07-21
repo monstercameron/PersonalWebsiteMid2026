@@ -5,11 +5,14 @@ package admin
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/monstercameron/earlcameron/internal/anime"
+	"github.com/monstercameron/earlcameron/internal/openai"
 	"github.com/monstercameron/earlcameron/internal/resume"
 	"github.com/monstercameron/earlcameron/internal/store"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
@@ -22,21 +25,63 @@ type Service struct {
 	sitepb.UnimplementedAdminServiceServer
 	anime    *anime.Service
 	sessions *Sessions
+	store    *store.Store
 	// openAI resolves the effective OpenAI key + model at call time (a DB setting overrides the env
 	// default), so a key added via the settings page takes effect without a restart. Empty key
 	// disables résumé tailoring.
 	openAI func(context.Context) (key, model string)
 }
 
-// NewService builds the admin gRPC service over the anime service, session manager, and an OpenAI
-// config resolver.
-func NewService(a *anime.Service, s *Sessions, openAI func(context.Context) (string, string)) *Service {
-	return &Service{anime: a, sessions: s, openAI: openAI}
+// NewService builds the admin gRPC service over the anime service, session manager, store (for
+// web-editable settings), and an OpenAI config resolver.
+func NewService(a *anime.Service, s *Sessions, st *store.Store, openAI func(context.Context) (string, string)) *Service {
+	return &Service{anime: a, sessions: s, store: st, openAI: openAI}
+}
+
+// GetSettings returns the current settings — the API key itself is never returned, only whether one
+// is configured (key_set) plus the effective model.
+func (s *Service) GetSettings(ctx context.Context, _ *sitepb.Empty) (*sitepb.Settings, error) {
+	key, model := s.openAI(ctx)
+	return &sitepb.Settings{OpenaiModel: model, KeySet: key != ""}, nil
+}
+
+// SaveSettings persists submitted settings. A blank openai_api_key leaves the stored key unchanged.
+func (s *Service) SaveSettings(ctx context.Context, req *sitepb.Settings) (*sitepb.Ack, error) {
+	if k := strings.TrimSpace(req.GetOpenaiApiKey()); k != "" {
+		if err := s.store.SetSetting(ctx, store.SettingOpenAIKey, k); err != nil {
+			return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+		}
+	}
+	if m := strings.TrimSpace(req.GetOpenaiModel()); m != "" {
+		if err := s.store.SetSetting(ctx, store.SettingOpenAIModel, m); err != nil {
+			return &sitepb.Ack{Ok: false, Message: err.Error()}, nil
+		}
+	}
+	return &sitepb.Ack{Ok: true}, nil
+}
+
+// ListModels returns the chat models available to the stored OpenAI key (empty if no key / on error).
+func (s *Service) ListModels(ctx context.Context, _ *sitepb.Empty) (*sitepb.ModelList, error) {
+	key, _ := s.openAI(ctx)
+	if key == "" {
+		return &sitepb.ModelList{}, nil
+	}
+	models, err := openai.ListModels(ctx, key)
+	if err != nil {
+		return &sitepb.ModelList{}, nil // best-effort; the client falls back to a text field
+	}
+	return &sitepb.ModelList{Models: models}, nil
 }
 
 // Login exchanges the admin password for a signed session token used by every other method.
-func (s *Service) Login(_ context.Context, req *sitepb.LoginRequest) (*sitepb.LoginReply, error) {
+func (s *Service) Login(ctx context.Context, req *sitepb.LoginRequest) (*sitepb.LoginReply, error) {
 	if !s.sessions.CheckCredentials(req.GetUsername(), req.GetPassword()) {
+		// Throttle brute-forcing: a fixed delay on failure caps attempts to ~1/sec per connection
+		// without a lockout that a griefer could use to lock the owner out.
+		select {
+		case <-time.After(time.Second):
+		case <-ctx.Done():
+		}
 		return &sitepb.LoginReply{Ok: false}, nil
 	}
 	return &sitepb.LoginReply{Ok: true, Token: s.sessions.Mint()}, nil

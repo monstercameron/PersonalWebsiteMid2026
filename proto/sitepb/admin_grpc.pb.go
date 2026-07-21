@@ -27,6 +27,9 @@ const (
 	AdminService_RunReleaseCheck_FullMethodName = "/site.v1.AdminService/RunReleaseCheck"
 	AdminService_GetResume_FullMethodName       = "/site.v1.AdminService/GetResume"
 	AdminService_TailorResume_FullMethodName    = "/site.v1.AdminService/TailorResume"
+	AdminService_GetSettings_FullMethodName     = "/site.v1.AdminService/GetSettings"
+	AdminService_SaveSettings_FullMethodName    = "/site.v1.AdminService/SaveSettings"
+	AdminService_ListModels_FullMethodName      = "/site.v1.AdminService/ListModels"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -57,6 +60,12 @@ type AdminServiceClient interface {
 	// TailorResume fetches a job posting and returns a résumé re-emphasized to fit it. The result
 	// is constrained to the canonical résumé — the model cannot fabricate employers/skills/etc.
 	TailorResume(ctx context.Context, in *TailorRequest, opts ...grpc.CallOption) (*Resume, error)
+	// GetSettings returns the current settings (the API key is never returned — only whether one is set).
+	GetSettings(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Settings, error)
+	// SaveSettings persists settings. A blank openai_api_key leaves the stored key unchanged.
+	SaveSettings(ctx context.Context, in *Settings, opts ...grpc.CallOption) (*Ack, error)
+	// ListModels returns the chat models available to the stored OpenAI key.
+	ListModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelList, error)
 }
 
 type adminServiceClient struct {
@@ -147,6 +156,36 @@ func (c *adminServiceClient) TailorResume(ctx context.Context, in *TailorRequest
 	return out, nil
 }
 
+func (c *adminServiceClient) GetSettings(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Settings, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Settings)
+	err := c.cc.Invoke(ctx, AdminService_GetSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SaveSettings(ctx context.Context, in *Settings, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_SaveSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ModelList)
+	err := c.cc.Invoke(ctx, AdminService_ListModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -175,6 +214,12 @@ type AdminServiceServer interface {
 	// TailorResume fetches a job posting and returns a résumé re-emphasized to fit it. The result
 	// is constrained to the canonical résumé — the model cannot fabricate employers/skills/etc.
 	TailorResume(context.Context, *TailorRequest) (*Resume, error)
+	// GetSettings returns the current settings (the API key is never returned — only whether one is set).
+	GetSettings(context.Context, *Empty) (*Settings, error)
+	// SaveSettings persists settings. A blank openai_api_key leaves the stored key unchanged.
+	SaveSettings(context.Context, *Settings) (*Ack, error)
+	// ListModels returns the chat models available to the stored OpenAI key.
+	ListModels(context.Context, *Empty) (*ModelList, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -208,6 +253,15 @@ func (UnimplementedAdminServiceServer) GetResume(context.Context, *Empty) (*Resu
 }
 func (UnimplementedAdminServiceServer) TailorResume(context.Context, *TailorRequest) (*Resume, error) {
 	return nil, status.Error(codes.Unimplemented, "method TailorResume not implemented")
+}
+func (UnimplementedAdminServiceServer) GetSettings(context.Context, *Empty) (*Settings, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSettings not implemented")
+}
+func (UnimplementedAdminServiceServer) SaveSettings(context.Context, *Settings) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveSettings not implemented")
+}
+func (UnimplementedAdminServiceServer) ListModels(context.Context, *Empty) (*ModelList, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListModels not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -374,6 +428,60 @@ func _AdminService_TailorResume_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetSettings(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SaveSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Settings)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SaveSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SaveSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SaveSettings(ctx, req.(*Settings))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListModels(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -412,6 +520,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TailorResume",
 			Handler:    _AdminService_TailorResume_Handler,
+		},
+		{
+			MethodName: "GetSettings",
+			Handler:    _AdminService_GetSettings_Handler,
+		},
+		{
+			MethodName: "SaveSettings",
+			Handler:    _AdminService_SaveSettings_Handler,
+		},
+		{
+			MethodName: "ListModels",
+			Handler:    _AdminService_ListModels_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
