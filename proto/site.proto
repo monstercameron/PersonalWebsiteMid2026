@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package site.v1;
+
+option go_package = "github.com/monstercameron/earlcameron/proto/sitepb;sitepb";
+
+// Public content — the single source of truth read by BOTH the terminal (`projects`/`open`,
+// `about`) and the server-rendered standard site, so the two front doors never drift.
+service ContentService {
+  rpc GetAbout(LocaleRequest) returns (About);
+  rpc ListProjects(LocaleRequest) returns (ProjectList);
+  rpc GetProject(ProjectRequest) returns (Project);
+}
+
+// Contact — visitor messages, stored server-side.
+service ContactService {
+  rpc SendMessage(ContactMessage) returns (Ack);
+}
+
+// Ack is a generic write acknowledgement.
+message Ack {
+  bool ok = 1;
+  string message = 2;
+}
+
+// LocaleRequest selects the language for localized content (falls back to English).
+message LocaleRequest {
+  string locale = 1;
+}
+
+// ProjectRequest identifies one project by id.
+message ProjectRequest {
+  string id = 1;
+  string locale = 2;
+}
+
+// About is the identity/thesis copy shown in the hero and `about`.
+message About {
+  string headline = 1;
+  string body = 2;
+}
+
+// Project is one portfolio entry.
+message Project {
+  string id = 1;
+  string name = 2;
+  string status = 3;
+  string glyph = 4;
+  string blurb = 5;
+  string long = 6;
+  string repo = 7;
+  string demo = 8;
+  repeated string tags = 9;
+}
+
+// ProjectList is the featured set, in display order.
+message ProjectList {
+  repeated Project projects = 1;
+}
+
+// ContactMessage is a visitor's inbound message.
+message ContactMessage {
+  string name = 1;
+  string email = 2;
+  string body = 3;
+}
