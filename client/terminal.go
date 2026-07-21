@@ -72,8 +72,12 @@ func Terminal() ui.Node {
 	})
 	onExpand := ui.UseEvent(func() { expanded.Set(true) })
 	onShrink := ui.UseEvent(func() { expanded.Set(false) })
-	// Clicking anywhere in the terminal body focuses the input (don't make the user hit the line).
+	// Clicking anywhere in the terminal body focuses the input — but NOT while the user is
+	// selecting text (focusing the input would clear the selection).
 	onFocus := ui.UseEvent(func() {
+		if sel := js.Global().Get("window").Call("getSelection"); sel.Truthy() && sel.Call("toString").String() != "" {
+			return
+		}
 		if inp := js.Global().Get("document").Call("getElementById", "term-input"); inp.Truthy() {
 			inp.Call("focus", map[string]interface{}{"preventScroll": true})
 		}
@@ -189,7 +193,8 @@ func lightBtn(hex, id string, on ui.Handler) ui.Node {
 
 // termBody renders the scrollback and the live input line.
 func termBody(expanded bool, onFocus ui.Handler, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
-	rules := []any{Pad(Spacing5), Flex, FlexCol, Gap(Spacing2), FontSize(Rem(0.95)), LineHeight(Num(1.6))}
+	rules := []any{Pad(Spacing5), Flex, FlexCol, Gap(Spacing2), FontSize(Rem(0.95)), LineHeight(Num(1.6)),
+		css.Raw("user-select", "text"), css.Raw("-webkit-user-select", "text")}
 	if expanded {
 		rules = append(rules, css.Raw("flex", "1"), css.Raw("overflow-y", "auto"))
 	} else {

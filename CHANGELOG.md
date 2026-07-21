@@ -45,5 +45,7 @@ Semantic Versioning once released.
 - Terminal modal no longer overflows the right edge (removed `width:100%` that fought the fixed
   insets); it now sizes purely from top/left/right/bottom offsets.
 - Terminal: clicking anywhere in the body focuses the input (no need to hit the prompt line).
+- Terminal: text is selectable again — click-to-focus no longer clears an active selection, and
+  the body is explicitly `user-select: text`. (Verified via a chromedp mouse-drag selection.)
 ### Security
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.
