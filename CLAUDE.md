@@ -15,7 +15,8 @@ Claude-specific notes.
   touching ANY UI, every time — new components, small tweaks, CSS/layout, motion, or
   user-facing copy, not just big screens. Then follow the locked design language in
   `documents/DESIGN.md` (macOS chrome, Ubuntu-souled "Aubergine" palette, two voices,
-  motion-with-restraint, reduced-motion + a11y floor).
+  motion-with-restraint, reduced-motion + a11y floor). **Colors come from `internal/theme`
+  tokens** (DESIGN.md §16) — never ad-hoc `u.Hex()`; spacing/radii/fonts use `css/u` defaults.
 - **Adversarial review is mandatory** for substantive changes: after doing the work, **spawn
   review subagent(s)** tasked with aggressively breaking your output — correctness, security,
   performance, and needless complexity — default to skepticism, fix every real finding, and

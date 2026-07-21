@@ -9,25 +9,15 @@ import (
 	. "github.com/monstercameron/GoWebComponents/v4/html/shorthand"
 	"github.com/monstercameron/GoWebComponents/v4/ui"
 
+	"github.com/monstercameron/earlcameron/internal/theme"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
 
-// Aubergine palette (Ubuntu-souled): deep aubergine ground, warm off-white text, Ubuntu-orange
-// accent, purple secondary. See documents/DESIGN.md.
-var (
-	cBg      = Hex("#17040f")
-	cBg2     = Hex("#210a19")
-	cFg      = Hex("#f3e9e6")
-	cDim     = Hex("#a98ba0")
-	cBorder  = Hex("#3a1b2e")
-	cAccent  = Hex("#e95420")
-	cAccent2 = Hex("#be7be6")
-	cGreen   = Hex("#8ae234")
-)
+// Colors come from the shared token package (internal/theme); see documents/DESIGN.md.
 
 // Page renders the full standard site for the given content.
 func Page(about *sitepb.About, projects []*sitepb.Project) ui.Node {
-	return Div(Class(Bg(cBg), Fg(cFg)),
+	return Div(Class(Bg(theme.Bg), Fg(theme.Fg)),
 		center(
 			hero(about),
 			work(projects),
@@ -63,17 +53,17 @@ func center(children ...ui.Node) ui.Node {
 // hero renders the identity block: eyebrow, headline, thesis, and social links.
 func hero(about *sitepb.About) ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing10)),
-		Div(Class(TextSize(TextSm), Fg(cAccent), Tracking(Ems(0.2))), "EARL CAMERON · LAUDERHILL, FL"),
+		Div(Class(TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.2))), "EARL CAMERON · LAUDERHILL, FL"),
 		H1(Class(FontSize(Rem(2)), Md(FontSize(Rem(2.8))), FontBold, LineHeight(Num(1.08))), about.GetHeadline()),
-		P(Class(FontSize(Rem(1.05)), Md(FontSize(Rem(1.15))), Fg(cDim), MaxWidth(Px(640))), about.GetBody()),
+		P(Class(FontSize(Rem(1.05)), Md(FontSize(Rem(1.15))), Fg(theme.Dim), MaxWidth(Px(640))), about.GetBody()),
 		Div(Class(Flex, Gap(Spacing5), TextSize(TextSm)),
 			extLink("https://github.com/monstercameron", "github"),
 			extLink("https://www.earlcameron.com", "earlcameron.com"),
-			A(Class(Fg(cAccent2)), Props{Href: "mailto:mr.e.cameron@gmail.com"}, "email"),
+			A(Class(Fg(theme.Accent2)), Props{Href: "mailto:mr.e.cameron@gmail.com"}, "email"),
 		),
-		Div(Class(TextSize(TextSm), Fg(cDim)),
+		Div(Class(TextSize(TextSm), Fg(theme.Dim)),
 			"Prefer a shell? This site has a live terminal — enable JavaScript and type ",
-			Span(Class(Fg(cAccent)), "help"), "."),
+			Span(Class(Fg(theme.Accent)), "help"), "."),
 	)
 }
 
@@ -94,20 +84,20 @@ func work(projects []*sitepb.Project) ui.Node {
 func card(p *sitepb.Project) ui.Node {
 	tags := []any{Class(Flex, Gap(Spacing2))}
 	for _, t := range p.GetTags() {
-		tags = append(tags, Span(Class(TextSize(TextSm), Fg(cDim), Border(cBorder), Rounded(RadiusLg), PadX(Spacing2)), t))
+		tags = append(tags, Span(Class(TextSize(TextSm), Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2)), t))
 	}
 	links := []any{Class(Flex, Gap(Spacing4), TextSize(TextSm)),
-		A(Class(Fg(cAccent2)), Props{Href: p.GetRepo(), Target: "_blank", Rel: "noopener"}, "code ↗")}
+		A(Class(Fg(theme.Accent2)), Props{Href: p.GetRepo(), Target: "_blank", Rel: "noopener"}, "code ↗")}
 	if p.GetDemo() != "" {
-		links = append(links, A(Class(Fg(cAccent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "demo ↗"))
+		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "demo ↗"))
 	}
-	return Div(Class(Bg(cBg2), Border(cBorder), Rounded(RadiusXl), Pad(Spacing5), Flex, FlexCol, Gap(Spacing3),
-		Transition(PropAll, Ms(160), Ease), Hover(Border(cAccent))),
+	return Div(Class(Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing5), Flex, FlexCol, Gap(Spacing3),
+		Transition(PropAll, Ms(160), Ease), Hover(Border(theme.Accent))),
 		Div(Class(Flex, JustifyBetween, ItemsCenter),
-			Span(Class(FontSemibold, Fg(cAccent)), p.GetGlyph()+"  "+p.GetName()),
-			Span(Class(TextSize(TextSm), Fg(cGreen)), p.GetStatus()),
+			Span(Class(FontSemibold, Fg(theme.Accent)), p.GetGlyph()+"  "+p.GetName()),
+			Span(Class(TextSize(TextSm), Fg(theme.Green)), p.GetStatus()),
 		),
-		P(Class(Fg(cDim), TextSize(TextSm)), p.GetBlurb()),
+		P(Class(Fg(theme.Dim), TextSize(TextSm)), p.GetBlurb()),
 		Div(tags...),
 		Div(links...),
 	)
@@ -116,16 +106,16 @@ func card(p *sitepb.Project) ui.Node {
 // how renders the "how this site works" architecture section.
 func how() ui.Node {
 	row := func(n, title, body string) ui.Node {
-		return Div(Class(Flex, FlexCol, Gap(Spacing2), Md(FlexRow, Gap(Spacing3)), Pad(Spacing4), Border(cBorder)),
-			Span(Class(Fg(cAccent)), n),
+		return Div(Class(Flex, FlexCol, Gap(Spacing2), Md(FlexRow, Gap(Spacing3)), Pad(Spacing4), Border(theme.Border)),
+			Span(Class(Fg(theme.Accent)), n),
 			Span(Class(FontSemibold), title),
-			Span(Class(Fg(cDim), TextSize(TextSm)), body),
+			Span(Class(Fg(theme.Dim), TextSize(TextSm)), body),
 		)
 	}
 	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
 		label("uname -a · how this site works"),
 		sectionH2("The medium is the résumé."),
-		Div(Class(Flex, FlexCol, Bg(cBg2), Rounded(RadiusXl)),
+		Div(Class(Flex, FlexCol, Bg(theme.BgRaised), Rounded(RadiusXl)),
 			row("01", "GoWebComponents", "the frontend is Go compiled to WebAssembly, a framework I wrote. Zero npm."),
 			row("02", "gRPC bridge", "the browser speaks gRPC-over-WebSocket through GoGRPCBridge. One same-origin socket."),
 			row("03", "Go backend", "a real gRPC server streams content, stores messages, powers live status."),
@@ -138,16 +128,16 @@ func contact() ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing6)),
 		label("./contact"),
 		sectionH2("Let's build something."),
-		P(Class(Fg(cDim)),
+		P(Class(Fg(theme.Dim)),
 			"Email me at ",
-			A(Class(Fg(cAccent)), Props{Href: "mailto:mr.e.cameron@gmail.com"}, "mr.e.cameron@gmail.com"),
+			A(Class(Fg(theme.Accent)), Props{Href: "mailto:mr.e.cameron@gmail.com"}, "mr.e.cameron@gmail.com"),
 			". The terminal has a live contact form over gRPC."),
 	)
 }
 
 // footer renders the site footer.
 func footer() ui.Node {
-	return Div(Class(Flex, FlexCol, Gap(Spacing2), Md(FlexRow, JustifyBetween), PadY(Spacing8), Border(cBorder), Fg(cDim), TextSize(TextSm)),
+	return Div(Class(Flex, FlexCol, Gap(Spacing2), Md(FlexRow, JustifyBetween), PadY(Spacing8), Border(theme.Border), Fg(theme.Dim), TextSize(TextSm)),
 		Span("built with GoWebComponents · Go · gRPC"),
 		Span("© 2026 Earl Cameron"),
 	)
@@ -160,10 +150,10 @@ func sectionH2(text string) ui.Node {
 
 // label renders a mono-style section eyebrow.
 func label(text string) ui.Node {
-	return Div(Class(TextSize(TextSm), Fg(cAccent), Tracking(Ems(0.15))), text)
+	return Div(Class(TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.15))), text)
 }
 
 // extLink renders an external link that opens in a new tab.
 func extLink(href, text string) ui.Node {
-	return A(Class(Fg(cAccent2)), Props{Href: href, Target: "_blank", Rel: "noopener"}, text)
+	return A(Class(Fg(theme.Accent2)), Props{Href: href, Target: "_blank", Rel: "noopener"}, text)
 }

@@ -17,5 +17,7 @@ Semantic Versioning once released.
 - `ContactService` + pure-Go SQLite store (modernc.org/sqlite): validated messages persisted.
 - Standard site rendered server-side as GWC components with typed CSS (`css/u`), mobile-first
   responsive, served at `/` (SEO + no-WASM failsafe), rendered once at startup.
+### Changed
+- Colors centralized into `internal/theme` design tokens (quick-ref: DESIGN.md §16).
 ### Security
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.

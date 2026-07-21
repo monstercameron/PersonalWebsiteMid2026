@@ -33,7 +33,9 @@ the proof of work: hand-built Go, top to bottom. See `README.md`, `documents/DES
    logic. If you think you need JS, you almost certainly need a GWC component instead.
 7. **Style with GWC, never raw CSS.** Use GWC's typed CSS + `tw` funcs for ALL styling. Do NOT
    hand-write `.css` files or inline raw CSS strings — the styling system is typed and
-   compile-checked for a reason. (Learned the hard way 2026-07-21.)
+   compile-checked for a reason. (Learned the hard way 2026-07-21.) **All colors come from the
+   shared token package `internal/theme`** (quick-ref table in `documents/DESIGN.md` §16) — never
+   scatter ad-hoc `u.Hex()` values. Spacing/radii/font-sizes use `css/u` defaults.
 
 ## Tool routing — local vs backend-routed
 Every terminal program is one of:

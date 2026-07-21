@@ -350,6 +350,31 @@ Captured here; enforced via `AGENTS.md` / `CLAUDE.md`.
   source of truth shared by the Go server and Go/WASM client — no `map[string]any` between
   layers; every function/method (exported *and* unexported) carries a doc comment.
 
+## 16. Design tokens (code) — `internal/theme`
+
+Colors live **once** in **`internal/theme`** (Go tokens, typed `css/u` colors) and are used across
+all UI — SSR site, terminal, admin. **Never scatter ad-hoc `u.Hex()` values; import the token.** A
+palette change is then one edit.
+
+| Token (`theme.`) | Hex | Role |
+|---|---|---|
+| `Bg` | `#17040F` | deep aubergine ground |
+| `BgRaised` | `#210A19` | raised surfaces (cards, panels) |
+| `Fg` | `#F3E9E6` | warm off-white text |
+| `Dim` | `#A98BA0` | muted mauve — secondary text |
+| `Faint` | `#6F5364` | hints, placeholders |
+| `Border` | `#3A1B2E` | aubergine-tinted border |
+| `Accent` | `#E95420` | Ubuntu orange — prompt, cursor, CTA, active |
+| `Accent2` | `#BE7BE6` | purple — links, secondary highlights |
+| `Green` | `#8AE234` | success / status |
+| `Red` | `#EF5350` | error |
+| `Yellow` | `#F2B840` | warning |
+| `Cyan` | `#4DD0E1` | info |
+
+Spacing, radii, and font sizes are **not** re-tokenized — use `css/u` defaults directly
+(`Spacing2..10`, `RadiusLg`/`RadiusXl`, `TextSm`, `FontSize(Rem(n))`, and `Md(...)` for the 768px
+breakpoint).
+
 ---
 
 *Interactive prototype: [`../design/mockup.html`](../design/mockup.html) (static mock; the
