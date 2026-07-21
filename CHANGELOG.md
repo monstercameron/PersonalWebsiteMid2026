@@ -25,6 +25,9 @@ Semantic Versioning once released.
 - Terminal is now **interactive**: a controlled input (GWC `UseState`/`UseEvent`) runs the
   portfolio programs (`help`/`about`/`projects`/`open`/`neofetch`/`links`/`contact`) and the
   window **expands/shrinks** to a fullscreen modal (green/red lights).
+- Recruiter notes in the terminal's `notes/` folder — `cat notes/about.md`, `experience.md`,
+  `skills.md`, `projects.md`, `working-style.md`: professional, tech-fit content for curious
+  recruiters exploring the shell (VFS cache bumped to v2).
 - Terminal **faux Unix shell** over a **localStorage-cached virtual filesystem**: ~30 commands
   (pwd/ls/cd/mkdir/touch/cp/mv/rm/cat/head/tail/echo/grep/find/sort/uniq/cut/sed/awk/wc/du/df/
   history/less/nano/curl/ssh/tar/man) with pipes `|`, chaining `&&`, `>` redirect, a cwd-aware

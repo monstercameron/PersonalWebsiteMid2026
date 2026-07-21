@@ -237,7 +237,7 @@ func bootScrollback() []ui.Node {
 		neofetch(),
 		gap(),
 		Div(Class(Fg(theme.Faint), FontSize(Rem(0.85))),
-			"Welcome. Type ", key("help"), " — try ", key("projects"), ", ", key("ls"), ", ", key("cat notes/todo.txt"), ". Tab completes."),
+			"Welcome. Type ", key("help"), " — recruiters, ", key("cat notes/about.md"), ". Tab completes."),
 	}
 }
 

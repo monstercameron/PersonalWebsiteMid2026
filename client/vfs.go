@@ -23,7 +23,7 @@ type vfs struct {
 	cwd  []string
 }
 
-const vfsKey = "earlcameron.vfs.v1"
+const vfsKey = "earlcameron.vfs.v2"
 
 // newVFS loads the cached filesystem, or seeds a fresh one, and starts in the home directory.
 func newVFS() *vfs {
@@ -41,27 +41,106 @@ func dir(children map[string]*fnode) *fnode { return &fnode{Dir: true, Children:
 // file makes a file node with the given content.
 func file(content string) *fnode { return &fnode{Content: content} }
 
-// seedTree builds the initial /home/cam filesystem.
+// seedTree builds the initial /home/cam filesystem, including recruiter-facing notes.
 func seedTree() *fnode {
 	return dir(map[string]*fnode{
 		"home": dir(map[string]*fnode{
 			"cam": dir(map[string]*fnode{
-				"about.md":   file("AI-native systems engineer. I build ambitious things fast by pairing systems judgment with LLM leverage.\n"),
+				"about.md":   file(aboutMD),
 				"resume.pdf": file("%PDF-1.4 (faux) — run `resume` on the site to download the real one.\n"),
 				"projects": dir(map[string]*fnode{
-					"gwc.md":        file("GoWebComponents — a React-style UI framework in Go→WASM. This site runs on it.\n"),
-					"cashflux.md":   file("CashFlux — local-first budgeting, all Go/WASM, no JS framework.\n"),
-					"wasibrowser.md": file("WASIBrowser — a no-JavaScript browser that renders WebAssembly apps.\n"),
+					"gwc.md":         file("GoWebComponents — a React-style UI framework in Go→WASM. This site runs on it.\n"),
+					"cashflux.md":    file("CashFlux — local-first budgeting, all Go/WASM, no JS framework.\n"),
+					"wasibrowser.md":  file("WASIBrowser — a no-JavaScript browser that renders WebAssembly apps.\n"),
 				}),
 				"notes": dir(map[string]*fnode{
-					"todo.txt": file("TODO: ship the terminal\nTODO: wire gRPC programs\ndone: match the mockup\nTODO: i18n pass\n"),
-					"ideas.txt": file("agent-native assembly\non-device LLMs\na browser with no javascript\n"),
+					"README.md":         file(notesReadme),
+					"experience.md":     file(experienceMD),
+					"skills.md":         file(skillsMD),
+					"projects.md":       file(projectsMD),
+					"working-style.md":  file(workingStyleMD),
 				}),
 				".secrets": file("nice try 😏\n"),
 			}),
 		}),
 	})
 }
+
+// --- recruiter-facing notes (professional, tech-fit content only) ---
+
+const aboutMD = `Earl Cameron — AI-native systems engineer · Lauderhill, FL
+
+Senior software engineer (UKG, since 2020). I build production systems across the stack — Go,
+C#/.NET on the backend; React, Angular, TypeScript on the front — and I ship fast by pairing deep
+systems judgment with LLMs in the loop. Recently focused on agentic systems and AI infrastructure.
+
+Curious recruiter? ` + "`ls notes`" + ` and read on.
+`
+
+const notesReadme = `notes/ — a quick briefing for recruiters.
+
+  cat notes/experience.md      roles, impact, education
+  cat notes/skills.md          languages, frameworks, infra, AI/ML
+  cat notes/projects.md        open-source work (github.com/monstercameron)
+  cat notes/working-style.md   how I operate
+
+Everything here is public and professional. The rest of the terminal is a playground —
+type ` + "`help`" + ` or ` + "`projects`" + `.
+`
+
+const experienceMD = `EXPERIENCE
+
+UKG — Software Engineer (P3 / Senior)                                    2020 – present
+  HCM domain, and more recently an agentic-systems / AI-infrastructure org (agents & AI tooling).
+  Selected work:
+    · Angular → React modernization (React, Tremor, Node, MS SQL Server)
+    · Unified Search micro-frontend
+    · "48 Hours" ChatAssistant
+    · Bryte ChangeJob proof-of-concept
+    · HCM Pillar Dashboard
+    · Go store/send benchmarks; client-per-core capacity experiments
+    · Provider registries; authentication & session systems
+    · SQL performance work (CXPACKET / SOS_SCHEDULER_YIELD); throughput & priority stored procs
+
+EDUCATION
+  B.S. Information Technology — Florida International University (FIU)
+  A.S. Information Technology — Miami Dade College
+`
+
+const skillsMD = `SKILLS
+
+  Languages   Go · C# · TypeScript / JavaScript · Python   (Rust, C — exploratory)
+  Frontend    React · Angular · Blazor / Razor · Tailwind · WebAssembly (Go→WASM)
+  Backend     .NET · Node · Flask · gRPC · REST
+  Data        MS SQL Server · MySQL · MongoDB · SQLite
+  Infra       Docker · IIS · WSL2 · GCP · DigitalOcean · Nginx
+  AI / ML     OpenAI & Anthropic APIs · LangChain · FAISS · Whisper · Stable Diffusion ·
+              local LLM runtimes · on-device inference (Snapdragon NPU, QNN, ONNX Runtime GenAI,
+              INT4 quantization)
+  Workflow    AI-native — Claude Code, Copilot, Cursor; heavy but measured LLM use
+`
+
+const projectsMD = `SELECTED OPEN-SOURCE WORK   github.com/monstercameron
+
+  GoWebComponents     A React-style UI framework in Go→WASM. This site runs on it.
+  GoGRPCBridge        gRPC over WebSockets for the browser — no proxy. Carries this site's traffic.
+  CashFlux            Local-first budgeting suite in Go/WASM — 40+ pages, rules engine, AI layer.
+  WASIBrowser         A no-JavaScript browser that renders WebAssembly apps via a custom ABI.
+  SemanticScript      An agent-first programming language — auditable source designed for LLMs.
+  SemanticAssembly    Agent-native RISC-V assembly layer.
+  SemanticPortrait    Privacy-first journaling → a living self-portrait graph via a local model.
+  Snapdragon LLMs     Running 12–27B models on the Snapdragon X2 NPU/GPU (QNN / ONNX pipelines).
+  Vulkan Path Tracer  Real-time GPU path tracing.
+`
+
+const workingStyleMD = `HOW I WORK
+
+  · Establish the mechanism first, challenge weak assumptions, refine the architecture, then spec.
+  · Direct and technically substantive — comfortable down at low-level architecture.
+  · Honest about feasibility and toolchain limits.
+  · Design sense: dark, polished, engineered-intentional UIs; clean information hierarchy;
+    privacy-first; explainable, reversible operations.
+`
 
 // load restores the filesystem from localStorage. It returns false if nothing was cached.
 func (v *vfs) load() bool {
