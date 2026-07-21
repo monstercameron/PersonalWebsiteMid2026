@@ -41,4 +41,14 @@ anti-pattern; `examples/public/typed-css/counter.go` is the template). (2) Commi
 caught a **CSWSH** hole — my dev `CheckOrigin: return true` allowed any origin; replaced with a
 same-origin + allow-list validator (tested).
 
-**Next.** wasm client + hydration + the minimal bootstrap glue, then the interactive terminal.
+**Terminal + UI (done, same day).** WASM pipeline verified in-browser via headless-Edge
+screenshots — **new discipline: always screenshot-check UI against the mockup** (added to the
+agent files after I once shipped an unverified layout Cam caught). Standard site: responsive
+project **grid** (typed `css.Property` for `grid-template-columns`, since `css/u` lacks it),
+tighter vertical rhythm, and a minimal bootstrap `<style>` for the mono font-family the typed
+system can't express (Cam OK'd a tiny bootstrap). Terminal: built the **macOS-window visual**
+(traffic-light chrome, boot log, neofetch, prompt) in wasm with typed CSS — now matches the
+mockup. Added `scripts/build.sh`. Design tokens centralized to `internal/theme`.
+
+**Next.** Make the terminal interactive: controlled input → command dispatch → gRPC programs
+(projects/about/contact over the tunnel) + local programs (help/theme/clear/neofetch).
