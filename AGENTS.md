@@ -36,6 +36,9 @@ the proof of work: hand-built Go, top to bottom. See `README.md`, `documents/DES
    compile-checked for a reason. (Learned the hard way 2026-07-21.) **All colors come from the
    shared token package `internal/theme`** (quick-ref table in `documents/DESIGN.md` §16) — never
    scatter ad-hoc `u.Hex()` values. Spacing/radii/font-sizes use `css/u` defaults.
+   *One permitted exception:* a **tiny** bootstrap `<style>` (CSS reset, base background/color to
+   avoid a flash, and the base `font-family` the typed system can't express). Keep it minimal —
+   everything else is typed `css/u`.
 
 ## Tool routing — local vs backend-routed
 Every terminal program is one of:
@@ -122,6 +125,14 @@ Then follow the locked design language in `documents/DESIGN.md`: macOS chrome, U
 **Keep the dev server running for UI work.** Whenever you build or change GWC/UI, (re)build and
 run the server in the background so Cam can check your work live in the browser. Tell him the
 URL (`http://127.0.0.1:8095`) and to hard-refresh. Never leave UI changes unviewable.
+
+**Screenshot-check every UI change — no exceptions.** After building or changing ANY UI, take a
+screenshot of the running page and actually LOOK at it, comparing against `design/mockup.html`
+and `documents/DESIGN.md`. Headless Chrome:
+`chrome --headless=new --disable-gpu --screenshot=out.png --window-size=1280,1600 http://127.0.0.1:8095`
+(also capture a mobile width, e.g. `--window-size=420,1600`). Read the PNG and judge it:
+layout, spacing, colors, typography, and the terminal aesthetic must actually match the design.
+**"It compiles and serves" is NOT "it looks right."** Do not call UI work done until you've seen it.
 
 ## Docs discipline
 - **NEVER create a new `.md` file without Cam's explicit instruction.** Update the existing docs

@@ -17,6 +17,9 @@ Claude-specific notes.
   `documents/DESIGN.md` (macOS chrome, Ubuntu-souled "Aubergine" palette, two voices,
   motion-with-restraint, reduced-motion + a11y floor). **Colors come from `internal/theme`
   tokens** (DESIGN.md §16) — never ad-hoc `u.Hex()`; spacing/radii/fonts use `css/u` defaults.
+- **Screenshot-check every UI change — no exceptions**: after any UI change, screenshot the
+  running page (headless Chrome), READ the PNG, and compare to `design/mockup.html` (desktop +
+  mobile) before calling it done. Compiling/serving is not looking right.
 - **Adversarial review is mandatory** for substantive changes: after doing the work, **spawn
   review subagent(s)** tasked with aggressively breaking your output — correctness, security,
   performance, and needless complexity — default to skepticism, fix every real finding, and
