@@ -259,6 +259,7 @@ func animeBody(q string, results []anime.Media, list []store.TrackedAnime) strin
 	var b strings.Builder
 	b.WriteString(`<div class="top"><h1>anime tracker</h1>` +
 		`<form method="post" action="/admin/logout"><button class="ghost">logout</button></form></div>`)
+	b.WriteString(`<div class="feeds"><b>anime</b> &nbsp; <a href="/admin/resume">résumé tool →</a></div>`)
 	b.WriteString(`<div class="feeds">Feeds: <a href="/anime.xml">/anime.xml</a> · ` +
 		`<a href="/anime/qotd.xml">/anime/qotd.xml</a> &nbsp; ` +
 		`<form method="post" action="/admin/anime/check" style="display:inline"><button class="ghost">run release check</button></form></div>`)
