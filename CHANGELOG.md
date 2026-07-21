@@ -31,6 +31,11 @@ Semantic Versioning once released.
   two RSS feeds — `/anime.xml` (Release Radar) and `/anime/qotd.xml` (daily prompts / QOTD) —
   plus a **password-gated config page** at `/admin` (search AniList, track/untrack, run release
   checks). Verified end-to-end (search → track → feed) against live AniList data.
+- **Résumé**: a clean, print-optimized HTML résumé at `/resume` (light professional document,
+  Ubuntu-orange accent, "Save as PDF" action) + an owner-gated **tailoring tool** at
+  `/admin/resume` that fetches a job-posting URL and re-emphasizes real résumé facts to fit it
+  (never fabricates — identity fields are force-preserved; OpenAI, gated behind `OPENAI_API_KEY`).
+  The standard-site "Résumé" card and terminal `resume` now point to `/resume`.
 - Recruiter notes in the terminal's `notes/` folder — `cat notes/about.md`, `experience.md`,
   `skills.md`, `projects.md`, `working-style.md`: professional, tech-fit content for curious
   recruiters exploring the shell (VFS cache bumped to v2).

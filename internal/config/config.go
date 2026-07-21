@@ -24,6 +24,10 @@ type Config struct {
 	AdminSecret string
 	// BaseURL is the public origin, used to build absolute RSS links.
 	BaseURL string
+	// OpenAIKey enables the résumé tailoring tool. Empty disables it. Secret — env only.
+	OpenAIKey string
+	// OpenAIModel is the chat model used for tailoring (default gpt-4o-mini).
+	OpenAIModel string
 }
 
 // Load reads configuration from the environment, applying sane local defaults.
@@ -35,6 +39,8 @@ func Load() Config {
 		AdminPassword:  os.Getenv("ADMIN_PASSWORD"),
 		AdminSecret:    os.Getenv("ADMIN_SECRET"),
 		BaseURL:        env("BASE_URL", "http://127.0.0.1:8095"),
+		OpenAIKey:      os.Getenv("OPENAI_API_KEY"),
+		OpenAIModel:    env("OPENAI_MODEL", "gpt-4o-mini"),
 	}
 }
 

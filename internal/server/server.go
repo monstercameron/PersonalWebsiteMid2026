@@ -114,6 +114,7 @@ func (s *Server) routes() *http.ServeMux {
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 	mux.HandleFunc("/healthz", s.healthz)
 	s.registerAdminRoutes(mux)
+	s.registerResumeRoutes(mux)
 	mux.HandleFunc("/", s.ssrShell)
 	return mux
 }

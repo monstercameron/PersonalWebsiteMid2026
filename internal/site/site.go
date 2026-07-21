@@ -205,7 +205,7 @@ func elsewhere() ui.Node {
 	}
 	grid := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(230px,1fr))"))}
 	grid = append(grid,
-		card("https://www.earlcameron.com/resume/EarlCameron.pdf", "⬇", "Résumé", "download the PDF"),
+		card("/resume", "⬇", "Résumé", "read it, save as PDF"),
 		card("https://github.com/monstercameron", "◆", "GitHub", "open-source work"),
 		card("https://www.linkedin.com/in/earl-cameron/", "in", "LinkedIn", "experience & network"),
 		card("https://www.youtube.com/@EarlCameron007", "▶", "YouTube", "builds & demos"),

@@ -131,7 +131,7 @@ func resumeOut() []ui.Node {
 		Div(Class(FontSemibold, Fg(theme.Accent)), "Earl Cameron — Senior Software Engineer"),
 		Div(Class(Fg(theme.Dim)), "UKG (2020–present) · Go · C# · React · agents & AI infra · on-device LLMs"),
 		Div("full breakdown: ", Span(Class(Fg(theme.Accent2)), "cat notes/experience.md")),
-		Div(Class(Fg(theme.Dim)), "download: https://www.earlcameron.com/resume/EarlCameron.pdf"),
+		Div(Class(Fg(theme.Dim)), "read + save as PDF: ", Span(Class(Fg(theme.Accent2)), "/resume")),
 	}
 }
 
