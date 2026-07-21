@@ -39,6 +39,7 @@ type Server struct {
 	page     []byte // the standard site, server-rendered once at startup
 	anime    *anime.Service
 	sessions *admin.Sessions
+	login    *loginLimiter // brute-force throttle for /admin/login
 }
 
 // New opens the store, builds the gRPC server, registers the services, and wraps them in the
@@ -53,7 +54,8 @@ func New(cfg config.Config) (*Server, error) {
 
 	cs := content.New()
 	animeSvc := anime.New(st)
-	sessions := admin.NewSessions(cfg.AdminPassword, cfg.AdminSecret)
+	// Cookies are marked Secure when the public origin is HTTPS (production behind nginx).
+	sessions := admin.NewSessions(cfg.AdminPassword, cfg.AdminSecret, strings.HasPrefix(cfg.BaseURL, "https://"))
 	grpcSrv := grpc.NewServer()
 	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
@@ -73,7 +75,7 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions}, nil
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, login: newLoginLimiter()}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket

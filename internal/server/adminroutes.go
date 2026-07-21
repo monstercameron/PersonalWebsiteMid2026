@@ -4,14 +4,90 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/monstercameron/earlcameron/internal/anime"
 	"github.com/monstercameron/earlcameron/internal/store"
 )
+
+// loginLimiter throttles admin login attempts to blunt password brute-forcing. It locks a client
+// out for `window` after `max` consecutive failures. Behind a reverse proxy every request shares
+// one RemoteAddr, so this degrades to a global lockout — acceptable (even desirable) for a
+// single-owner admin gate.
+type loginLimiter struct {
+	mu     sync.Mutex
+	fails  map[string]*failRecord
+	max    int
+	window time.Duration
+}
+
+// failRecord tracks one client's recent failed attempts.
+type failRecord struct {
+	count int       // consecutive failures in the current run
+	until time.Time // lockout expiry (zero = not locked)
+	seen  time.Time // last activity, for pruning
+}
+
+// newLoginLimiter builds a limiter: 5 failures → 15-minute lockout.
+func newLoginLimiter() *loginLimiter {
+	return &loginLimiter{fails: map[string]*failRecord{}, max: 5, window: 15 * time.Minute}
+}
+
+// allowed reports whether ip may attempt a login at time now.
+func (l *loginLimiter) allowed(ip string, now time.Time) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	r := l.fails[ip]
+	return r == nil || now.After(r.until)
+}
+
+// fail records a failed attempt for ip and starts a lockout once max is reached.
+func (l *loginLimiter) fail(ip string, now time.Time) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.prune(now)
+	r := l.fails[ip]
+	if r == nil {
+		r = &failRecord{}
+		l.fails[ip] = r
+	}
+	r.count++
+	r.seen = now
+	if r.count >= l.max {
+		r.until = now.Add(l.window)
+		r.count = 0
+	}
+}
+
+// success clears ip's failure record after a correct password.
+func (l *loginLimiter) success(ip string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.fails, ip)
+}
+
+// prune drops stale records; callers must hold the lock.
+func (l *loginLimiter) prune(now time.Time) {
+	for k, r := range l.fails {
+		if now.Sub(r.seen) > l.window && now.After(r.until) {
+			delete(l.fails, k)
+		}
+	}
+}
+
+// clientIP returns the request's remote host (without port) for rate-limit keying.
+func clientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
 
 // registerAdminRoutes wires the public anime RSS feeds and the password-gated config page.
 func (s *Server) registerAdminRoutes(mux *http.ServeMux) {
@@ -71,11 +147,19 @@ func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return
 	}
+	ip, now := clientIP(r), time.Now()
+	if !s.login.allowed(ip, now) {
+		w.Header().Set("Retry-After", "900")
+		http.Error(w, "too many attempts — try again later", http.StatusTooManyRequests)
+		return
+	}
 	if s.sessions.CheckPassword(r.FormValue("password")) {
+		s.login.success(ip)
 		s.sessions.Issue(w)
 		http.Redirect(w, r, "/admin/anime", http.StatusSeeOther)
 		return
 	}
+	s.login.fail(ip, now)
 	adminPage(w, "sign in", loginBody(s.sessions.Enabled(), "wrong password"))
 }
 

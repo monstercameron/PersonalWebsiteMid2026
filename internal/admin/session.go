@@ -2,6 +2,7 @@ package admin
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
@@ -20,14 +21,23 @@ type Sessions struct {
 	password string
 	secret   []byte
 	ttl      time.Duration
+	secure   bool
 }
 
-// NewSessions builds a session manager. An empty password disables admin login entirely.
-func NewSessions(password, secret string) *Sessions {
-	if secret == "" {
-		secret = "dev-insecure-secret-change-me"
+// NewSessions builds a session manager. An empty password disables admin login entirely. When
+// secret is empty a random 32-byte secret is generated per process — this is deliberate: a fixed
+// fallback secret would let anyone forge a valid admin cookie, so we never ship a known default.
+// (The tradeoff is that sessions don't survive a restart unless ADMIN_SECRET is set explicitly.)
+// secure marks the cookie Secure (HTTPS-only) — set it in production.
+func NewSessions(password, secret string, secure bool) *Sessions {
+	sec := []byte(secret)
+	if len(sec) == 0 {
+		sec = make([]byte, 32)
+		if _, err := rand.Read(sec); err != nil {
+			panic("admin: cannot generate a session secret: " + err.Error())
+		}
 	}
-	return &Sessions{password: password, secret: []byte(secret), ttl: 12 * time.Hour}
+	return &Sessions{password: password, secret: sec, ttl: 12 * time.Hour, secure: secure}
 }
 
 // Enabled reports whether admin login is configured (a password is set).
@@ -47,7 +57,7 @@ func (s *Sessions) Issue(w http.ResponseWriter) {
 	payload := "admin." + strconv.FormatInt(exp, 10)
 	val := base64.RawURLEncoding.EncodeToString([]byte(payload + "." + s.sign(payload)))
 	http.SetCookie(w, &http.Cookie{
-		Name: sessionCookie, Value: val, Path: "/admin", HttpOnly: true,
+		Name: sessionCookie, Value: val, Path: "/admin", HttpOnly: true, Secure: s.secure,
 		SameSite: http.SameSiteLaxMode, Expires: time.Unix(exp, 0),
 	})
 }
