@@ -157,4 +157,21 @@ Goal: **one-click install, push-to-deploy from GitHub, no brain-racking.**
 - [ ] SQLite in `/opt/earlcameron/data` (outside deploy dir) + nightly backup; auto-migrations on boot.
 - [ ] One-time: DNS A-record → droplet IP; one GitHub SSH deploy secret.
 
+## 12. Terminal — live tracker (Cam's asks)
+> Native Claude Code TodoWrite isn't available this session — tracking here instead.
+- [x] Interactive input (type + Enter runs commands) — GWC hooks.
+- [x] Faux portfolio programs: help/about/projects/open/neofetch/links/ls/contact/echo/clear.
+- [x] Expand to fullscreen **modal** (green light) + shrink (red light).
+- [x] Auto-scroll to newest line (like a real terminal).
+- [x] Keep input **focus** after Enter.
+- [x] Lock page scroll in the modal + its own scroll; themed scrollbar.
+- [x] Verified with a **chromedp** browser-interaction test (real keystrokes/clicks).
+- [x] Fix: modal falling off the right edge (removed width:100% vs fixed inset). Verified.
+- [x] **Virtual filesystem** cached in localStorage (persists across reloads). Verified.
+- [x] **~30 bash commands** (pwd/ls/cd/mkdir/touch/cp/mv/rm/cat/less/head/tail/nano/echo/grep/
+      find/sort/uniq/cut/sed/awk/wc/du/df/history/curl/ssh/tar/man) + pipes `|`, `&&`, `>`. Verified.
+- [x] **Tab auto-completion** (commands + paths), Ubuntu-style. Verified.
+- [ ] Wire portfolio programs to **real gRPC** (ContentService) instead of faux.
+- [ ] i18n all terminal + site copy.
+
 

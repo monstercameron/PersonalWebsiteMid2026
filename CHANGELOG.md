@@ -22,9 +22,13 @@ Semantic Versioning once released.
 - Terminal (wasm): macOS-style window — traffic-light chrome, boot log, neofetch identity splash,
   and prompt with cursor — styled with typed CSS from theme tokens; screenshot-verified against
   the mockup.
-- Terminal is now **interactive**: a controlled input (GWC `UseState`/`UseEvent`) runs faux
-  programs — `help`, `about`, `projects`, `open <id>`, `neofetch`, `links`, `ls`, `contact`,
-  `echo`, `clear` — and the window **expands/shrinks** to a fullscreen modal (green/red lights).
+- Terminal is now **interactive**: a controlled input (GWC `UseState`/`UseEvent`) runs the
+  portfolio programs (`help`/`about`/`projects`/`open`/`neofetch`/`links`/`contact`) and the
+  window **expands/shrinks** to a fullscreen modal (green/red lights).
+- Terminal **faux Unix shell** over a **localStorage-cached virtual filesystem**: ~30 commands
+  (pwd/ls/cd/mkdir/touch/cp/mv/rm/cat/head/tail/echo/grep/find/sort/uniq/cut/sed/awk/wc/du/df/
+  history/less/nano/curl/ssh/tar/man) with pipes `|`, chaining `&&`, `>` redirect, a cwd-aware
+  prompt, and **Tab completion** (commands + paths). Verified end-to-end via chromedp (9 checks).
 ### Changed
 - Standard site reworked to match the mockup: hero-first order (orange-dash eyebrow, accent
   headline, sans-serif lede, glyphed social, orange launch CTA), then the terminal; boot log with
@@ -35,5 +39,7 @@ Semantic Versioning once released.
 - Terminal: auto-scrolls to the newest line; the input keeps focus after Enter; the expanded
   modal locks the page scroll and has its own; themed scrollbar. Verified with a chromedp
   browser-interaction test (real keystrokes + clicks), not just a render check.
+- Terminal modal no longer overflows the right edge (removed `width:100%` that fought the fixed
+  insets); it now sizes purely from top/left/right/bottom offsets.
 ### Security
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.

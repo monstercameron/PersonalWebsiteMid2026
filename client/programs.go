@@ -3,8 +3,6 @@
 package main
 
 import (
-	"strings"
-
 	"github.com/monstercameron/GoWebComponents/v4/css"
 	. "github.com/monstercameron/GoWebComponents/v4/css/u"
 	. "github.com/monstercameron/GoWebComponents/v4/html/shorthand"
@@ -41,12 +39,8 @@ func programOutput(name string, args []string) []ui.Node {
 		return []ui.Node{neofetch()}
 	case "links":
 		return linksOut()
-	case "ls":
-		return lsOut()
 	case "contact":
 		return contactOut()
-	case "echo":
-		return []ui.Node{Div(strings.Join(args, " "))}
 	default:
 		return []ui.Node{Div(Class(Fg(theme.Red)), name+": command not found — try "), key("help")}
 	}
@@ -71,6 +65,8 @@ func helpOut() []ui.Node {
 			Span(Class(Fg(theme.Dim)), r[1]),
 		))
 	}
+	out = append(out, Div(Class(Fg(theme.Faint), css.Property("white-space", "pre-wrap")),
+		"…and a faux Unix shell over a virtual filesystem: ls, cat, mkdir, echo>file, grep, find,\nsort, uniq, wc, du · pipes | and && · Tab completes. Try: cat notes/todo.txt | grep TODO"))
 	return out
 }
 
@@ -109,7 +105,7 @@ func openOut(args []string) []ui.Node {
 			}
 		}
 	}
-	return []ui.Node{Div(Class(Fg(theme.Red)), "open: no project \""+args[0]+"\" — try `projects`")}
+	return []ui.Node{Div(Class(Fg(theme.Dim)), "opening "+args[0]+"… (nothing to preview — try `projects` or `open gwc`)")}
 }
 
 // linksOut prints the contact links.
@@ -124,16 +120,6 @@ func linksOut() []ui.Node {
 		row("site", "earlcameron.com"),
 		row("email", "mr.e.cameron@gmail.com"),
 	}
-}
-
-// lsOut prints a faux file listing.
-func lsOut() []ui.Node {
-	return []ui.Node{Div(Class(Flex, Gap(Spacing4)),
-		Span(Class(Fg(theme.Accent2)), "about.md"),
-		Span(Class(Fg(theme.Accent2)), "projects/"),
-		Span("resume.pdf"),
-		Span("contact.sh"),
-	)}
 }
 
 // contactOut prints how to reach Cam.
