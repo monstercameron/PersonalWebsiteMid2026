@@ -45,7 +45,12 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project) (string, error)
 		`font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code","JetBrains Mono",monospace;` +
 		`background:radial-gradient(60vw 50vw at 12% -8%,rgba(190,123,230,.16),transparent 60%),` +
 		`radial-gradient(55vw 55vw at 105% 115%,rgba(233,84,32,.14),transparent 55%),#17040f;` +
-		`background-attachment:fixed}</style>` +
+		`background-attachment:fixed}` +
+		`#term-body{scrollbar-width:thin;scrollbar-color:#3a1b2e transparent}` +
+		`#term-body::-webkit-scrollbar{width:9px}` +
+		`#term-body::-webkit-scrollbar-track{background:transparent}` +
+		`#term-body::-webkit-scrollbar-thumb{background:#3a1b2e;border-radius:8px}` +
+		`#term-body::-webkit-scrollbar-thumb:hover{background:#5a2b44}</style>` +
 		css.StyleBlock() + `</head><body>`
 	// The wasm terminal mounts into #term-root (rendered inside the hero). The two <script> lines
 	// are the only JavaScript in the project: the wasm bootstrap glue.

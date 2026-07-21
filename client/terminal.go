@@ -4,6 +4,7 @@ package main
 
 import (
 	"strings"
+	"syscall/js"
 
 	"github.com/monstercameron/GoWebComponents/v4/css"
 	. "github.com/monstercameron/GoWebComponents/v4/css/u"
@@ -29,6 +30,30 @@ func Terminal() ui.Node {
 		}
 		return nil
 	}, true)
+
+	// After the scrollback grows: auto-scroll to the newest line and keep the input focused
+	// (re-render can drop focus) — like a real terminal. preventScroll avoids page jumps.
+	ui.UseEffect(func() func() {
+		doc := js.Global().Get("document")
+		if el := doc.Call("getElementById", "term-body"); el.Truthy() {
+			el.Set("scrollTop", el.Get("scrollHeight"))
+		}
+		if inp := doc.Call("getElementById", "term-input"); inp.Truthy() {
+			inp.Call("focus", map[string]interface{}{"preventScroll": true})
+		}
+		return nil
+	}, len(scrollback.Get()))
+
+	// Lock the page scroll while the terminal is a fullscreen modal (it gets its own scroll).
+	ui.UseEffect(func() func() {
+		style := js.Global().Get("document").Get("body").Get("style")
+		if expanded.Get() {
+			style.Set("overflow", "hidden")
+		} else {
+			style.Set("overflow", "")
+		}
+		return func() { style.Set("overflow", "") }
+	}, expanded.Get())
 
 	onInput := ui.UseEvent(func(e ui.Event) { input.Set(e.GetValue()) })
 	onKey := ui.UseEvent(func(e ui.Event) {
@@ -93,7 +118,7 @@ func windowFrame(expanded bool, onExpand, onShrink ui.Handler, sb []ui.Node, inp
 func titleBar(onExpand, onShrink ui.Handler, expanded bool) ui.Node {
 	return Div(Class(Flex, ItemsCenter, Gap(Spacing2), PadX(Spacing4), PadY(Spacing3),
 		css.Property("border-bottom", "1px solid #3a1b2e")),
-		lightBtn("#ff5f56", onShrink), light("#ffbd2e"), lightBtn("#27c93f", onExpand),
+		lightBtn("#ff5f56", "term-shrink", onShrink), light("#ffbd2e"), lightBtn("#27c93f", "term-expand", onExpand),
 		Span(Class(css.Property("flex", "1"), css.Property("text-align", "center"), Fg(theme.Dim), FontSize(Rem(0.82))),
 			"cameron — zsh — 80×24"),
 		Span(Class(Fg(theme.Dim), FontSize(Rem(0.75))),
@@ -107,11 +132,11 @@ func light(hex string) ui.Node {
 		css.Property("border-radius", "50%"), css.Property("display", "inline-block"), css.Property("background", hex)))
 }
 
-// lightBtn renders a clickable traffic-light dot.
-func lightBtn(hex string, on ui.Handler) ui.Node {
+// lightBtn renders a clickable traffic-light dot with an id (for testability).
+func lightBtn(hex, id string, on ui.Handler) ui.Node {
 	cls := css.New(css.Property("width", "12px"), css.Property("height", "12px"), css.Property("border-radius", "50%"),
 		css.Property("display", "inline-block"), css.Property("cursor", "pointer"), css.Property("background", hex))
-	return Span(Props{Class: string(cls), OnClick: on})
+	return Span(Props{ID: id, Class: string(cls), OnClick: on})
 }
 
 // termBody renders the scrollback and the live input line.
@@ -122,7 +147,7 @@ func termBody(expanded bool, sb []ui.Node, inputVal string, onInput, onKey ui.Ha
 	} else {
 		rules = append(rules, css.Property("max-height", "460px"), css.Property("overflow-y", "auto"))
 	}
-	return Div(Class(rules...), sb, inputLine(inputVal, onInput, onKey))
+	return Div(Class(rules...), FromProps(Props{ID: "term-body"}), sb, inputLine(inputVal, onInput, onKey))
 }
 
 // inputLine renders the prompt plus the controlled text input.
@@ -132,8 +157,8 @@ func inputLine(value string, onInput, onKey ui.Handler) ui.Node {
 		css.Property("font", "inherit"), css.Property("margin-left", "8px"), css.Property("caret-color", "#e95420"))
 	return Div(Class(Flex, ItemsCenter),
 		promptSigil(),
-		Input(Props{Class: string(inputCls), Value: value, Placeholder: "type a command…",
-			AutoFocus: true, OnInput: onInput, OnKeyDown: onKey}),
+		Input(Props{ID: "term-input", Class: string(inputCls), Value: value, Placeholder: "type a command…",
+			OnInput: onInput, OnKeyDown: onKey}),
 	)
 }
 

@@ -31,5 +31,9 @@ Semantic Versioning once released.
   OK badges + dotted leaders + right-aligned values; "live · interactive" title; ambient glows.
 - Colors centralized into `internal/theme` design tokens (quick-ref: DESIGN.md §16).
 - Minimal bootstrap `<style>` (reset + base bg + mono font-family) added to the SSR shell.
+### Fixed
+- Terminal: auto-scrolls to the newest line; the input keeps focus after Enter; the expanded
+  modal locks the page scroll and has its own; themed scrollbar. Verified with a chromedp
+  browser-interaction test (real keystrokes + clicks), not just a render check.
 ### Security
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.
