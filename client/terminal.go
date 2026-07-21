@@ -72,12 +72,18 @@ func Terminal() ui.Node {
 	})
 	onExpand := ui.UseEvent(func() { expanded.Set(true) })
 	onShrink := ui.UseEvent(func() { expanded.Set(false) })
+	// Clicking anywhere in the terminal body focuses the input (don't make the user hit the line).
+	onFocus := ui.UseEvent(func() {
+		if inp := js.Global().Get("document").Call("getElementById", "term-input"); inp.Truthy() {
+			inp.Call("focus", map[string]interface{}{"preventScroll": true})
+		}
+	})
 
 	prompt := "~"
 	if s := sh.Get(); s != nil {
 		prompt = s.prompt()
 	}
-	return windowFrame(expanded.Get(), onExpand, onShrink, prompt, scrollback.Get(), input.Get(), onInput, onKey)
+	return windowFrame(expanded.Get(), onExpand, onShrink, onFocus, prompt, scrollback.Get(), input.Get(), onInput, onKey)
 }
 
 // runCommand echoes the command and appends its output. Portfolio commands (help/projects/…)
@@ -132,7 +138,7 @@ func shellLine(o outLine) ui.Node {
 }
 
 // windowFrame renders the terminal window, inline or as a fullscreen modal when expanded.
-func windowFrame(expanded bool, onExpand, onShrink ui.Handler, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
+func windowFrame(expanded bool, onExpand, onShrink, onFocus ui.Handler, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
 	rules := []any{Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl),
 		css.Property("box-shadow", "0 40px 90px -40px rgba(0,0,0,.8)"), css.Property("overflow", "hidden"),
 		css.Property("display", "flex"), css.Property("flex-direction", "column")}
@@ -146,7 +152,7 @@ func windowFrame(expanded bool, onExpand, onShrink ui.Handler, prompt string, sb
 	}
 	frame := Div(Class(rules...),
 		titleBar(onExpand, onShrink, expanded),
-		termBody(expanded, prompt, sb, inputVal, onInput, onKey),
+		termBody(expanded, onFocus, prompt, sb, inputVal, onInput, onKey),
 	)
 	if expanded {
 		scrim := Div(Class(css.Property("position", "fixed"), css.Property("inset", "0"),
@@ -182,14 +188,14 @@ func lightBtn(hex, id string, on ui.Handler) ui.Node {
 }
 
 // termBody renders the scrollback and the live input line.
-func termBody(expanded bool, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
+func termBody(expanded bool, onFocus ui.Handler, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
 	rules := []any{Pad(Spacing5), Flex, FlexCol, Gap(Spacing2), FontSize(Rem(0.95)), LineHeight(Num(1.6))}
 	if expanded {
 		rules = append(rules, css.Property("flex", "1"), css.Property("overflow-y", "auto"))
 	} else {
 		rules = append(rules, css.Property("max-height", "460px"), css.Property("overflow-y", "auto"))
 	}
-	return Div(Class(rules...), FromProps(Props{ID: "term-body"}), sb, inputLine(prompt, inputVal, onInput, onKey))
+	return Div(Class(rules...), FromProps(Props{ID: "term-body", OnClick: onFocus}), sb, inputLine(prompt, inputVal, onInput, onKey))
 }
 
 // inputLine renders the prompt plus the controlled text input.

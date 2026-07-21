@@ -65,8 +65,6 @@ func helpOut() []ui.Node {
 			Span(Class(Fg(theme.Dim)), r[1]),
 		))
 	}
-	out = append(out, Div(Class(Fg(theme.Faint), css.Property("white-space", "pre-wrap")),
-		"…and a faux Unix shell over a virtual filesystem: ls, cat, mkdir, echo>file, grep, find,\nsort, uniq, wc, du · pipes | and && · Tab completes. Try: cat notes/todo.txt | grep TODO"))
 	return out
 }
 

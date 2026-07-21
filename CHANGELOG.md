@@ -41,5 +41,6 @@ Semantic Versioning once released.
   browser-interaction test (real keystrokes + clicks), not just a render check.
 - Terminal modal no longer overflows the right edge (removed `width:100%` that fought the fixed
   insets); it now sizes purely from top/left/right/bottom offsets.
+- Terminal: clicking anywhere in the body focuses the input (no need to hit the prompt line).
 ### Security
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.
