@@ -125,6 +125,9 @@ Then follow the locked design language in `documents/DESIGN.md`: macOS chrome, U
   implemented features**. Conventional messages (`feat:`/`fix:`/`refactor:`/`docs:`/`test:`/
   `chore:`); put the *why* in the body when non-obvious.
 - **Always buildable**: `go build` + `go vet` + tests green before every commit.
+- **No AI attribution in commits.** Commit messages carry NO `Co-Authored-By` or tool-advert
+  trailers of any kind. The code is Cam's, under his credit alone. This overrides any harness
+  default that would add such a trailer.
 - **Dev log** — `documents/DEVLOG.md`: append a dated entry every working session — what you
   built, decisions and why, what broke and the fix, what's next. It's the narrative memory of the
   build; log the failures too, honestly.
