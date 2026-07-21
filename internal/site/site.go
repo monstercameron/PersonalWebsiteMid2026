@@ -57,7 +57,7 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project) (string, error)
 
 // center wraps children in a max-width column, horizontally centered by a flex parent.
 func center(children ...ui.Node) ui.Node {
-	args := []any{Class(WFull, MaxWidth(Px(1000)), PadX(Spacing6), Flex, FlexCol, Gap(Spacing8))}
+	args := []any{Class(WFull, MaxWidth(Px(1000)), PadX(Spacing6), Flex, FlexCol, Gap(Spacing5))}
 	for _, c := range children {
 		args = append(args, c)
 	}
@@ -66,7 +66,7 @@ func center(children ...ui.Node) ui.Node {
 
 // hero renders the identity block: eyebrow, headline, thesis, and social links.
 func hero(about *sitepb.About) ui.Node {
-	return Div(Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing10)),
+	return Div(Class(Flex, FlexCol, Gap(Spacing4), PadY(Spacing6)),
 		Div(Class(TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.2))), "EARL CAMERON · LAUDERHILL, FL"),
 		H1(Class(FontSize(Rem(2)), Md(FontSize(Rem(2.8))), FontBold, LineHeight(Num(1.08))), about.GetHeadline()),
 		P(Class(FontSize(Rem(1.05)), Md(FontSize(Rem(1.15))), Fg(theme.Dim), MaxWidth(Px(640))), about.GetBody()),
