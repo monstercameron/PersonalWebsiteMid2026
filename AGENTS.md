@@ -24,6 +24,10 @@ the proof of work: hand-built Go, top to bottom. See `README.md`, `documents/DES
    WASM/JS. The terminal enhances over it.
 4. **Secrets are env-only.** `OPENAI_API_KEY`, signing keys, owner IDs. Never in the DB, never
    web-editable, never sent to the client.
+5. **Pure Go, no cgo.** Prefer pure-Go implementations and dependencies over C/cgo or mixed
+   codebases — e.g. `modernc.org/sqlite` (not `mattn/go-sqlite3`), `buf` (not a protoc binary).
+   Keeps cross-compilation trivial (ARM64 dev → Linux deploy) and the single-binary deploy clean.
+   Reach for cgo only if there is genuinely no pure-Go option, and flag it when you do.
 
 ## Tool routing — local vs backend-routed
 Every terminal program is one of:
