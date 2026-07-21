@@ -18,6 +18,12 @@ type Config struct {
 	// separated ALLOWED_ORIGINS). Same-origin requests are always allowed; everything else is
 	// rejected to prevent cross-site WebSocket hijacking.
 	AllowedOrigins []string
+	// AdminPassword gates the /admin config page. Empty disables admin login entirely.
+	AdminPassword string
+	// AdminSecret signs admin session cookies (defaults to an insecure dev value if empty).
+	AdminSecret string
+	// BaseURL is the public origin, used to build absolute RSS links.
+	BaseURL string
 }
 
 // Load reads configuration from the environment, applying sane local defaults.
@@ -26,6 +32,9 @@ func Load() Config {
 		Addr:           env("LISTEN_ADDR", "127.0.0.1:8095"),
 		DBPath:         env("DB_PATH", "web/data/site.db"),
 		AllowedOrigins: splitCSV(os.Getenv("ALLOWED_ORIGINS")),
+		AdminPassword:  os.Getenv("ADMIN_PASSWORD"),
+		AdminSecret:    os.Getenv("ADMIN_SECRET"),
+		BaseURL:        env("BASE_URL", "http://127.0.0.1:8095"),
 	}
 }
 

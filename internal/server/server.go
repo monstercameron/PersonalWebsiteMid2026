@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/monstercameron/GoGRPCBridge/pkg/grpctunnel"
+	"github.com/monstercameron/earlcameron/internal/admin"
+	"github.com/monstercameron/earlcameron/internal/anime"
 	"github.com/monstercameron/earlcameron/internal/config"
 	"github.com/monstercameron/earlcameron/internal/contact"
 	"github.com/monstercameron/earlcameron/internal/content"
@@ -32,9 +34,11 @@ type Server struct {
 	cfg    config.Config
 	log    *slog.Logger
 	grpc   *grpc.Server
-	tunnel http.Handler
-	store  *store.Store
-	page   []byte // the standard site, server-rendered once at startup
+	tunnel   http.Handler
+	store    *store.Store
+	page     []byte // the standard site, server-rendered once at startup
+	anime    *anime.Service
+	sessions *admin.Sessions
 }
 
 // New opens the store, builds the gRPC server, registers the services, and wraps them in the
@@ -48,6 +52,8 @@ func New(cfg config.Config) (*Server, error) {
 	}
 
 	cs := content.New()
+	animeSvc := anime.New(st)
+	sessions := admin.NewSessions(cfg.AdminPassword, cfg.AdminSecret)
 	grpcSrv := grpc.NewServer()
 	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
@@ -67,7 +73,7 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page)}, nil
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
@@ -105,6 +111,7 @@ func (s *Server) routes() *http.ServeMux {
 	// Document plane (HTTP GET).
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 	mux.HandleFunc("/healthz", s.healthz)
+	s.registerAdminRoutes(mux)
 	mux.HandleFunc("/", s.ssrShell)
 	return mux
 }

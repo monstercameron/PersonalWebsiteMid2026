@@ -27,6 +27,10 @@ Semantic Versioning once released.
   window **expands/shrinks** to a fullscreen modal (green/red lights).
 - "Elsewhere" section on the standard site + terminal `links`/`resume`: résumé download,
   LinkedIn (`earl-cameron`), YouTube (`@EarlCameron007`), GitHub — ported from the current site.
+- **Anime tracker** (Go port of the current site's Node feature): AniList-backed tracking with
+  two RSS feeds — `/anime.xml` (Release Radar) and `/anime/qotd.xml` (daily prompts / QOTD) —
+  plus a **password-gated config page** at `/admin` (search AniList, track/untrack, run release
+  checks). Verified end-to-end (search → track → feed) against live AniList data.
 - Recruiter notes in the terminal's `notes/` folder — `cat notes/about.md`, `experience.md`,
   `skills.md`, `projects.md`, `working-style.md`: professional, tech-fit content for curious
   recruiters exploring the shell (VFS cache bumped to v2).
@@ -51,3 +55,5 @@ Semantic Versioning once released.
   the body is explicitly `user-select: text`. (Verified via a chromedp mouse-drag selection.)
 ### Security
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.
+- `/admin` config page is gated by a single password (`ADMIN_PASSWORD` env) behind an HMAC-signed,
+  HttpOnly session cookie; disabled entirely when no password is set.

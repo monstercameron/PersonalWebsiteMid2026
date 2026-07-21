@@ -41,14 +41,32 @@ func (s *Store) Close() error { return s.db.Close() }
 // migrate creates the schema if it does not already exist. It is idempotent, so it runs safely
 // on every startup.
 func migrate(db *sql.DB) error {
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS contact_messages (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		name       TEXT    NOT NULL,
-		email      TEXT    NOT NULL,
-		body       TEXT    NOT NULL,
-		created_at INTEGER NOT NULL
-	)`)
-	return err
+	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS contact_messages (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			name       TEXT    NOT NULL,
+			email      TEXT    NOT NULL,
+			body       TEXT    NOT NULL,
+			created_at INTEGER NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS tracked_anime (
+			anilist_id  INTEGER PRIMARY KEY,
+			title       TEXT    NOT NULL,
+			cover_image TEXT    NOT NULL DEFAULT '',
+			status      TEXT    NOT NULL DEFAULT '',
+			episodes    INTEGER NOT NULL DEFAULT 0,
+			format      TEXT    NOT NULL DEFAULT '',
+			season_year INTEGER NOT NULL DEFAULT 0,
+			site_url    TEXT    NOT NULL DEFAULT '',
+			updated_at  INTEGER NOT NULL
+		)`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ContactMessage is a stored inbound message.
