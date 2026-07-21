@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
-	"html"
 	"net/http"
 	"strings"
 
+	"github.com/monstercameron/earlcameron/internal/adminui"
 	"github.com/monstercameron/earlcameron/internal/resume"
 )
 
@@ -31,7 +31,8 @@ func (s *Server) adminResume(w http.ResponseWriter, r *http.Request) {
 	if !s.requireAdmin(w, r) {
 		return
 	}
-	adminPage(w, "résumé tool", resumeToolBody(s.cfg.OpenAIKey != "", ""))
+	page, err := adminui.ResumeTool(s.cfg.OpenAIKey != "", "")
+	writeHTML(w, page, err)
 }
 
 // adminResumeTailor fetches a job posting URL, tailors the résumé to it, and renders the result.
@@ -46,46 +47,29 @@ func (s *Server) adminResumeTailor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.cfg.OpenAIKey == "" {
-		adminPage(w, "résumé tool", resumeToolBody(false, "Tailoring is disabled — set OPENAI_API_KEY."))
+		page, err := adminui.ResumeTool(false, "Tailoring is disabled — set OPENAI_API_KEY.")
+		writeHTML(w, page, err)
 		return
 	}
 	jobURL := strings.TrimSpace(r.FormValue("url"))
 	if !strings.HasPrefix(jobURL, "http://") && !strings.HasPrefix(jobURL, "https://") {
-		adminPage(w, "résumé tool", resumeToolBody(true, "Enter a full job-posting URL (http/https)."))
+		page, err := adminui.ResumeTool(true, "Enter a full job-posting URL (http/https).")
+		writeHTML(w, page, err)
 		return
 	}
 	jobText, err := resume.FetchJobText(r.Context(), jobURL)
 	if err != nil {
-		adminPage(w, "résumé tool", resumeToolBody(true, "Couldn't fetch that URL: "+err.Error()))
+		page, rerr := adminui.ResumeTool(true, "Couldn't fetch that URL: "+err.Error())
+		writeHTML(w, page, rerr)
 		return
 	}
 	tailored, err := resume.Tailor(r.Context(), s.cfg.OpenAIKey, s.cfg.OpenAIModel, jobText, resume.Data())
 	if err != nil {
-		adminPage(w, "résumé tool", resumeToolBody(true, "Tailoring failed: "+err.Error()))
+		page, rerr := adminui.ResumeTool(true, "Tailoring failed: "+err.Error())
+		writeHTML(w, page, rerr)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = fmt.Fprint(w, resume.RenderHTML(tailored, "Tailored to: "+jobURL+" — review every line before you send it."))
 }
 
-// resumeToolBody renders the legacy tailoring tool form. enabled=false shows a disabled notice; msg
-// is an optional status/error line.
-func resumeToolBody(enabled bool, msg string) string {
-	var b strings.Builder
-	b.WriteString(`<div class="top"><h1>résumé tool</h1>` +
-		`<form method="post" action="/admin/logout"><button class="ghost">logout</button></form></div>`)
-	b.WriteString(`<div class="feeds"><a href="/admin/anime">← anime</a> &nbsp; ` +
-		`Canonical résumé: <a href="/resume" target="_blank">/resume</a> (open it, then Save as PDF).</div>`)
-	if msg != "" {
-		b.WriteString(`<p class="dim">` + html.EscapeString(msg) + `</p>`)
-	}
-	if !enabled {
-		b.WriteString(`<p class="dim">Set the OPENAI_API_KEY environment variable to enable tailoring.</p>`)
-		return b.String()
-	}
-	b.WriteString(`<form method="post" action="/admin/resume/tailor" class="row">` +
-		`<input name="url" placeholder="paste a job-posting URL…" autofocus><button>Tailor résumé</button></form>`)
-	b.WriteString(`<p class="dim">The tool fetches the posting and re-emphasizes real facts to fit it — ` +
-		`it never invents experience. Review the result before sending, then Save as PDF.</p>`)
-	return b.String()
-}

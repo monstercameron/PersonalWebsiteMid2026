@@ -1,23 +1,22 @@
 package admin
 
 import (
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/base64"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-// sessionCookie is the admin session cookie name.
+// sessionCookie is the admin session cookie name (carries the JWT for the legacy HTTP path).
 const sessionCookie = "ec_admin"
 
-// Sessions issues and verifies password-based admin sessions via a signed cookie. It's a
-// pragmatic single-password gate (env ADMIN_PASSWORD) — the WebAuthn console is a later phase.
+// Sessions authenticates the owner by username + password and mints/verifies HS256 JWTs. The same
+// token gates both the HTTP admin pages (via cookie) and the gRPC AdminService (via metadata). It's
+// a single-owner gate: one username (ADMIN_USERNAME) and one password (ADMIN_PASSWORD).
 type Sessions struct {
+	username string
 	password string
 	secret   []byte
 	ttl      time.Duration
@@ -25,11 +24,10 @@ type Sessions struct {
 }
 
 // NewSessions builds a session manager. An empty password disables admin login entirely. When
-// secret is empty a random 32-byte secret is generated per process — this is deliberate: a fixed
-// fallback secret would let anyone forge a valid admin cookie, so we never ship a known default.
-// (The tradeoff is that sessions don't survive a restart unless ADMIN_SECRET is set explicitly.)
-// secure marks the cookie Secure (HTTPS-only) — set it in production.
-func NewSessions(password, secret string, secure bool) *Sessions {
+// secret is empty a random 32-byte secret is generated per process — deliberate: a fixed fallback
+// secret would let anyone forge a valid JWT, so we never ship a known default (set ADMIN_SECRET to
+// keep sessions valid across restarts). secure marks the cookie Secure (HTTPS-only) in production.
+func NewSessions(username, password, secret string, secure bool) *Sessions {
 	sec := []byte(secret)
 	if len(sec) == 0 {
 		sec = make([]byte, 32)
@@ -37,55 +35,62 @@ func NewSessions(password, secret string, secure bool) *Sessions {
 			panic("admin: cannot generate a session secret: " + err.Error())
 		}
 	}
-	return &Sessions{password: password, secret: sec, ttl: 12 * time.Hour, secure: secure}
+	return &Sessions{username: username, password: password, secret: sec, ttl: 12 * time.Hour, secure: secure}
 }
 
 // Enabled reports whether admin login is configured (a password is set).
 func (s *Sessions) Enabled() bool { return s.password != "" }
 
-// CheckPassword reports whether pw matches the configured password (constant-time).
-func (s *Sessions) CheckPassword(pw string) bool {
+// CheckCredentials reports whether username+password match the configured owner (constant-time on
+// both fields; both comparisons always run so timing doesn't reveal which one failed).
+func (s *Sessions) CheckCredentials(username, password string) bool {
 	if s.password == "" {
 		return false
 	}
-	return subtle.ConstantTimeCompare([]byte(pw), []byte(s.password)) == 1
+	okUser := subtle.ConstantTimeCompare([]byte(username), []byte(s.username)) == 1
+	okPass := subtle.ConstantTimeCompare([]byte(password), []byte(s.password)) == 1
+	return okUser && okPass
 }
 
-// Mint returns a fresh signed session token (the value carried by the cookie and, for the gRPC
-// admin plane, by the "authorization" metadata). It encodes "admin.<expiry>.<hmac>".
+// Mint returns a fresh signed HS256 JWT for the owner (subject = username, with iat + exp). This is
+// the value carried by the cookie and, for the gRPC admin plane, by the "authorization" metadata.
 func (s *Sessions) Mint() string {
-	exp := time.Now().Add(s.ttl).Unix()
-	payload := "admin." + strconv.FormatInt(exp, 10)
-	return base64.RawURLEncoding.EncodeToString([]byte(payload + "." + s.sign(payload)))
+	now := time.Now()
+	claims := jwt.RegisteredClaims{
+		Subject:   s.username,
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(s.ttl)),
+	}
+	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(s.secret)
+	if err != nil {
+		return ""
+	}
+	return signed
 }
 
-// Verify reports whether token is a valid, unexpired, correctly-signed session token. It is the
-// shared core behind both the cookie check (Authed) and the gRPC metadata check.
+// Verify reports whether token is a valid, unexpired JWT signed by us for the configured owner. It
+// pins the algorithm to HS256 (no alg-confusion / "none") and requires an expiry. Shared core
+// behind both the cookie check (Authed) and the gRPC metadata check (tokenFromContext).
 func (s *Sessions) Verify(token string) bool {
-	raw, err := base64.RawURLEncoding.DecodeString(token)
+	if token == "" {
+		return false
+	}
+	parsed, err := jwt.Parse(token, func(*jwt.Token) (any, error) { return s.secret, nil },
+		jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
+	if err != nil || !parsed.Valid {
+		return false
+	}
+	sub, err := parsed.Claims.GetSubject()
 	if err != nil {
 		return false
 	}
-	parts := strings.Split(string(raw), ".")
-	if len(parts) != 3 {
-		return false
-	}
-	payload := parts[0] + "." + parts[1]
-	if !hmac.Equal([]byte(parts[2]), []byte(s.sign(payload))) {
-		return false
-	}
-	exp, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil || time.Now().Unix() > exp {
-		return false
-	}
-	return parts[0] == "admin"
+	return subtle.ConstantTimeCompare([]byte(sub), []byte(s.username)) == 1
 }
 
-// Issue writes a signed, HttpOnly session cookie scoped to /admin.
+// Issue writes the JWT as a signed, HttpOnly session cookie scoped to /admin.
 func (s *Sessions) Issue(w http.ResponseWriter) {
-	val := s.Mint()
 	http.SetCookie(w, &http.Cookie{
-		Name: sessionCookie, Value: val, Path: "/admin", HttpOnly: true, Secure: s.secure,
+		Name: sessionCookie, Value: s.Mint(), Path: "/admin", HttpOnly: true, Secure: s.secure,
 		SameSite: http.SameSiteLaxMode, Expires: time.Now().Add(s.ttl),
 	})
 }
@@ -102,11 +107,4 @@ func (s *Sessions) Authed(r *http.Request) bool {
 		return false
 	}
 	return s.Verify(c.Value)
-}
-
-// sign returns the base64 HMAC-SHA256 of payload.
-func (s *Sessions) sign(payload string) string {
-	m := hmac.New(sha256.New, s.secret)
-	m.Write([]byte(payload))
-	return base64.RawURLEncoding.EncodeToString(m.Sum(nil))
 }

@@ -58,10 +58,11 @@ func (*Empty) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{0}
 }
 
-// LoginRequest carries the admin password.
+// LoginRequest carries the admin username + password.
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Password      string                 `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -96,6 +97,13 @@ func (*LoginRequest) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{1}
 }
 
+func (x *LoginRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
 func (x *LoginRequest) GetPassword() string {
 	if x != nil {
 		return x.Password
@@ -103,7 +111,7 @@ func (x *LoginRequest) GetPassword() string {
 	return ""
 }
 
-// LoginReply returns a session token on success.
+// LoginReply returns a signed JWT on success.
 type LoginReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
@@ -788,9 +796,10 @@ const file_admin_proto_rawDesc = "" +
 	"\n" +
 	"\vadmin.proto\x12\asite.v1\x1a\n" +
 	"site.proto\"\a\n" +
-	"\x05Empty\"*\n" +
+	"\x05Empty\"F\n" +
 	"\fLoginRequest\x12\x1a\n" +
-	"\bpassword\x18\x01 \x01(\tR\bpassword\"2\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"2\n" +
 	"\n" +
 	"LoginReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x14\n" +

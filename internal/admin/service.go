@@ -34,7 +34,7 @@ func NewService(a *anime.Service, s *Sessions, openAIKey, openAIModel string) *S
 
 // Login exchanges the admin password for a signed session token used by every other method.
 func (s *Service) Login(_ context.Context, req *sitepb.LoginRequest) (*sitepb.LoginReply, error) {
-	if !s.sessions.CheckPassword(req.GetPassword()) {
+	if !s.sessions.CheckCredentials(req.GetUsername(), req.GetPassword()) {
 		return &sitepb.LoginReply{Ok: false}, nil
 	}
 	return &sitepb.LoginReply{Ok: true, Token: s.sessions.Mint()}, nil

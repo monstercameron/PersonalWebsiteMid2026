@@ -3,6 +3,7 @@ module github.com/monstercameron/earlcameron
 go 1.26.3
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/monstercameron/GoGRPCBridge v0.0.19
 	github.com/monstercameron/GoWebComponents/v4 v4.2.0
 	google.golang.org/grpc v1.82.1

@@ -55,6 +55,12 @@ Semantic Versioning once released.
   history/less/nano/curl/ssh/tar/man) with pipes `|`, chaining `&&`, `>` redirect, a cwd-aware
   prompt, and **Tab completion** (commands + paths). Verified end-to-end via chromedp (9 checks).
 ### Changed
+- **Admin console rebuilt as GoWebComponents** (`internal/adminui`) — typed `css/u` + `internal/theme`
+  tokens, the same design system as the public site (centered login card, console header/nav, cover-art
+  result cards). The hand-written admin HTML strings + the `adminCSS` blob are gone. Rendered per
+  request under a mutex (the css sink is process-global).
+- **Home page indexes every page**: a top nav (`work · résumé · anime · contact · admin`) plus section
+  anchors, so all page links live on the single home page.
 - Standard site reworked to match the mockup: hero-first order (orange-dash eyebrow, accent
   headline, sans-serif lede, glyphed social, orange launch CTA), then the terminal; boot log with
   OK badges + dotted leaders + right-aligned values; "live · interactive" title; ambient glows.
@@ -70,6 +76,10 @@ Semantic Versioning once released.
 - Terminal: text is selectable again — click-to-focus no longer clears an active selection, and
   the body is explicitly `user-select: text`. (Verified via a chromedp mouse-drag selection.)
 ### Security
+- Admin auth is now **username + password → signed HS256 JWT** (golang-jwt/jwt v5): the login
+  (`ADMIN_USERNAME`/`ADMIN_PASSWORD`) mints a JWT with algorithm pinned to HS256 and bound to the
+  owner subject; the same token gates both the HTTP cookie path and the gRPC `authorization` metadata.
+  Unit-tested (round-trip, tamper, wrong-secret, wrong-subject, credential checks).
 - WebSocket tunnel rejects cross-site origins (CSWSH guard) — same-origin + `ALLOWED_ORIGINS` only.
 - `/admin` config page is gated by a single password (`ADMIN_PASSWORD` env) behind an HMAC-signed,
   HttpOnly session cookie; disabled entirely when no password is set.

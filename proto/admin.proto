@@ -35,12 +35,13 @@ service AdminService {
 // Empty is a no-argument request.
 message Empty {}
 
-// LoginRequest carries the admin password.
+// LoginRequest carries the admin username + password.
 message LoginRequest {
-  string password = 1;
+  string username = 1;
+  string password = 2;
 }
 
-// LoginReply returns a session token on success.
+// LoginReply returns a signed JWT on success.
 message LoginReply {
   bool ok = 1;
   string token = 2;

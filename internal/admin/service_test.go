@@ -28,7 +28,7 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	}
 	defer st.Close()
 
-	sessions := NewSessions("secret-pw", "test-secret", false)
+	sessions := NewSessions("cam", "secret-pw", "test-secret", false)
 	svc := NewService(anime.New(st), sessions, "", "gpt-4o-mini") // empty OpenAI key → tailoring disabled
 
 	lis := bufconn.Listen(1 << 20)
@@ -48,12 +48,16 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	ctx := context.Background()
 
 	// Wrong password is rejected.
-	if r, err := client.Login(ctx, &sitepb.LoginRequest{Password: "nope"}); err != nil || r.GetOk() {
+	if r, err := client.Login(ctx, &sitepb.LoginRequest{Username: "cam", Password: "nope"}); err != nil || r.GetOk() {
 		t.Fatalf("wrong password should fail: ok=%v err=%v", r.GetOk(), err)
 	}
+	// Wrong username is rejected too.
+	if r, err := client.Login(ctx, &sitepb.LoginRequest{Username: "eve", Password: "secret-pw"}); err != nil || r.GetOk() {
+		t.Fatalf("wrong username should fail: ok=%v err=%v", r.GetOk(), err)
+	}
 
-	// Correct password mints a token.
-	login, err := client.Login(ctx, &sitepb.LoginRequest{Password: "secret-pw"})
+	// Correct credentials mint a token.
+	login, err := client.Login(ctx, &sitepb.LoginRequest{Username: "cam", Password: "secret-pw"})
 	if err != nil || !login.GetOk() || login.GetToken() == "" {
 		t.Fatalf("login should succeed with a token: %+v err=%v", login, err)
 	}

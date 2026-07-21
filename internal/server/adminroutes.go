@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"html"
 	"net"
 	"net/http"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/monstercameron/earlcameron/internal/adminui"
 	"github.com/monstercameron/earlcameron/internal/anime"
 	"github.com/monstercameron/earlcameron/internal/store"
 )
@@ -138,7 +138,8 @@ func (s *Server) adminHome(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/anime", http.StatusSeeOther)
 		return
 	}
-	adminPage(w, "sign in", loginBody(s.sessions.Enabled(), ""))
+	page, err := adminui.LoginPage(s.sessions.Enabled(), "")
+	writeHTML(w, page, err)
 }
 
 // adminLogin checks the password and issues a session.
@@ -153,14 +154,15 @@ func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "too many attempts — try again later", http.StatusTooManyRequests)
 		return
 	}
-	if s.sessions.CheckPassword(r.FormValue("password")) {
+	if s.sessions.CheckCredentials(r.FormValue("username"), r.FormValue("password")) {
 		s.login.success(ip)
 		s.sessions.Issue(w)
 		http.Redirect(w, r, "/admin/anime", http.StatusSeeOther)
 		return
 	}
 	s.login.fail(ip, now)
-	adminPage(w, "sign in", loginBody(s.sessions.Enabled(), "wrong password"))
+	page, err := adminui.LoginPage(s.sessions.Enabled(), "wrong username or password")
+	writeHTML(w, page, err)
 }
 
 // adminLogout clears the session.
@@ -175,12 +177,17 @@ func (s *Server) adminAnime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	list, _ := s.anime.List(r.Context())
+	tracked := make(map[int]bool, len(list))
+	for _, a := range list {
+		tracked[a.AniListID] = true
+	}
 	var results []anime.Media
 	if q != "" {
 		results, _ = s.anime.Search(r.Context(), q)
 	}
-	list, _ := s.anime.List(r.Context())
-	adminPage(w, "anime tracker", animeBody(q, results, list))
+	page, err := adminui.AnimeConsole(q, mediaCards(results, tracked), trackedCards(list))
+	writeHTML(w, page, err)
 }
 
 // adminTrack tracks an anime by AniList id.
@@ -214,90 +221,47 @@ func (s *Server) adminCheck(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/anime", http.StatusSeeOther)
 }
 
-// --- HTML rendering (admin tool — self-contained inline styling) ---
+// --- rendering bridge to the GWC admin UI (internal/adminui) ---
 
-const adminCSS = `*{box-sizing:border-box}body{margin:0;background:#17040f;color:#f3e9e6;` +
-	`font-family:ui-monospace,"SF Mono",Menlo,monospace}a{color:#be7be6}` +
-	`.wrap{max-width:1000px;margin:0 auto;padding:32px 24px}` +
-	`h1{font-size:24px;margin:0}h2{font-size:15px;color:#a98ba0;margin:28px 0 12px;text-transform:uppercase;letter-spacing:.15em}` +
-	`.dim{color:#a98ba0;font-size:13px}.top{display:flex;justify-content:space-between;align-items:center}` +
-	`.feeds{margin:14px 0;color:#a98ba0;font-size:13px}` +
-	`input{background:#210a19;border:1px solid #3a1b2e;color:#f3e9e6;padding:10px 12px;border-radius:8px;font:inherit}` +
-	`button{background:#e95420;border:0;color:#fff;padding:10px 16px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}` +
-	`button.ghost{background:transparent;border:1px solid #3a1b2e;color:#f3e9e6;font-weight:400}` +
-	`form.row{display:flex;gap:10px;margin:8px 0}form.row input{flex:1}form.col{display:flex;flex-direction:column;gap:12px;max-width:320px}` +
-	`.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}` +
-	`.card{display:flex;gap:12px;background:#210a19;border:1px solid #3a1b2e;border-radius:12px;padding:12px}` +
-	`.card img{width:56px;height:80px;object-fit:cover;border-radius:6px;background:#3a1b2e}` +
-	`.card b{font-size:14px}.card form{margin-top:8px}`
-
-// adminPage writes a full admin HTML document.
-func adminPage(w http.ResponseWriter, title, body string) {
+// writeHTML writes a rendered admin page, or a 500 if rendering failed.
+func writeHTML(w http.ResponseWriter, page string, err error) {
+	if err != nil {
+		http.Error(w, "admin render error", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = fmt.Fprintf(w, `<!doctype html><html lang="en"><head><meta charset="utf-8">`+
-		`<meta name="viewport" content="width=device-width,initial-scale=1"><title>%s · admin</title>`+
-		`<style>%s</style></head><body><div class="wrap">%s</div></body></html>`,
-		html.EscapeString(title), adminCSS, body)
+	_, _ = fmt.Fprint(w, page)
 }
 
-// loginBody renders the sign-in form (or a disabled notice).
-func loginBody(enabled bool, errMsg string) string {
-	if !enabled {
-		return `<h1>admin</h1><p class="dim">Admin is disabled — set the ADMIN_PASSWORD environment variable.</p>`
+// mediaCards maps AniList search results to console view-models, flagging already-tracked shows.
+func mediaCards(results []anime.Media, tracked map[int]bool) []adminui.AnimeCard {
+	out := make([]adminui.AnimeCard, 0, len(results))
+	for _, m := range results {
+		out = append(out, adminui.AnimeCard{
+			ID: m.ID, Title: m.DisplayTitle(), Meta: animeMeta(m.Format, m.Status, m.Episodes, m.SeasonYear),
+			Cover: m.CoverImage.Large, Tracked: tracked[m.ID],
+		})
 	}
-	e := ""
-	if errMsg != "" {
-		e = `<p style="color:#ef5350;font-size:13px">` + html.EscapeString(errMsg) + `</p>`
-	}
-	return `<h1>admin</h1>` + e + `<form method="post" action="/admin/login" class="col">` +
-		`<input type="password" name="password" placeholder="password" autofocus>` +
-		`<button type="submit">Sign in</button></form>`
+	return out
 }
 
-// animeBody renders the anime config page.
-func animeBody(q string, results []anime.Media, list []store.TrackedAnime) string {
-	var b strings.Builder
-	b.WriteString(`<div class="top"><h1>anime tracker</h1>` +
-		`<form method="post" action="/admin/logout"><button class="ghost">logout</button></form></div>`)
-	b.WriteString(`<div class="feeds"><b>anime</b> &nbsp; <a href="/admin/resume">résumé tool →</a></div>`)
-	b.WriteString(`<div class="feeds">Feeds: <a href="/anime.xml">/anime.xml</a> · ` +
-		`<a href="/anime/qotd.xml">/anime/qotd.xml</a> &nbsp; ` +
-		`<form method="post" action="/admin/anime/check" style="display:inline"><button class="ghost">run release check</button></form></div>`)
-	fmt.Fprintf(&b, `<form method="get" action="/admin/anime" class="row">`+
-		`<input name="q" value="%s" placeholder="search AniList…" autofocus><button>Search</button></form>`, html.EscapeString(q))
-
-	if len(results) > 0 {
-		b.WriteString(`<h2>results</h2><div class="grid">`)
-		for _, m := range results {
-			b.WriteString(card(m.CoverImage.Large, m.DisplayTitle(), m.Format, m.Status, m.Episodes, 0, m.ID, "track", "/admin/anime/track", false))
-		}
-		b.WriteString(`</div>`)
+// trackedCards maps stored tracked shows to console view-models.
+func trackedCards(list []store.TrackedAnime) []adminui.AnimeCard {
+	out := make([]adminui.AnimeCard, 0, len(list))
+	for _, a := range list {
+		out = append(out, adminui.AnimeCard{
+			ID: a.AniListID, Title: a.Title, Meta: animeMeta(a.Format, a.Status, a.Episodes, a.SeasonYear),
+			Cover: a.CoverImage, Tracked: true,
+		})
 	}
-
-	fmt.Fprintf(&b, `<h2>tracked (%d)</h2>`, len(list))
-	if len(list) == 0 {
-		b.WriteString(`<p class="dim">Nothing tracked yet — search above and hit “track”.</p>`)
-	} else {
-		b.WriteString(`<div class="grid">`)
-		for _, a := range list {
-			b.WriteString(card(a.CoverImage, a.Title, a.Format, a.Status, a.Episodes, a.SeasonYear, a.AniListID, "remove", "/admin/anime/untrack", true))
-		}
-		b.WriteString(`</div>`)
-	}
-	return b.String()
+	return out
 }
 
-// card renders one anime card with a track/remove action.
-func card(cover, title, format, status string, episodes, year, id int, action, endpoint string, ghost bool) string {
+// animeMeta formats the "format · status · N eps · year" line for a card.
+func animeMeta(format, status string, episodes, year int) string {
 	meta := fmt.Sprintf("%s · %s · %d eps", format, status, episodes)
 	if year > 0 {
 		meta += fmt.Sprintf(" · %d", year)
 	}
-	cls := ""
-	if ghost {
-		cls = ` class="ghost"`
-	}
-	return fmt.Sprintf(`<div class="card"><img src="%s" alt=""><div><b>%s</b><div class="dim">%s</div>`+
-		`<form method="post" action="%s"><input type="hidden" name="id" value="%d"><button%s>%s</button></form></div></div>`,
-		html.EscapeString(cover), html.EscapeString(title), html.EscapeString(meta), endpoint, id, cls, action)
+	return meta
 }
