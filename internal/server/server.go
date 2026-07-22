@@ -22,7 +22,6 @@ import (
 	"github.com/monstercameron/earlcameron/internal/admin"
 	"github.com/monstercameron/earlcameron/internal/anime"
 	"github.com/monstercameron/earlcameron/internal/budget"
-	"github.com/monstercameron/earlcameron/internal/rss"
 	"github.com/monstercameron/earlcameron/internal/config"
 	"github.com/monstercameron/earlcameron/internal/contact"
 	"github.com/monstercameron/earlcameron/internal/content"
@@ -62,10 +61,6 @@ func New(cfg config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Seed the default QOTD prompts on a fresh database (no-op once prompts exist).
-	if _, err := rss.SeedPrompts(context.Background(), st, time.Now()); err != nil {
-		log.Warn("qotd seed failed", "err", err)
-	}
 
 	cs := content.New()
 	animeSvc := anime.New(st)
@@ -98,7 +93,7 @@ func New(cfg config.Config) (*Server, error) {
 	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))
 	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
-	sitepb.RegisterAdminServiceServer(grpcSrv, admin.NewService(animeSvc, sessions, st, resolveOpenAI))
+	sitepb.RegisterAdminServiceServer(grpcSrv, admin.NewService(animeSvc, sessions, st, cfg.BaseURL, resolveOpenAI))
 
 	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
 		CheckOrigin: originChecker(cfg.AllowedOrigins),

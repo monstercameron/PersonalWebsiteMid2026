@@ -2,6 +2,22 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-22 — RSS panel: single generation prompt + dry-run
+
+Cam wanted the /admin/rss page to drop the old QOTD prompt list and instead hold ONE editable prompt
+he can save, plus a dry-run that generates a non-published post to test it. Reframed the "prompt" from
+a static question into a generation instruction: it's fed the latest Anime News Network headline and a
+model writes the discussion post. New `openai.Generate` (Responses API, free-text) backs it. Backend:
+`GetPrompt`/`SavePrompt` over `SettingQOTDPrompt`; `DryRunPrompt` generates + returns a preview (body +
+rendered RSS item) without touching the feed; `PostToSlackNow` now generates from the saved prompt,
+posts to Slack, and stores the result as `SettingQOTDPublished`, which the `/anime/qotd.xml` handler
+serves. Removed the orphaned multi-prompt machinery my change created — `store/qotd.go`, `rss/qotd.go`
+(DefaultPrompts/SeedPrompts/DailyPrompt), `rss.QuestionFeedXML` and their tests — and dropped the
+`qotd_prompts` table on startup so old seeded rows are gone (left the unrelated, already-dead
+`anime.QuestionFeedXML` alone). Client: a textarea + Save/Dry-run buttons + a preview block (body +
+RSS `<pre>`). Verified via chromedp: login → /admin/rss renders the textarea (pre-loaded default) +
+buttons, no list; Dry run with no key shows the graceful "add an OpenAI key" error.
+
 ## 2026-07-21 — first-run owner setup + password reset
 
 Cam wanted the deployed site to set up its own username/password on first run (not baked into env),

@@ -36,15 +36,15 @@ type parsedFeed struct {
 	} `xml:"channel"`
 }
 
-// TestQuestionFeedXMLSpecCompliance parses the question feed and asserts every RSS-2.0-required
-// element and the atom:self link are present and well-formed.
-func TestQuestionFeedXMLSpecCompliance(t *testing.T) {
+// TestPublishedFeedXMLSpecCompliance parses the QOTD (published-post) feed and asserts every
+// RSS-2.0-required element and the atom:self link are present and well-formed.
+func TestPublishedFeedXMLSpecCompliance(t *testing.T) {
 	now := time.Date(2026, 7, 21, 12, 0, 0, 0, time.UTC)
-	prompts := []string{"Prompt A", "Prompt B & C <escaped>"}
+	post := &PublishedPost{Title: "Anime discussion", Body: "Prompt B & C <escaped>", PublishedAt: now}
 
-	xmlStr, err := QuestionFeedXML(prompts, "https://example.com", now)
+	xmlStr, err := PublishedFeedXML(post, "https://example.com", now)
 	if err != nil {
-		t.Fatalf("QuestionFeedXML: %v", err)
+		t.Fatalf("PublishedFeedXML: %v", err)
 	}
 
 	if !strings.Contains(xmlStr, `xmlns:atom="http://www.w3.org/2005/Atom"`) {
@@ -81,8 +81,8 @@ func TestQuestionFeedXMLSpecCompliance(t *testing.T) {
 	if _, err := time.Parse(time.RFC1123Z, parsed.Channel.LastBuildDate); err != nil {
 		t.Errorf("lastBuildDate %q not RFC1123Z: %v", parsed.Channel.LastBuildDate, err)
 	}
-	if len(parsed.Channel.Items) != 7 {
-		t.Fatalf("got %d items, want 7", len(parsed.Channel.Items))
+	if len(parsed.Channel.Items) != 1 {
+		t.Fatalf("got %d items, want 1", len(parsed.Channel.Items))
 	}
 	for i, it := range parsed.Channel.Items {
 		if it.Title == "" || it.Link == "" || it.Description == "" {

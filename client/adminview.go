@@ -589,11 +589,11 @@ func settingRow(label, hint string, field ui.Node) ui.Node {
 
 // --- rss / anime control panel ---
 
-// rssView renders the RSS control panel: the public feed links, Slack posting config (+ post-now),
-// and the configurable QOTD prompt list with add/delete.
-func rssView(prompts []*sitepb.Prompt, newPrompt ui.State[string], onAddPrompt ui.Handler, onDeletePrompt func(int64),
+// rssView renders the RSS control panel: the public feed links, the single QOTD generation prompt
+// (edit → dry-run preview → save), and the Slack "generate & publish" config.
+func rssView(promptText ui.State[string], onSavePrompt, onDryRun ui.Handler, dryRunning bool, preview *sitepb.PostPreview,
 	slackWebhook ui.State[string], slackSet, slackEnabled bool, onToggleSlack, onSaveSlack, onPostNow ui.Handler) ui.Node {
-	onNew := ui.WrapHandler(func(e ui.Event) { newPrompt.Set(e.GetValue()) })
+	onPrompt := ui.WrapHandler(func(e ui.Event) { promptText.Set(e.GetValue()) })
 	onWebhook := ui.WrapHandler(func(e ui.Event) { slackWebhook.Set(e.GetValue()) })
 
 	webhookPlaceholder := "https://hooks.slack.com/services/…"
@@ -604,16 +604,9 @@ func rssView(prompts []*sitepb.Prompt, newPrompt ui.State[string], onAddPrompt u
 	if slackEnabled {
 		schedule = "scheduled posting: on"
 	}
-
-	promptRows := []any{Class(Flex, FlexCol, Gap(Spacing2))}
-	for _, p := range prompts {
-		id := p.GetId()
-		del := ui.WrapHandler(func() { onDeletePrompt(id) })
-		promptRows = append(promptRows,
-			Div(Class(Flex, JustifyBetween, ItemsCenter, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
-				Span(Class(TextSize(TextSm)), p.GetText()),
-				linkButton("delete", del, theme.Red),
-			))
+	dryLabel := "Dry run — generate a test post"
+	if dryRunning {
+		dryLabel = "Generating…"
 	}
 
 	return Div(Class(Flex, FlexCol, Gap(Spacing5)),
@@ -624,27 +617,57 @@ func rssView(prompts []*sitepb.Prompt, newPrompt ui.State[string], onAddPrompt u
 				A(Class(Fg(theme.Accent2)), Props{Href: "/anime/qotd.xml", Target: "_blank", Rel: "noopener"}, "↗ /anime/qotd.xml — QOTD"),
 			),
 		),
-		Div(Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(560))),
-			sectionLabel("slack — post to your channel"),
+		Div(Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(760))),
+			sectionLabel("anime discussion prompt"),
 			P(Class(Fg(theme.Dim), TextSize(TextSm)),
-				"Posts the latest anime news + today's prompt as a discussion/debate topic to a Slack incoming webhook."),
+				"One instruction that turns the latest anime headline into a discussion post for Slack + the QOTD feed. Edit it, dry-run to preview what it generates, then save."),
+			Textarea(inputBase(rawWidth("100%"), css.Raw("min-height", "150px"), css.Raw("resize", "vertical"), css.Raw("line-height", "1.5")),
+				Props{Value: promptText.Get(), OnInput: onPrompt, Placeholder: "Write an instruction for the model…"}),
+			Div(Class(Flex, Gap(Spacing3), ItemsCenter, css.Raw("flex-wrap", "wrap")),
+				primaryButton("Save prompt", onSavePrompt),
+				ghostButton(dryLabel, onDryRun),
+			),
+			previewBlock(preview),
+		),
+		Div(Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(560))),
+			sectionLabel("slack — generate & publish"),
+			P(Class(Fg(theme.Dim), TextSize(TextSm)),
+				"Generates a post from the saved prompt, posts it to your Slack channel, and publishes it to the QOTD RSS feed."),
 			settingRow("Webhook URL ("+keyStatus(slackSet)+")", "stored in the backend, never shown",
 				textInput(slackWebhook.Get(), onWebhook, webhookPlaceholder, "password", false)),
 			Div(Class(Flex, Gap(Spacing3), ItemsCenter, css.Raw("flex-wrap", "wrap")),
 				ghostButton(schedule, onToggleSlack),
 				primaryButton("Save Slack config", onSaveSlack),
-				ghostButton("Post to Slack now", onPostNow),
+				ghostButton("Generate & post now", onPostNow),
 			),
-		),
-		Div(Class(Flex, FlexCol, Gap(Spacing3)),
-			sectionLabel("question-of-the-day prompts ("+strconv.Itoa(len(prompts))+")"),
-			Div(Class(Flex, Gap(Spacing2)),
-				growInput(newPrompt.Get(), onNew, "add a discussion prompt…"),
-				primaryButton("Add", onAddPrompt),
-			),
-			Div(promptRows...),
 		),
 	)
+}
+
+// previewBlock renders a dry-run result — the headline used, the generated post, and the rendered RSS
+// XML — or an error. It returns an empty span when there is no preview yet.
+func previewBlock(p *sitepb.PostPreview) ui.Node {
+	if p == nil {
+		return Span()
+	}
+	if p.GetError() != "" {
+		return Div(Class(TextSize(TextSm), Fg(theme.Red), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing3)),
+			"⚠ "+p.GetError())
+	}
+	rows := []any{Class(Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4), Flex, FlexCol, Gap(Spacing3)),
+		sectionLabel("preview — not published"),
+	}
+	if p.GetNews() != "" {
+		rows = append(rows, Span(Class(TextSize(TextXs), Fg(theme.Faint)), "based on headline: "+p.GetNews()))
+	}
+	rows = append(rows,
+		Span(Class(FontSemibold, TextSize(TextSm)), p.GetTitle()),
+		P(Class(TextSize(TextSm), css.Raw("white-space", "pre-wrap"), css.Raw("line-height", "1.5")), p.GetBody()),
+		Tag("pre", Class(TextSize(TextXs), Fg(theme.Dim), Bg(theme.Bg), Border(theme.Border), Rounded(RadiusMd), Pad(Spacing3),
+			css.Raw("overflow-x", "auto"), css.Raw("white-space", "pre"), css.Raw("max-height", "220px"),
+			css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace")), p.GetRss()),
+	)
+	return Div(rows...)
 }
 
 // --- shared bits ---

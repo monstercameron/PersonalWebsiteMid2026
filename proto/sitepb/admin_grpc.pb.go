@@ -39,9 +39,9 @@ const (
 	AdminService_ListTailorings_FullMethodName   = "/site.v1.AdminService/ListTailorings"
 	AdminService_GetTailoring_FullMethodName     = "/site.v1.AdminService/GetTailoring"
 	AdminService_DeleteTailoring_FullMethodName  = "/site.v1.AdminService/DeleteTailoring"
-	AdminService_ListPrompts_FullMethodName      = "/site.v1.AdminService/ListPrompts"
-	AdminService_AddPrompt_FullMethodName        = "/site.v1.AdminService/AddPrompt"
-	AdminService_DeletePrompt_FullMethodName     = "/site.v1.AdminService/DeletePrompt"
+	AdminService_GetPrompt_FullMethodName        = "/site.v1.AdminService/GetPrompt"
+	AdminService_SavePrompt_FullMethodName       = "/site.v1.AdminService/SavePrompt"
+	AdminService_DryRunPrompt_FullMethodName     = "/site.v1.AdminService/DryRunPrompt"
 	AdminService_GetSlackConfig_FullMethodName   = "/site.v1.AdminService/GetSlackConfig"
 	AdminService_SaveSlackConfig_FullMethodName  = "/site.v1.AdminService/SaveSlackConfig"
 	AdminService_PostToSlackNow_FullMethodName   = "/site.v1.AdminService/PostToSlackNow"
@@ -104,17 +104,19 @@ type AdminServiceClient interface {
 	// DeleteTailoring removes a saved variant by id.
 	DeleteTailoring(ctx context.Context, in *TailoringId, opts ...grpc.CallOption) (*Ack, error)
 	// --- RSS / anime control panel ---
-	// ListPrompts returns the configurable QOTD (question-of-the-day) prompts.
-	ListPrompts(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PromptList, error)
-	// AddPrompt adds a QOTD prompt.
-	AddPrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*Ack, error)
-	// DeletePrompt removes a QOTD prompt by id.
-	DeletePrompt(ctx context.Context, in *PromptId, opts ...grpc.CallOption) (*Ack, error)
+	// GetPrompt returns the single QOTD generation instruction (the default when none is saved).
+	GetPrompt(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PromptText, error)
+	// SavePrompt stores the single QOTD generation instruction.
+	SavePrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*Ack, error)
+	// DryRunPrompt generates a preview anime discussion post from the given prompt (fetching the latest
+	// anime news) WITHOUT publishing it — for testing the prompt.
+	DryRunPrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*PostPreview, error)
 	// GetSlackConfig returns the Slack posting config (the webhook URL is never returned, only whether set).
 	GetSlackConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SlackConfig, error)
 	// SaveSlackConfig persists the Slack config (a blank webhook_url leaves the stored one unchanged).
 	SaveSlackConfig(ctx context.Context, in *SlackConfig, opts ...grpc.CallOption) (*Ack, error)
-	// PostToSlackNow composes the latest anime news + today's prompt and posts it to Slack now.
+	// PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
+	// QOTD RSS feed.
 	PostToSlackNow(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Ack, error)
 }
 
@@ -326,30 +328,30 @@ func (c *adminServiceClient) DeleteTailoring(ctx context.Context, in *TailoringI
 	return out, nil
 }
 
-func (c *adminServiceClient) ListPrompts(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PromptList, error) {
+func (c *adminServiceClient) GetPrompt(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PromptText, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PromptList)
-	err := c.cc.Invoke(ctx, AdminService_ListPrompts_FullMethodName, in, out, cOpts...)
+	out := new(PromptText)
+	err := c.cc.Invoke(ctx, AdminService_GetPrompt_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) AddPrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*Ack, error) {
+func (c *adminServiceClient) SavePrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*Ack, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Ack)
-	err := c.cc.Invoke(ctx, AdminService_AddPrompt_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AdminService_SavePrompt_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) DeletePrompt(ctx context.Context, in *PromptId, opts ...grpc.CallOption) (*Ack, error) {
+func (c *adminServiceClient) DryRunPrompt(ctx context.Context, in *PromptText, opts ...grpc.CallOption) (*PostPreview, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Ack)
-	err := c.cc.Invoke(ctx, AdminService_DeletePrompt_FullMethodName, in, out, cOpts...)
+	out := new(PostPreview)
+	err := c.cc.Invoke(ctx, AdminService_DryRunPrompt_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -443,17 +445,19 @@ type AdminServiceServer interface {
 	// DeleteTailoring removes a saved variant by id.
 	DeleteTailoring(context.Context, *TailoringId) (*Ack, error)
 	// --- RSS / anime control panel ---
-	// ListPrompts returns the configurable QOTD (question-of-the-day) prompts.
-	ListPrompts(context.Context, *Empty) (*PromptList, error)
-	// AddPrompt adds a QOTD prompt.
-	AddPrompt(context.Context, *PromptText) (*Ack, error)
-	// DeletePrompt removes a QOTD prompt by id.
-	DeletePrompt(context.Context, *PromptId) (*Ack, error)
+	// GetPrompt returns the single QOTD generation instruction (the default when none is saved).
+	GetPrompt(context.Context, *Empty) (*PromptText, error)
+	// SavePrompt stores the single QOTD generation instruction.
+	SavePrompt(context.Context, *PromptText) (*Ack, error)
+	// DryRunPrompt generates a preview anime discussion post from the given prompt (fetching the latest
+	// anime news) WITHOUT publishing it — for testing the prompt.
+	DryRunPrompt(context.Context, *PromptText) (*PostPreview, error)
 	// GetSlackConfig returns the Slack posting config (the webhook URL is never returned, only whether set).
 	GetSlackConfig(context.Context, *Empty) (*SlackConfig, error)
 	// SaveSlackConfig persists the Slack config (a blank webhook_url leaves the stored one unchanged).
 	SaveSlackConfig(context.Context, *SlackConfig) (*Ack, error)
-	// PostToSlackNow composes the latest anime news + today's prompt and posts it to Slack now.
+	// PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
+	// QOTD RSS feed.
 	PostToSlackNow(context.Context, *Empty) (*Ack, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
@@ -525,14 +529,14 @@ func (UnimplementedAdminServiceServer) GetTailoring(context.Context, *TailoringI
 func (UnimplementedAdminServiceServer) DeleteTailoring(context.Context, *TailoringId) (*Ack, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteTailoring not implemented")
 }
-func (UnimplementedAdminServiceServer) ListPrompts(context.Context, *Empty) (*PromptList, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListPrompts not implemented")
+func (UnimplementedAdminServiceServer) GetPrompt(context.Context, *Empty) (*PromptText, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPrompt not implemented")
 }
-func (UnimplementedAdminServiceServer) AddPrompt(context.Context, *PromptText) (*Ack, error) {
-	return nil, status.Error(codes.Unimplemented, "method AddPrompt not implemented")
+func (UnimplementedAdminServiceServer) SavePrompt(context.Context, *PromptText) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method SavePrompt not implemented")
 }
-func (UnimplementedAdminServiceServer) DeletePrompt(context.Context, *PromptId) (*Ack, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeletePrompt not implemented")
+func (UnimplementedAdminServiceServer) DryRunPrompt(context.Context, *PromptText) (*PostPreview, error) {
+	return nil, status.Error(codes.Unimplemented, "method DryRunPrompt not implemented")
 }
 func (UnimplementedAdminServiceServer) GetSlackConfig(context.Context, *Empty) (*SlackConfig, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSlackConfig not implemented")
@@ -924,56 +928,56 @@ func _AdminService_DeleteTailoring_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ListPrompts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AdminService_GetPrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ListPrompts(ctx, in)
+		return srv.(AdminServiceServer).GetPrompt(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_ListPrompts_FullMethodName,
+		FullMethod: AdminService_GetPrompt_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListPrompts(ctx, req.(*Empty))
+		return srv.(AdminServiceServer).GetPrompt(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_AddPrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AdminService_SavePrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PromptText)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).AddPrompt(ctx, in)
+		return srv.(AdminServiceServer).SavePrompt(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_AddPrompt_FullMethodName,
+		FullMethod: AdminService_SavePrompt_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).AddPrompt(ctx, req.(*PromptText))
+		return srv.(AdminServiceServer).SavePrompt(ctx, req.(*PromptText))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_DeletePrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PromptId)
+func _AdminService_DryRunPrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PromptText)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).DeletePrompt(ctx, in)
+		return srv.(AdminServiceServer).DryRunPrompt(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_DeletePrompt_FullMethodName,
+		FullMethod: AdminService_DryRunPrompt_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).DeletePrompt(ctx, req.(*PromptId))
+		return srv.(AdminServiceServer).DryRunPrompt(ctx, req.(*PromptText))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1120,16 +1124,16 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_DeleteTailoring_Handler,
 		},
 		{
-			MethodName: "ListPrompts",
-			Handler:    _AdminService_ListPrompts_Handler,
+			MethodName: "GetPrompt",
+			Handler:    _AdminService_GetPrompt_Handler,
 		},
 		{
-			MethodName: "AddPrompt",
-			Handler:    _AdminService_AddPrompt_Handler,
+			MethodName: "SavePrompt",
+			Handler:    _AdminService_SavePrompt_Handler,
 		},
 		{
-			MethodName: "DeletePrompt",
-			Handler:    _AdminService_DeletePrompt_Handler,
+			MethodName: "DryRunPrompt",
+			Handler:    _AdminService_DryRunPrompt_Handler,
 		},
 		{
 			MethodName: "GetSlackConfig",

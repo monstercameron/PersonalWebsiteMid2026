@@ -34,8 +34,9 @@ func AdminApp() ui.Node {
 	variants := ui.UseState[[]*sitepb.TailoringMeta](nil) // saved tailoring variants (the CRUD list)
 
 	// RSS / anime control panel
-	prompts := ui.UseState[[]*sitepb.Prompt](nil)
-	newPrompt := ui.UseState("")
+	promptText := ui.UseState("")                    // the single QOTD generation instruction
+	dryRun := ui.UseState[*sitepb.PostPreview](nil)  // last dry-run preview
+	dryRunning := ui.UseState(false)                 // dry-run in flight
 	slackWebhook := ui.UseState("")
 	slackSet := ui.UseState(false)
 	slackEnabled := ui.UseState(false)
@@ -142,12 +143,15 @@ func AdminApp() ui.Node {
 				}
 				ctx, cancel := callCtx(token.Get())
 				defer cancel()
-				pl, err := c.ListPrompts(ctx, &sitepb.Empty{})
+				gp, err := c.GetPrompt(ctx, &sitepb.Empty{})
 				if onAuthErr(err) {
 					return
 				}
-				if err == nil {
-					prompts.Set(pl.GetItems())
+				// Only seed the textarea from the server when it's still empty — never clobber edits the
+				// owner has already typed (this effect re-fires on every nav back to the RSS view, and a
+				// slow first-load response could otherwise land after they've started editing).
+				if err == nil && promptText.Get() == "" {
+					promptText.Set(gp.GetText())
 				}
 				if sc, err := c.GetSlackConfig(ctx, &sitepb.Empty{}); err == nil {
 					slackSet.Set(sc.GetWebhookSet())
@@ -558,56 +562,52 @@ func AdminApp() ui.Node {
 		}()
 	}
 
-	reloadPrompts := func() {
+	onSavePrompt := ui.UseEvent(func() {
+		flash.Set("")
 		go func() {
 			c, err := adminClient()
 			if err != nil {
+				flash.Set("connection error")
 				return
 			}
 			ctx, cancel := callCtx(token.Get())
 			defer cancel()
-			if pl, err := c.ListPrompts(ctx, &sitepb.Empty{}); err == nil {
-				prompts.Set(pl.GetItems())
+			ack, err := c.SavePrompt(ctx, &sitepb.PromptText{Text: promptText.Get()})
+			if onAuthErr(err) {
+				return
 			}
-		}()
-	}
-	onAddPrompt := ui.UseEvent(func() {
-		if newPrompt.Get() == "" {
-			return
-		}
-		go func() {
-			c, err := adminClient()
 			if err != nil {
+				flash.Set("save failed")
 				return
 			}
-			ctx, cancel := callCtx(token.Get())
-			defer cancel()
-			if _, err := c.AddPrompt(ctx, &sitepb.PromptText{Text: newPrompt.Get()}); err != nil {
-				if onAuthErr(err) {
-					return
-				}
-				flash.Set("add failed")
-				return
-			}
-			newPrompt.Set("")
-			reloadPrompts()
+			flash.Set(ack.GetMessage())
 		}()
 	})
-	deletePrompt := func(id int64) {
+	onDryRun := ui.UseEvent(func() {
+		flash.Set("")
+		dryRun.Set(nil)
+		dryRunning.Set(true)
 		go func() {
 			c, err := adminClient()
 			if err != nil {
+				dryRunning.Set(false)
+				flash.Set("connection error")
 				return
 			}
-			ctx, cancel := callCtx(token.Get())
+			ctx, cancel := callCtxLong(token.Get())
 			defer cancel()
-			if _, err := c.DeletePrompt(ctx, &sitepb.PromptId{Id: id}); err == nil {
-				reloadPrompts()
-			} else {
-				onAuthErr(err)
+			res, err := c.DryRunPrompt(ctx, &sitepb.PromptText{Text: promptText.Get()})
+			dryRunning.Set(false)
+			if onAuthErr(err) {
+				return
 			}
+			if err != nil {
+				flash.Set("dry run failed: " + err.Error())
+				return
+			}
+			dryRun.Set(res)
 		}()
-	}
+	})
 	onToggleSlack := ui.WrapHandler(func() { slackEnabled.Set(!slackEnabled.Get()) })
 	onSaveSlack := ui.UseEvent(func() {
 		go func() {
@@ -630,13 +630,13 @@ func AdminApp() ui.Node {
 		}()
 	})
 	onPostNow := ui.UseEvent(func() {
-		flash.Set("posting to Slack…")
+		flash.Set("generating & posting…")
 		go func() {
 			c, err := adminClient()
 			if err != nil {
 				return
 			}
-			ctx, cancel := callCtx(token.Get())
+			ctx, cancel := callCtxLong(token.Get())
 			defer cancel()
 			ack, err := c.PostToSlackNow(ctx, &sitepb.Empty{})
 			if onAuthErr(err) {
@@ -657,7 +657,7 @@ func AdminApp() ui.Node {
 	case "settings":
 		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
 	case "rss":
-		content = rssView(prompts.Get(), newPrompt, onAddPrompt, deletePrompt, slackWebhook, slackSet.Get(), slackEnabled.Get(), onToggleSlack, onSaveSlack, onPostNow)
+		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), onToggleSlack, onSaveSlack, onPostNow)
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}

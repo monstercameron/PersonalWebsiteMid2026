@@ -1,11 +1,14 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/monstercameron/earlcameron/internal/rss"
+	"github.com/monstercameron/earlcameron/internal/store"
 )
 
 // registerAdminRoutes wires the public anime RSS feeds and the admin console shell.
@@ -37,14 +40,17 @@ func (s *Server) animeFeed(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprint(w, xml)
 }
 
-// qotdFeed serves the daily-prompts (QOTD) RSS feed, built from the configurable prompt list.
+// qotdFeed serves the QOTD RSS feed: the single last-published generated post (an empty but valid
+// feed until the owner publishes one via "Post to Slack now").
 func (s *Server) qotdFeed(w http.ResponseWriter, r *http.Request) {
-	prompts, _ := s.store.ListPrompts(r.Context())
-	texts := make([]string, 0, len(prompts))
-	for _, p := range prompts {
-		texts = append(texts, p.Prompt)
+	var post *rss.PublishedPost
+	if raw, _ := s.store.GetSetting(r.Context(), store.SettingQOTDPublished); strings.TrimSpace(raw) != "" {
+		var p rss.PublishedPost
+		if json.Unmarshal([]byte(raw), &p) == nil {
+			post = &p
+		}
 	}
-	xml, err := rss.QuestionFeedXML(texts, s.cfg.BaseURL, time.Now())
+	xml, err := rss.PublishedFeedXML(post, s.cfg.BaseURL, time.Now())
 	if err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return

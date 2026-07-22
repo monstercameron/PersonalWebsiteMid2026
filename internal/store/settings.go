@@ -13,6 +13,8 @@ const (
 	SettingActiveResume = "active_resume"     // JSON of the applied résumé (overrides the canonical)
 	SettingSlackWebhook = "slack_webhook_url" // Slack incoming-webhook URL for QOTD/news posts
 	SettingSlackEnabled = "slack_enabled"     // "1"/"true" to enable scheduled Slack posting
+	SettingQOTDPrompt   = "qotd_prompt"       // the single generation instruction for the anime discussion post
+	SettingQOTDPublished = "qotd_published"   // JSON of the last generated-and-published post (served by the QOTD feed)
 )
 
 // GetSetting returns the stored value for key, or "" if it has never been set.

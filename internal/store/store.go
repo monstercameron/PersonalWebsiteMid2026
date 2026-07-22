@@ -72,14 +72,9 @@ func migrate(db *sql.DB) error {
 			result     TEXT    NOT NULL,
 			created_at INTEGER NOT NULL
 		)`,
-		`CREATE TABLE IF NOT EXISTS qotd_prompts (
-			id         INTEGER PRIMARY KEY AUTOINCREMENT,
-			prompt     TEXT    NOT NULL,
-			created_at INTEGER NOT NULL
-		)`,
-		// Unique prompt text: makes seeding and adds idempotent (INSERT OR IGNORE), so a concurrent
-		// double-seed or a duplicate add can never duplicate a prompt.
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_qotd_prompt ON qotd_prompts(prompt)`,
+		// The old multi-prompt QOTD list was replaced by a single generation instruction stored in
+		// settings (SettingQOTDPrompt); drop the legacy table so its seeded rows don't linger.
+		`DROP TABLE IF EXISTS qotd_prompts`,
 		// The single owner account for the deployed site (first-run setup writes row id=1). The CHECK
 		// pins it to one row: there is exactly one owner. Password and recovery phrase are stored only
 		// as bcrypt hashes; the hint is plaintext (it is a memory jog the owner chooses, shown on the

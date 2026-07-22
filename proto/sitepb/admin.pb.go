@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// PromptText carries a QOTD prompt to add.
+// PromptText carries the single QOTD generation instruction.
 type PromptText struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
@@ -66,28 +66,33 @@ func (x *PromptText) GetText() string {
 	return ""
 }
 
-// PromptId identifies a QOTD prompt.
-type PromptId struct {
+// PostPreview is the result of a dry-run: the generated post body, a title, the rendered RSS feed
+// XML, and an error string (set when generation failed, e.g. no OpenAI key).
+type PostPreview struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Body          string                 `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Rss           string                 `protobuf:"bytes,3,opt,name=rss,proto3" json:"rss,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	News          string                 `protobuf:"bytes,5,opt,name=news,proto3" json:"news,omitempty"` // the headline the prompt was generated against (context)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PromptId) Reset() {
-	*x = PromptId{}
+func (x *PostPreview) Reset() {
+	*x = PostPreview{}
 	mi := &file_admin_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PromptId) String() string {
+func (x *PostPreview) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PromptId) ProtoMessage() {}
+func (*PostPreview) ProtoMessage() {}
 
-func (x *PromptId) ProtoReflect() protoreflect.Message {
+func (x *PostPreview) ProtoReflect() protoreflect.Message {
 	mi := &file_admin_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -99,122 +104,44 @@ func (x *PromptId) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PromptId.ProtoReflect.Descriptor instead.
-func (*PromptId) Descriptor() ([]byte, []int) {
+// Deprecated: Use PostPreview.ProtoReflect.Descriptor instead.
+func (*PostPreview) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PromptId) GetId() int64 {
+func (x *PostPreview) GetBody() string {
 	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-// Prompt is one QOTD prompt.
-type Prompt struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	CreatedAt     int64                  `protobuf:"varint,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Prompt) Reset() {
-	*x = Prompt{}
-	mi := &file_admin_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Prompt) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Prompt) ProtoMessage() {}
-
-func (x *Prompt) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Prompt.ProtoReflect.Descriptor instead.
-func (*Prompt) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *Prompt) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *Prompt) GetText() string {
-	if x != nil {
-		return x.Text
+		return x.Body
 	}
 	return ""
 }
 
-func (x *Prompt) GetCreatedAt() int64 {
+func (x *PostPreview) GetTitle() string {
 	if x != nil {
-		return x.CreatedAt
+		return x.Title
 	}
-	return 0
+	return ""
 }
 
-// PromptList is the configured QOTD prompts, newest first.
-type PromptList struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*Prompt              `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PromptList) Reset() {
-	*x = PromptList{}
-	mi := &file_admin_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PromptList) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PromptList) ProtoMessage() {}
-
-func (x *PromptList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[3]
+func (x *PostPreview) GetRss() string {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.Rss
 	}
-	return mi.MessageOf(x)
+	return ""
 }
 
-// Deprecated: Use PromptList.ProtoReflect.Descriptor instead.
-func (*PromptList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *PromptList) GetItems() []*Prompt {
+func (x *PostPreview) GetError() string {
 	if x != nil {
-		return x.Items
+		return x.Error
 	}
-	return nil
+	return ""
+}
+
+func (x *PostPreview) GetNews() string {
+	if x != nil {
+		return x.News
+	}
+	return ""
 }
 
 // SlackConfig is the Slack posting configuration. On read, webhook_url is empty and webhook_set
@@ -230,7 +157,7 @@ type SlackConfig struct {
 
 func (x *SlackConfig) Reset() {
 	*x = SlackConfig{}
-	mi := &file_admin_proto_msgTypes[4]
+	mi := &file_admin_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -242,7 +169,7 @@ func (x *SlackConfig) String() string {
 func (*SlackConfig) ProtoMessage() {}
 
 func (x *SlackConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[4]
+	mi := &file_admin_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -255,7 +182,7 @@ func (x *SlackConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SlackConfig.ProtoReflect.Descriptor instead.
 func (*SlackConfig) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{4}
+	return file_admin_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SlackConfig) GetWebhookUrl() string {
@@ -289,7 +216,7 @@ type TailoringId struct {
 
 func (x *TailoringId) Reset() {
 	*x = TailoringId{}
-	mi := &file_admin_proto_msgTypes[5]
+	mi := &file_admin_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -301,7 +228,7 @@ func (x *TailoringId) String() string {
 func (*TailoringId) ProtoMessage() {}
 
 func (x *TailoringId) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[5]
+	mi := &file_admin_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -314,7 +241,7 @@ func (x *TailoringId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailoringId.ProtoReflect.Descriptor instead.
 func (*TailoringId) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{5}
+	return file_admin_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *TailoringId) GetId() int64 {
@@ -339,7 +266,7 @@ type TailoringMeta struct {
 
 func (x *TailoringMeta) Reset() {
 	*x = TailoringMeta{}
-	mi := &file_admin_proto_msgTypes[6]
+	mi := &file_admin_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -351,7 +278,7 @@ func (x *TailoringMeta) String() string {
 func (*TailoringMeta) ProtoMessage() {}
 
 func (x *TailoringMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[6]
+	mi := &file_admin_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -364,7 +291,7 @@ func (x *TailoringMeta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailoringMeta.ProtoReflect.Descriptor instead.
 func (*TailoringMeta) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{6}
+	return file_admin_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *TailoringMeta) GetId() int64 {
@@ -419,7 +346,7 @@ type TailoringList struct {
 
 func (x *TailoringList) Reset() {
 	*x = TailoringList{}
-	mi := &file_admin_proto_msgTypes[7]
+	mi := &file_admin_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -431,7 +358,7 @@ func (x *TailoringList) String() string {
 func (*TailoringList) ProtoMessage() {}
 
 func (x *TailoringList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[7]
+	mi := &file_admin_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -444,7 +371,7 @@ func (x *TailoringList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailoringList.ProtoReflect.Descriptor instead.
 func (*TailoringList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{7}
+	return file_admin_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *TailoringList) GetItems() []*TailoringMeta {
@@ -467,7 +394,7 @@ type Settings struct {
 
 func (x *Settings) Reset() {
 	*x = Settings{}
-	mi := &file_admin_proto_msgTypes[8]
+	mi := &file_admin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -479,7 +406,7 @@ func (x *Settings) String() string {
 func (*Settings) ProtoMessage() {}
 
 func (x *Settings) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[8]
+	mi := &file_admin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -492,7 +419,7 @@ func (x *Settings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Settings.ProtoReflect.Descriptor instead.
 func (*Settings) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{8}
+	return file_admin_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Settings) GetOpenaiApiKey() string {
@@ -526,7 +453,7 @@ type ModelList struct {
 
 func (x *ModelList) Reset() {
 	*x = ModelList{}
-	mi := &file_admin_proto_msgTypes[9]
+	mi := &file_admin_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -538,7 +465,7 @@ func (x *ModelList) String() string {
 func (*ModelList) ProtoMessage() {}
 
 func (x *ModelList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[9]
+	mi := &file_admin_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -551,7 +478,7 @@ func (x *ModelList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModelList.ProtoReflect.Descriptor instead.
 func (*ModelList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{9}
+	return file_admin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ModelList) GetModels() []string {
@@ -570,7 +497,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_admin_proto_msgTypes[10]
+	mi := &file_admin_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -582,7 +509,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[10]
+	mi := &file_admin_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -595,7 +522,7 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{10}
+	return file_admin_proto_rawDescGZIP(), []int{8}
 }
 
 // LoginRequest carries the admin username + password.
@@ -609,7 +536,7 @@ type LoginRequest struct {
 
 func (x *LoginRequest) Reset() {
 	*x = LoginRequest{}
-	mi := &file_admin_proto_msgTypes[11]
+	mi := &file_admin_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -621,7 +548,7 @@ func (x *LoginRequest) String() string {
 func (*LoginRequest) ProtoMessage() {}
 
 func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[11]
+	mi := &file_admin_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -634,7 +561,7 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{11}
+	return file_admin_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *LoginRequest) GetUsername() string {
@@ -662,7 +589,7 @@ type LoginReply struct {
 
 func (x *LoginReply) Reset() {
 	*x = LoginReply{}
-	mi := &file_admin_proto_msgTypes[12]
+	mi := &file_admin_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -674,7 +601,7 @@ func (x *LoginReply) String() string {
 func (*LoginReply) ProtoMessage() {}
 
 func (x *LoginReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[12]
+	mi := &file_admin_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -687,7 +614,7 @@ func (x *LoginReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginReply.ProtoReflect.Descriptor instead.
 func (*LoginReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{12}
+	return file_admin_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *LoginReply) GetOk() bool {
@@ -715,7 +642,7 @@ type AuthStateReply struct {
 
 func (x *AuthStateReply) Reset() {
 	*x = AuthStateReply{}
-	mi := &file_admin_proto_msgTypes[13]
+	mi := &file_admin_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -727,7 +654,7 @@ func (x *AuthStateReply) String() string {
 func (*AuthStateReply) ProtoMessage() {}
 
 func (x *AuthStateReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[13]
+	mi := &file_admin_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -740,7 +667,7 @@ func (x *AuthStateReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthStateReply.ProtoReflect.Descriptor instead.
 func (*AuthStateReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{13}
+	return file_admin_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AuthStateReply) GetNeedsSetup() bool {
@@ -771,7 +698,7 @@ type SetupRequest struct {
 
 func (x *SetupRequest) Reset() {
 	*x = SetupRequest{}
-	mi := &file_admin_proto_msgTypes[14]
+	mi := &file_admin_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -783,7 +710,7 @@ func (x *SetupRequest) String() string {
 func (*SetupRequest) ProtoMessage() {}
 
 func (x *SetupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[14]
+	mi := &file_admin_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -796,7 +723,7 @@ func (x *SetupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupRequest.ProtoReflect.Descriptor instead.
 func (*SetupRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{14}
+	return file_admin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SetupRequest) GetUsername() string {
@@ -841,7 +768,7 @@ type SetupReply struct {
 
 func (x *SetupReply) Reset() {
 	*x = SetupReply{}
-	mi := &file_admin_proto_msgTypes[15]
+	mi := &file_admin_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -853,7 +780,7 @@ func (x *SetupReply) String() string {
 func (*SetupReply) ProtoMessage() {}
 
 func (x *SetupReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[15]
+	mi := &file_admin_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -866,7 +793,7 @@ func (x *SetupReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupReply.ProtoReflect.Descriptor instead.
 func (*SetupReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{15}
+	return file_admin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SetupReply) GetOk() bool {
@@ -908,7 +835,7 @@ type ResetRequest struct {
 
 func (x *ResetRequest) Reset() {
 	*x = ResetRequest{}
-	mi := &file_admin_proto_msgTypes[16]
+	mi := &file_admin_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -920,7 +847,7 @@ func (x *ResetRequest) String() string {
 func (*ResetRequest) ProtoMessage() {}
 
 func (x *ResetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[16]
+	mi := &file_admin_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -933,7 +860,7 @@ func (x *ResetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetRequest.ProtoReflect.Descriptor instead.
 func (*ResetRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{16}
+	return file_admin_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ResetRequest) GetRecoveryPhrase() string {
@@ -962,7 +889,7 @@ type ResetReply struct {
 
 func (x *ResetReply) Reset() {
 	*x = ResetReply{}
-	mi := &file_admin_proto_msgTypes[17]
+	mi := &file_admin_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -974,7 +901,7 @@ func (x *ResetReply) String() string {
 func (*ResetReply) ProtoMessage() {}
 
 func (x *ResetReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[17]
+	mi := &file_admin_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -987,7 +914,7 @@ func (x *ResetReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetReply.ProtoReflect.Descriptor instead.
 func (*ResetReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{17}
+	return file_admin_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ResetReply) GetOk() bool {
@@ -1021,7 +948,7 @@ type SearchRequest struct {
 
 func (x *SearchRequest) Reset() {
 	*x = SearchRequest{}
-	mi := &file_admin_proto_msgTypes[18]
+	mi := &file_admin_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1033,7 +960,7 @@ func (x *SearchRequest) String() string {
 func (*SearchRequest) ProtoMessage() {}
 
 func (x *SearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[18]
+	mi := &file_admin_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1046,7 +973,7 @@ func (x *SearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
 func (*SearchRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{18}
+	return file_admin_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SearchRequest) GetQuery() string {
@@ -1066,7 +993,7 @@ type AnimeId struct {
 
 func (x *AnimeId) Reset() {
 	*x = AnimeId{}
-	mi := &file_admin_proto_msgTypes[19]
+	mi := &file_admin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1078,7 +1005,7 @@ func (x *AnimeId) String() string {
 func (*AnimeId) ProtoMessage() {}
 
 func (x *AnimeId) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[19]
+	mi := &file_admin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1091,7 +1018,7 @@ func (x *AnimeId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnimeId.ProtoReflect.Descriptor instead.
 func (*AnimeId) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{19}
+	return file_admin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *AnimeId) GetAnilistId() int32 {
@@ -1111,7 +1038,7 @@ type CheckReply struct {
 
 func (x *CheckReply) Reset() {
 	*x = CheckReply{}
-	mi := &file_admin_proto_msgTypes[20]
+	mi := &file_admin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1123,7 +1050,7 @@ func (x *CheckReply) String() string {
 func (*CheckReply) ProtoMessage() {}
 
 func (x *CheckReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[20]
+	mi := &file_admin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1136,7 +1063,7 @@ func (x *CheckReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckReply.ProtoReflect.Descriptor instead.
 func (*CheckReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{20}
+	return file_admin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CheckReply) GetUpdated() int32 {
@@ -1163,7 +1090,7 @@ type Anime struct {
 
 func (x *Anime) Reset() {
 	*x = Anime{}
-	mi := &file_admin_proto_msgTypes[21]
+	mi := &file_admin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1175,7 +1102,7 @@ func (x *Anime) String() string {
 func (*Anime) ProtoMessage() {}
 
 func (x *Anime) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[21]
+	mi := &file_admin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1188,7 +1115,7 @@ func (x *Anime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Anime.ProtoReflect.Descriptor instead.
 func (*Anime) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{21}
+	return file_admin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *Anime) GetAnilistId() int32 {
@@ -1257,7 +1184,7 @@ type AnimeList struct {
 
 func (x *AnimeList) Reset() {
 	*x = AnimeList{}
-	mi := &file_admin_proto_msgTypes[22]
+	mi := &file_admin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1269,7 +1196,7 @@ func (x *AnimeList) String() string {
 func (*AnimeList) ProtoMessage() {}
 
 func (x *AnimeList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[22]
+	mi := &file_admin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1282,7 +1209,7 @@ func (x *AnimeList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnimeList.ProtoReflect.Descriptor instead.
 func (*AnimeList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{22}
+	return file_admin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *AnimeList) GetItems() []*Anime {
@@ -1312,7 +1239,7 @@ type Resume struct {
 
 func (x *Resume) Reset() {
 	*x = Resume{}
-	mi := &file_admin_proto_msgTypes[23]
+	mi := &file_admin_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1324,7 +1251,7 @@ func (x *Resume) String() string {
 func (*Resume) ProtoMessage() {}
 
 func (x *Resume) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[23]
+	mi := &file_admin_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1337,7 +1264,7 @@ func (x *Resume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resume.ProtoReflect.Descriptor instead.
 func (*Resume) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{23}
+	return file_admin_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Resume) GetName() string {
@@ -1430,7 +1357,7 @@ type ResumeJob struct {
 
 func (x *ResumeJob) Reset() {
 	*x = ResumeJob{}
-	mi := &file_admin_proto_msgTypes[24]
+	mi := &file_admin_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1442,7 +1369,7 @@ func (x *ResumeJob) String() string {
 func (*ResumeJob) ProtoMessage() {}
 
 func (x *ResumeJob) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[24]
+	mi := &file_admin_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1455,7 +1382,7 @@ func (x *ResumeJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeJob.ProtoReflect.Descriptor instead.
 func (*ResumeJob) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{24}
+	return file_admin_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ResumeJob) GetRole() string {
@@ -1497,7 +1424,7 @@ type ResumeSkill struct {
 
 func (x *ResumeSkill) Reset() {
 	*x = ResumeSkill{}
-	mi := &file_admin_proto_msgTypes[25]
+	mi := &file_admin_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1509,7 +1436,7 @@ func (x *ResumeSkill) String() string {
 func (*ResumeSkill) ProtoMessage() {}
 
 func (x *ResumeSkill) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[25]
+	mi := &file_admin_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1522,7 +1449,7 @@ func (x *ResumeSkill) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeSkill.ProtoReflect.Descriptor instead.
 func (*ResumeSkill) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{25}
+	return file_admin_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ResumeSkill) GetLabel() string {
@@ -1550,7 +1477,7 @@ type ResumeProject struct {
 
 func (x *ResumeProject) Reset() {
 	*x = ResumeProject{}
-	mi := &file_admin_proto_msgTypes[26]
+	mi := &file_admin_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1562,7 +1489,7 @@ func (x *ResumeProject) String() string {
 func (*ResumeProject) ProtoMessage() {}
 
 func (x *ResumeProject) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[26]
+	mi := &file_admin_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1575,7 +1502,7 @@ func (x *ResumeProject) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeProject.ProtoReflect.Descriptor instead.
 func (*ResumeProject) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{26}
+	return file_admin_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ResumeProject) GetName() string {
@@ -1602,7 +1529,7 @@ type TailorRequest struct {
 
 func (x *TailorRequest) Reset() {
 	*x = TailorRequest{}
-	mi := &file_admin_proto_msgTypes[27]
+	mi := &file_admin_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1614,7 +1541,7 @@ func (x *TailorRequest) String() string {
 func (*TailorRequest) ProtoMessage() {}
 
 func (x *TailorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[27]
+	mi := &file_admin_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1627,7 +1554,7 @@ func (x *TailorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailorRequest.ProtoReflect.Descriptor instead.
 func (*TailorRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{27}
+	return file_admin_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *TailorRequest) GetJobUrl() string {
@@ -1650,7 +1577,7 @@ type TailorResult struct {
 
 func (x *TailorResult) Reset() {
 	*x = TailorResult{}
-	mi := &file_admin_proto_msgTypes[28]
+	mi := &file_admin_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1662,7 +1589,7 @@ func (x *TailorResult) String() string {
 func (*TailorResult) ProtoMessage() {}
 
 func (x *TailorResult) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[28]
+	mi := &file_admin_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1675,7 +1602,7 @@ func (x *TailorResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailorResult.ProtoReflect.Descriptor instead.
 func (*TailorResult) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{28}
+	return file_admin_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *TailorResult) GetResume() *Resume {
@@ -1712,7 +1639,7 @@ type JobAnalysis struct {
 
 func (x *JobAnalysis) Reset() {
 	*x = JobAnalysis{}
-	mi := &file_admin_proto_msgTypes[29]
+	mi := &file_admin_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1724,7 +1651,7 @@ func (x *JobAnalysis) String() string {
 func (*JobAnalysis) ProtoMessage() {}
 
 func (x *JobAnalysis) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[29]
+	mi := &file_admin_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1737,7 +1664,7 @@ func (x *JobAnalysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobAnalysis.ProtoReflect.Descriptor instead.
 func (*JobAnalysis) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{29}
+	return file_admin_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *JobAnalysis) GetTitle() string {
@@ -1779,7 +1706,7 @@ type Rationale struct {
 
 func (x *Rationale) Reset() {
 	*x = Rationale{}
-	mi := &file_admin_proto_msgTypes[30]
+	mi := &file_admin_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1791,7 +1718,7 @@ func (x *Rationale) String() string {
 func (*Rationale) ProtoMessage() {}
 
 func (x *Rationale) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[30]
+	mi := &file_admin_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1804,7 +1731,7 @@ func (x *Rationale) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rationale.ProtoReflect.Descriptor instead.
 func (*Rationale) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{30}
+	return file_admin_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *Rationale) GetFocus() string {
@@ -1829,17 +1756,13 @@ const file_admin_proto_rawDesc = "" +
 	"site.proto\" \n" +
 	"\n" +
 	"PromptText\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"\x1a\n" +
-	"\bPromptId\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\"K\n" +
-	"\x06Prompt\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\x03 \x01(\x03R\tcreatedAt\"3\n" +
-	"\n" +
-	"PromptList\x12%\n" +
-	"\x05items\x18\x01 \x03(\v2\x0f.site.v1.PromptR\x05items\"i\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"s\n" +
+	"\vPostPreview\x12\x12\n" +
+	"\x04body\x18\x01 \x01(\tR\x04body\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
+	"\x03rss\x18\x03 \x01(\tR\x03rss\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x12\x12\n" +
+	"\x04news\x18\x05 \x01(\tR\x04news\"i\n" +
 	"\vSlackConfig\x12\x1f\n" +
 	"\vwebhook_url\x18\x01 \x01(\tR\n" +
 	"webhookUrl\x12\x18\n" +
@@ -1957,7 +1880,7 @@ const file_admin_proto_rawDesc = "" +
 	"\frequirements\x18\x04 \x03(\tR\frequirements\"9\n" +
 	"\tRationale\x12\x14\n" +
 	"\x05focus\x18\x01 \x01(\tR\x05focus\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason2\xee\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason2\xf7\n" +
 	"\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x124\n" +
@@ -1981,10 +1904,11 @@ const file_admin_proto_rawDesc = "" +
 	"\rGetBaseResume\x12\x0e.site.v1.Empty\x1a\x0f.site.v1.Resume\x128\n" +
 	"\x0eListTailorings\x12\x0e.site.v1.Empty\x1a\x16.site.v1.TailoringList\x12;\n" +
 	"\fGetTailoring\x12\x14.site.v1.TailoringId\x1a\x15.site.v1.TailorResult\x125\n" +
-	"\x0fDeleteTailoring\x12\x14.site.v1.TailoringId\x1a\f.site.v1.Ack\x122\n" +
-	"\vListPrompts\x12\x0e.site.v1.Empty\x1a\x13.site.v1.PromptList\x12.\n" +
-	"\tAddPrompt\x12\x13.site.v1.PromptText\x1a\f.site.v1.Ack\x12/\n" +
-	"\fDeletePrompt\x12\x11.site.v1.PromptId\x1a\f.site.v1.Ack\x126\n" +
+	"\x0fDeleteTailoring\x12\x14.site.v1.TailoringId\x1a\f.site.v1.Ack\x120\n" +
+	"\tGetPrompt\x12\x0e.site.v1.Empty\x1a\x13.site.v1.PromptText\x12/\n" +
+	"\n" +
+	"SavePrompt\x12\x13.site.v1.PromptText\x1a\f.site.v1.Ack\x129\n" +
+	"\fDryRunPrompt\x12\x13.site.v1.PromptText\x1a\x14.site.v1.PostPreview\x126\n" +
 	"\x0eGetSlackConfig\x12\x0e.site.v1.Empty\x1a\x14.site.v1.SlackConfig\x125\n" +
 	"\x0fSaveSlackConfig\x12\x14.site.v1.SlackConfig\x1a\f.site.v1.Ack\x12.\n" +
 	"\x0ePostToSlackNow\x12\x0e.site.v1.Empty\x1a\f.site.v1.AckB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
@@ -2001,108 +1925,105 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_admin_proto_goTypes = []any{
 	(*PromptText)(nil),     // 0: site.v1.PromptText
-	(*PromptId)(nil),       // 1: site.v1.PromptId
-	(*Prompt)(nil),         // 2: site.v1.Prompt
-	(*PromptList)(nil),     // 3: site.v1.PromptList
-	(*SlackConfig)(nil),    // 4: site.v1.SlackConfig
-	(*TailoringId)(nil),    // 5: site.v1.TailoringId
-	(*TailoringMeta)(nil),  // 6: site.v1.TailoringMeta
-	(*TailoringList)(nil),  // 7: site.v1.TailoringList
-	(*Settings)(nil),       // 8: site.v1.Settings
-	(*ModelList)(nil),      // 9: site.v1.ModelList
-	(*Empty)(nil),          // 10: site.v1.Empty
-	(*LoginRequest)(nil),   // 11: site.v1.LoginRequest
-	(*LoginReply)(nil),     // 12: site.v1.LoginReply
-	(*AuthStateReply)(nil), // 13: site.v1.AuthStateReply
-	(*SetupRequest)(nil),   // 14: site.v1.SetupRequest
-	(*SetupReply)(nil),     // 15: site.v1.SetupReply
-	(*ResetRequest)(nil),   // 16: site.v1.ResetRequest
-	(*ResetReply)(nil),     // 17: site.v1.ResetReply
-	(*SearchRequest)(nil),  // 18: site.v1.SearchRequest
-	(*AnimeId)(nil),        // 19: site.v1.AnimeId
-	(*CheckReply)(nil),     // 20: site.v1.CheckReply
-	(*Anime)(nil),          // 21: site.v1.Anime
-	(*AnimeList)(nil),      // 22: site.v1.AnimeList
-	(*Resume)(nil),         // 23: site.v1.Resume
-	(*ResumeJob)(nil),      // 24: site.v1.ResumeJob
-	(*ResumeSkill)(nil),    // 25: site.v1.ResumeSkill
-	(*ResumeProject)(nil),  // 26: site.v1.ResumeProject
-	(*TailorRequest)(nil),  // 27: site.v1.TailorRequest
-	(*TailorResult)(nil),   // 28: site.v1.TailorResult
-	(*JobAnalysis)(nil),    // 29: site.v1.JobAnalysis
-	(*Rationale)(nil),      // 30: site.v1.Rationale
-	(*Ack)(nil),            // 31: site.v1.Ack
+	(*PostPreview)(nil),    // 1: site.v1.PostPreview
+	(*SlackConfig)(nil),    // 2: site.v1.SlackConfig
+	(*TailoringId)(nil),    // 3: site.v1.TailoringId
+	(*TailoringMeta)(nil),  // 4: site.v1.TailoringMeta
+	(*TailoringList)(nil),  // 5: site.v1.TailoringList
+	(*Settings)(nil),       // 6: site.v1.Settings
+	(*ModelList)(nil),      // 7: site.v1.ModelList
+	(*Empty)(nil),          // 8: site.v1.Empty
+	(*LoginRequest)(nil),   // 9: site.v1.LoginRequest
+	(*LoginReply)(nil),     // 10: site.v1.LoginReply
+	(*AuthStateReply)(nil), // 11: site.v1.AuthStateReply
+	(*SetupRequest)(nil),   // 12: site.v1.SetupRequest
+	(*SetupReply)(nil),     // 13: site.v1.SetupReply
+	(*ResetRequest)(nil),   // 14: site.v1.ResetRequest
+	(*ResetReply)(nil),     // 15: site.v1.ResetReply
+	(*SearchRequest)(nil),  // 16: site.v1.SearchRequest
+	(*AnimeId)(nil),        // 17: site.v1.AnimeId
+	(*CheckReply)(nil),     // 18: site.v1.CheckReply
+	(*Anime)(nil),          // 19: site.v1.Anime
+	(*AnimeList)(nil),      // 20: site.v1.AnimeList
+	(*Resume)(nil),         // 21: site.v1.Resume
+	(*ResumeJob)(nil),      // 22: site.v1.ResumeJob
+	(*ResumeSkill)(nil),    // 23: site.v1.ResumeSkill
+	(*ResumeProject)(nil),  // 24: site.v1.ResumeProject
+	(*TailorRequest)(nil),  // 25: site.v1.TailorRequest
+	(*TailorResult)(nil),   // 26: site.v1.TailorResult
+	(*JobAnalysis)(nil),    // 27: site.v1.JobAnalysis
+	(*Rationale)(nil),      // 28: site.v1.Rationale
+	(*Ack)(nil),            // 29: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
-	2,  // 0: site.v1.PromptList.items:type_name -> site.v1.Prompt
-	6,  // 1: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
-	21, // 2: site.v1.AnimeList.items:type_name -> site.v1.Anime
-	24, // 3: site.v1.Resume.jobs:type_name -> site.v1.ResumeJob
-	25, // 4: site.v1.Resume.skills:type_name -> site.v1.ResumeSkill
-	26, // 5: site.v1.Resume.projects:type_name -> site.v1.ResumeProject
-	23, // 6: site.v1.TailorResult.resume:type_name -> site.v1.Resume
-	29, // 7: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
-	30, // 8: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
-	11, // 9: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
-	10, // 10: site.v1.AdminService.AuthState:input_type -> site.v1.Empty
-	14, // 11: site.v1.AdminService.Setup:input_type -> site.v1.SetupRequest
-	16, // 12: site.v1.AdminService.ResetPassword:input_type -> site.v1.ResetRequest
-	18, // 13: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
-	10, // 14: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
-	19, // 15: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
-	19, // 16: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
-	10, // 17: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
-	10, // 18: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
-	23, // 19: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
-	27, // 20: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
-	10, // 21: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
-	8,  // 22: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
-	10, // 23: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
-	10, // 24: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
-	10, // 25: site.v1.AdminService.GetBaseResume:input_type -> site.v1.Empty
-	10, // 26: site.v1.AdminService.ListTailorings:input_type -> site.v1.Empty
-	5,  // 27: site.v1.AdminService.GetTailoring:input_type -> site.v1.TailoringId
-	5,  // 28: site.v1.AdminService.DeleteTailoring:input_type -> site.v1.TailoringId
-	10, // 29: site.v1.AdminService.ListPrompts:input_type -> site.v1.Empty
-	0,  // 30: site.v1.AdminService.AddPrompt:input_type -> site.v1.PromptText
-	1,  // 31: site.v1.AdminService.DeletePrompt:input_type -> site.v1.PromptId
-	10, // 32: site.v1.AdminService.GetSlackConfig:input_type -> site.v1.Empty
-	4,  // 33: site.v1.AdminService.SaveSlackConfig:input_type -> site.v1.SlackConfig
-	10, // 34: site.v1.AdminService.PostToSlackNow:input_type -> site.v1.Empty
-	12, // 35: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	13, // 36: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
-	15, // 37: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
-	17, // 38: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
-	22, // 39: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	22, // 40: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	31, // 41: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	31, // 42: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	20, // 43: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	23, // 44: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	31, // 45: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	28, // 46: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	8,  // 47: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	31, // 48: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	9,  // 49: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	28, // 50: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	23, // 51: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
-	7,  // 52: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
-	28, // 53: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
-	31, // 54: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
-	3,  // 55: site.v1.AdminService.ListPrompts:output_type -> site.v1.PromptList
-	31, // 56: site.v1.AdminService.AddPrompt:output_type -> site.v1.Ack
-	31, // 57: site.v1.AdminService.DeletePrompt:output_type -> site.v1.Ack
-	4,  // 58: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
-	31, // 59: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
-	31, // 60: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
-	35, // [35:61] is the sub-list for method output_type
-	9,  // [9:35] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	4,  // 0: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
+	19, // 1: site.v1.AnimeList.items:type_name -> site.v1.Anime
+	22, // 2: site.v1.Resume.jobs:type_name -> site.v1.ResumeJob
+	23, // 3: site.v1.Resume.skills:type_name -> site.v1.ResumeSkill
+	24, // 4: site.v1.Resume.projects:type_name -> site.v1.ResumeProject
+	21, // 5: site.v1.TailorResult.resume:type_name -> site.v1.Resume
+	27, // 6: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
+	28, // 7: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
+	9,  // 8: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
+	8,  // 9: site.v1.AdminService.AuthState:input_type -> site.v1.Empty
+	12, // 10: site.v1.AdminService.Setup:input_type -> site.v1.SetupRequest
+	14, // 11: site.v1.AdminService.ResetPassword:input_type -> site.v1.ResetRequest
+	16, // 12: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
+	8,  // 13: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
+	17, // 14: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
+	17, // 15: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
+	8,  // 16: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
+	8,  // 17: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
+	21, // 18: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
+	25, // 19: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
+	8,  // 20: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
+	6,  // 21: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
+	8,  // 22: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
+	8,  // 23: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
+	8,  // 24: site.v1.AdminService.GetBaseResume:input_type -> site.v1.Empty
+	8,  // 25: site.v1.AdminService.ListTailorings:input_type -> site.v1.Empty
+	3,  // 26: site.v1.AdminService.GetTailoring:input_type -> site.v1.TailoringId
+	3,  // 27: site.v1.AdminService.DeleteTailoring:input_type -> site.v1.TailoringId
+	8,  // 28: site.v1.AdminService.GetPrompt:input_type -> site.v1.Empty
+	0,  // 29: site.v1.AdminService.SavePrompt:input_type -> site.v1.PromptText
+	0,  // 30: site.v1.AdminService.DryRunPrompt:input_type -> site.v1.PromptText
+	8,  // 31: site.v1.AdminService.GetSlackConfig:input_type -> site.v1.Empty
+	2,  // 32: site.v1.AdminService.SaveSlackConfig:input_type -> site.v1.SlackConfig
+	8,  // 33: site.v1.AdminService.PostToSlackNow:input_type -> site.v1.Empty
+	10, // 34: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	11, // 35: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
+	13, // 36: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
+	15, // 37: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
+	20, // 38: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	20, // 39: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	29, // 40: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	29, // 41: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	18, // 42: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	21, // 43: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	29, // 44: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	26, // 45: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	6,  // 46: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	29, // 47: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	7,  // 48: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	26, // 49: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	21, // 50: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	5,  // 51: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	26, // 52: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	29, // 53: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	0,  // 54: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
+	29, // 55: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
+	1,  // 56: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
+	2,  // 57: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
+	29, // 58: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
+	29, // 59: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
+	34, // [34:60] is the sub-list for method output_type
+	8,  // [8:34] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_admin_proto_init() }
@@ -2117,7 +2038,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

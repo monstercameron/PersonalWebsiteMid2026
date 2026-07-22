@@ -122,22 +122,3 @@ func TrackedFeedXML(list []store.TrackedAnime, baseURL string, now time.Time) (s
 	}
 	return buildFeed("Anime Release Radar — Tracked Releases", "Tracked show release updates and status snapshots.", self, items, now)
 }
-
-// QuestionFeedXML renders the daily anime discussion prompt (QOTD) feed, with one item per day
-// for the last week (today plus the six days before it), each pinned to that day's DailyPrompt.
-func QuestionFeedXML(prompts []string, baseURL string, now time.Time) (string, error) {
-	self := baseURL + "/anime/qotd.xml"
-	const days = 7
-	items := make([]FeedItem, 0, days)
-	for i := 0; i < days; i++ {
-		day := now.AddDate(0, 0, -i)
-		items = append(items, FeedItem{
-			Title:       "Anime prompt — " + day.Format("Jan 2"),
-			Link:        self,
-			Description: DailyPrompt(prompts, day),
-			GUID:        "anime-qotd-" + day.Format("2006-01-02"),
-			PubDate:     day.UTC(),
-		})
-	}
-	return buildFeed("Anime Release Radar — Daily Prompts", "Daily anime discussion prompts for engagement.", self, items, now)
-}

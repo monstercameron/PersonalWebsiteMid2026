@@ -4,6 +4,17 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Changed
+- **RSS/anime panel: one generation prompt + dry-run** (replaces the QOTD prompt list). The admin RSS
+  page now edits a single **generation instruction** (a textarea, saved to `SettingQOTDPrompt`) instead
+  of a list of static questions. A **Dry run** button generates a preview anime discussion post from
+  the (unsaved) prompt via the OpenAI Responses API — fetching the latest Anime News Network headline —
+  and shows the body + the rendered RSS item, **without publishing**. **Generate & post now** generates
+  from the saved prompt, posts it to Slack, and publishes it to the QOTD feed (`/anime/qotd.xml` now
+  serves the single last-published post). The legacy `qotd_prompts` table is dropped on startup and its
+  seeded prompts removed. New gRPC `GetPrompt`/`SavePrompt`/`DryRunPrompt` (replacing
+  `ListPrompts`/`AddPrompt`/`DeletePrompt`); new `openai.Generate` Responses-API text helper.
+
 ### Added
 - **CashFlux sync discovery** (`/v1/version`): the embedded sync engine now also serves the CashFlux
   frontend's discovery probe at `/v1/version` (alongside the `/grpc` tunnel), so CashFlux's "Test

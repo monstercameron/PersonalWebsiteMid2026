@@ -43,7 +43,21 @@ func adminClient() (sitepb.AdminServiceClient, error) {
 // callCtx builds a per-call context with a timeout and the admin JWT in "authorization" metadata
 // (the server interceptor requires it on every method but Login).
 func callCtx(token string) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	return callCtxTimeout(token, 30*time.Second)
+}
+
+// callCtxLong is for methods that call OpenAI server-side (dry-run / generate-and-post): its deadline
+// exceeds the server's OpenAI HTTP timeout so a slow generation surfaces its real result instead of a
+// premature client timeout (which, on the post path, could otherwise prompt a retry and a duplicate
+// Slack post).
+func callCtxLong(token string) (context.Context, context.CancelFunc) {
+	return callCtxTimeout(token, 75*time.Second)
+}
+
+// callCtxTimeout builds a per-call context with the given timeout and the admin JWT in
+// "authorization" metadata.
+func callCtxTimeout(token string, d time.Duration) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), d)
 	if token != "" {
 		ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
 	}

@@ -32,7 +32,7 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	// No stored account: falls back to the env bootstrap credentials.
 	sessions := NewSessions(st, "cam", "secret-pw", "test-secret", "", "")
 	// empty OpenAI key → tailoring disabled
-	svc := NewService(anime.New(st), sessions, st, func(context.Context) (string, string) { return "", "gpt-4o-mini" })
+	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "gpt-4o-mini" })
 
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))
@@ -93,7 +93,7 @@ func TestAuthThrottleNotBypassable(t *testing.T) {
 	}
 	defer st.Close()
 	sessions := NewSessions(st, "cam", "envpassword", "sekret", "", "")
-	svc := NewService(anime.New(st), sessions, st, func(context.Context) (string, string) { return "", "" })
+	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "" })
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // already cancelled: a cancellable throttle would return immediately

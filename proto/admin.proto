@@ -59,40 +59,35 @@ service AdminService {
   // DeleteTailoring removes a saved variant by id.
   rpc DeleteTailoring(TailoringId) returns (Ack);
   // --- RSS / anime control panel ---
-  // ListPrompts returns the configurable QOTD (question-of-the-day) prompts.
-  rpc ListPrompts(Empty) returns (PromptList);
-  // AddPrompt adds a QOTD prompt.
-  rpc AddPrompt(PromptText) returns (Ack);
-  // DeletePrompt removes a QOTD prompt by id.
-  rpc DeletePrompt(PromptId) returns (Ack);
+  // GetPrompt returns the single QOTD generation instruction (the default when none is saved).
+  rpc GetPrompt(Empty) returns (PromptText);
+  // SavePrompt stores the single QOTD generation instruction.
+  rpc SavePrompt(PromptText) returns (Ack);
+  // DryRunPrompt generates a preview anime discussion post from the given prompt (fetching the latest
+  // anime news) WITHOUT publishing it — for testing the prompt.
+  rpc DryRunPrompt(PromptText) returns (PostPreview);
   // GetSlackConfig returns the Slack posting config (the webhook URL is never returned, only whether set).
   rpc GetSlackConfig(Empty) returns (SlackConfig);
   // SaveSlackConfig persists the Slack config (a blank webhook_url leaves the stored one unchanged).
   rpc SaveSlackConfig(SlackConfig) returns (Ack);
-  // PostToSlackNow composes the latest anime news + today's prompt and posts it to Slack now.
+  // PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
+  // QOTD RSS feed.
   rpc PostToSlackNow(Empty) returns (Ack);
 }
 
-// PromptText carries a QOTD prompt to add.
+// PromptText carries the single QOTD generation instruction.
 message PromptText {
   string text = 1;
 }
 
-// PromptId identifies a QOTD prompt.
-message PromptId {
-  int64 id = 1;
-}
-
-// Prompt is one QOTD prompt.
-message Prompt {
-  int64 id = 1;
-  string text = 2;
-  int64 created_at = 3;
-}
-
-// PromptList is the configured QOTD prompts, newest first.
-message PromptList {
-  repeated Prompt items = 1;
+// PostPreview is the result of a dry-run: the generated post body, a title, the rendered RSS feed
+// XML, and an error string (set when generation failed, e.g. no OpenAI key).
+message PostPreview {
+  string body = 1;
+  string title = 2;
+  string rss = 3;
+  string error = 4;
+  string news = 5; // the headline the prompt was generated against (context)
 }
 
 // SlackConfig is the Slack posting configuration. On read, webhook_url is empty and webhook_set
