@@ -30,6 +30,11 @@ type Config struct {
 	OpenAIKey string
 	// OpenAIModel is the chat model used for tailoring (default gpt-4o-mini).
 	OpenAIModel string
+	// CashFluxDataDir is where the embedded CashFlux data-sync engine keeps its encrypted server-side
+	// SQLite store (cashflux-server.db). CashFlux's SyncService runs in-process over gRPC-over-
+	// WebSocket at /grpc, making multi-device sync a managed service. Empty disables the embedded
+	// sync engine (frontend-only hosting).
+	CashFluxDataDir string
 }
 
 // Load reads configuration from the environment, applying sane local defaults.
@@ -42,8 +47,9 @@ func Load() Config {
 		AdminPassword:  os.Getenv("ADMIN_PASSWORD"),
 		AdminSecret:    os.Getenv("ADMIN_SECRET"),
 		BaseURL:        env("BASE_URL", "http://127.0.0.1:8095"),
-		OpenAIKey:      os.Getenv("OPENAI_API_KEY"),
-		OpenAIModel:    env("OPENAI_MODEL", "gpt-4o-mini"),
+		OpenAIKey:       os.Getenv("OPENAI_API_KEY"),
+		OpenAIModel:     env("OPENAI_MODEL", "gpt-4o-mini"),
+		CashFluxDataDir: env("CASHFLUX_DATA_DIR", "web/data/cashflux"),
 	}
 }
 

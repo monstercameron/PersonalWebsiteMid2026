@@ -2,6 +2,21 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-21 — CashFlux becomes a managed service (embedded sync engine)
+
+Cam wanted CashFlux hosted here as a managed budgeting app with server-side storage, but explicitly
+"just the data sync engine, not the whole site." So rather than embed CashFlux's full HTTP mux
+(billing/portal/console/AI), the server now embeds only its gRPC `SyncService` over a GoGRPCBridge
+tunnel at `/grpc`, backed by an encrypted server-side SQLite store. Added `CashFlux/pkg/embed.NewSyncBridge`
+(upstream) on a sync-only `NewSyncBridgeHandler` twin of CashFlux's full bridge — same interceptor
+chain, minus AIService. Adversarial review confirmed the narrowing is sound (`/grpc` is the sole
+bridge mount the full server used; a pure sync client needs nothing else) but caught the real
+landmine: token-mode auto-mints a random token each boot that the embed never surfaced, so sync was
+unauthenticatable — `NewSyncBridge` now returns the generated token and we log it at startup. Also
+seed CashFlux's WS app-origin from `BASE_URL`, normalized to a bare `scheme://host` so a trailing
+slash doesn't silently disable the whole engine. Next: gate `/budget/` on the home page with a
+password (guest-mode bypass).
+
 ## 2026-07-21 — planning + P1 foundation
 **Planning (this session).** Locked: the concept (portfolio-as-terminal + a conventional
 standard site, two front doors, unified hero); the "Aubergine" design language (macOS chrome,

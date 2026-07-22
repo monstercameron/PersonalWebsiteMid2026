@@ -90,6 +90,7 @@ func topNav() ui.Node {
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
 			link("#work", "work"),
 			link("/resume", "résumé"),
+			link("/budget/", "budget"),
 			link("#anime", "anime"),
 			link("#contact", "contact"),
 			link("/admin", "admin"),
@@ -229,6 +230,7 @@ func elsewhere() ui.Node {
 	grid := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(230px,1fr))"))}
 	grid = append(grid,
 		card("/resume", "⬇", "Résumé", "read it, save as PDF"),
+		card("/budget/", "◱", "CashFlux", "my budgeting app — try it live"),
 		card("https://github.com/monstercameron", "◆", "GitHub", "open-source work"),
 		card("https://www.linkedin.com/in/earl-cameron/", "in", "LinkedIn", "experience & network"),
 		card("https://www.youtube.com/@EarlCameron007", "▶", "YouTube", "builds & demos"),

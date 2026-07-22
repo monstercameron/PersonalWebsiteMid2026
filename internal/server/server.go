@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	cashfluxembed "github.com/monstercameron/CashFlux/pkg/embed"
 	"github.com/monstercameron/GoGRPCBridge/pkg/grpctunnel"
 	"github.com/monstercameron/earlcameron/internal/admin"
 	"github.com/monstercameron/earlcameron/internal/anime"
@@ -41,6 +42,12 @@ type Server struct {
 	page     []byte // the standard site, server-rendered once at startup
 	anime    *anime.Service
 	sessions *admin.Sessions
+	// cashfluxSync is the embedded CashFlux data-sync bridge — its SyncService exposed over its own
+	// gRPC-over-WebSocket tunnel (the sync engine only, not the full CashFlux site), backed by an
+	// encrypted server-side SQLite store. nil when disabled. cashfluxClose releases its store at
+	// shutdown.
+	cashfluxSync  http.Handler
+	cashfluxClose func() error
 }
 
 // New opens the store, builds the gRPC server, registers the services, and wraps them in the
@@ -95,7 +102,39 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions}, nil
+	// Embed the CashFlux data-sync engine in-process (owns its encrypted server-side SQLite store)
+	// when enabled — the SyncService only, over its own gRPC-over-WebSocket bridge, not the full site.
+	var cashfluxSync http.Handler
+	var cashfluxClose func() error
+	if cfg.CashFluxDataDir != "" {
+		// The frontend is served same-origin (/budget/), so its WebSocket Origin equals our BaseURL;
+		// seed CashFlux's app-origin from it (unless explicitly overridden) so the bridge's origin
+		// check accepts the frontend in production too, not just on loopback. Reduce BaseURL to a bare
+		// scheme://host — CashFlux rejects an origin carrying any path (e.g. a trailing slash), which
+		// would silently disable the whole sync engine.
+		if os.Getenv("CASHFLUX_SERVER_APP_ORIGIN") == "" {
+			if origin := schemeHostOrigin(cfg.BaseURL); origin != "" {
+				_ = os.Setenv("CASHFLUX_SERVER_APP_ORIGIN", origin)
+			}
+		}
+		h, closeFn, token, err := cashfluxembed.NewSyncBridge(cfg.CashFluxDataDir)
+		if err != nil {
+			// A degraded managed service is not a silent condition: the site advertises CashFlux sync,
+			// so surface the failure loudly (common cause: a BASE_URL that isn't a bare origin).
+			log.Error("embedded CashFlux sync engine disabled", "err", err)
+		} else {
+			cashfluxSync, cashfluxClose = h, closeFn
+			log.Info("embedded CashFlux sync engine", "data_dir", cfg.CashFluxDataDir)
+			if token != "" {
+				// The token was auto-generated (no CASHFLUX_SERVER_TOKEN pinned). Surface it once so it
+				// can be entered as the CashFlux frontend's "server token"; otherwise sync is
+				// unauthenticated. It changes every restart until pinned via env.
+				log.Warn("CashFlux sync access token (auto-generated; enter in CashFlux settings; set CASHFLUX_SERVER_TOKEN to keep it stable)", "token", token)
+			}
+		}
+	}
+
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
@@ -124,6 +163,21 @@ func originChecker(allowed []string) func(*http.Request) bool {
 	}
 }
 
+// schemeHostOrigin reduces a base URL to a bare "scheme://host" origin, dropping any path, query,
+// or fragment. It returns "" when raw is empty or lacks a scheme/host. CashFlux's WebSocket origin
+// check rejects an origin that carries a path (e.g. a BASE_URL with a trailing slash), so the
+// app-origin seeded from BaseURL must be normalized to this shape.
+func schemeHostOrigin(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return ""
+	}
+	return u.Scheme + "://" + u.Host
+}
+
 // routes builds the request multiplexer.
 func (s *Server) routes() *http.ServeMux {
 	mux := http.NewServeMux()
@@ -132,8 +186,14 @@ func (s *Server) routes() *http.ServeMux {
 	mux.Handle("/socket/", s.tunnel)
 	// Document plane (HTTP GET).
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
-	// CashFlux, hosted as a managed budgeting app (its own WASM SPA under web/cashflux).
+	// CashFlux, hosted as a managed budgeting app: the WASM SPA (web/cashflux) plus its data-sync
+	// engine served in-process over gRPC-over-WebSocket at /grpc (the bridge path the CashFlux
+	// frontend dials), backed by our encrypted server-side SQLite store — so multi-device sync
+	// persists on our backend. Point CashFlux's "server URL" at this origin.
 	mux.Handle("/budget/", http.StripPrefix("/budget/", budget.Handler()))
+	if s.cashfluxSync != nil {
+		mux.Handle("/grpc", s.cashfluxSync)
+	}
 	mux.HandleFunc("/healthz", s.healthz)
 	s.registerAdminRoutes(mux)
 	s.registerResumeRoutes(mux)
@@ -170,6 +230,9 @@ func (s *Server) Run() error {
 
 	s.grpc.GracefulStop()
 	_ = s.store.Close()
+	if s.cashfluxClose != nil {
+		_ = s.cashfluxClose()
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return srv.Shutdown(ctx)

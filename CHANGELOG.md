@@ -15,7 +15,14 @@ Semantic Versioning once released.
 - **CashFlux as a managed budgeting service** at `/budget/` (`internal/budget`): the full CashFlux
   WASM app is built (`scripts/build-cashflux.sh`) and served from this server (correct `application/wasm`
   types, no double-decompress on the self-decompressing `.gz`, SPA fallback, path-containment guard).
-  Linked from the admin nav. Frontend-hosting only — server-side sync is a separate larger project.
+  Linked from the home page and admin nav.
+- **Embedded CashFlux data-sync engine** (managed, in-process): the server embeds *only* CashFlux's
+  sync engine — its gRPC `SyncService` over a GoGRPCBridge WebSocket tunnel at `/grpc`, via the new
+  `CashFlux/pkg/embed.NewSyncBridge` — backed by an encrypted server-side SQLite store under
+  `CASHFLUX_DATA_DIR`, so multi-device sync persists on this backend without running the full CashFlux
+  site. The frontend's WS origin is seeded from `BASE_URL` (normalized to a bare origin); the
+  auto-generated access token is logged at startup (pin with `CASHFLUX_SERVER_TOKEN`). Point
+  CashFlux's "server URL" at this origin to sync.
 - **Résumé variants library**: the base résumé is permanent (the diff baseline, never overwritten).
   Each tailoring is saved as a variant, shown as designed, glanceable cards — the role **title @
   company** and the **keyword chips** the tailoring emphasized (derived from the stored analysis, so
