@@ -205,7 +205,10 @@ func (s *Server) routes() *http.ServeMux {
 	// persists on our backend. Point CashFlux's "server URL" at this origin.
 	mux.Handle("/budget/", http.StripPrefix("/budget/", s.budgetGate.Wrap(budget.Handler())))
 	if s.cashfluxSync != nil {
+		// The embedded sync engine serves the /grpc WebSocket tunnel and the /v1/version discovery
+		// handshake the CashFlux frontend probes before it will connect ("Test connection").
 		mux.Handle("/grpc", s.cashfluxSync)
+		mux.Handle("/v1/version", s.cashfluxSync)
 	}
 	mux.HandleFunc("/healthz", s.healthz)
 	s.registerAdminRoutes(mux)

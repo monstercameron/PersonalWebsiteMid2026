@@ -5,6 +5,10 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **CashFlux sync discovery** (`/v1/version`): the embedded sync engine now also serves the CashFlux
+  frontend's discovery probe at `/v1/version` (alongside the `/grpc` tunnel), so CashFlux's "Test
+  connection" succeeds when pointed at this origin — it fetches `/v1/version` for the API version and
+  auth mode before connecting. Point CashFlux's Server URL at this origin (no path).
 - **First-run owner setup + password reset** (`internal/admin`, `internal/store`): the deployed site
   no longer needs credentials baked into the environment. On a fresh deploy the admin client shows a
   setup screen that creates the owner account (username + password), stored as **bcrypt hashes** in a
