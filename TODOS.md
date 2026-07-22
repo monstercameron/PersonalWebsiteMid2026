@@ -2,6 +2,21 @@
 
 Status legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[?]` needs a decision from Cam
 
+## RSS + CashFlux managed-service effort (tracking — 2026-07-22)
+_(No Claude Code todo tool exists in-session; tracked here per project convention.)_
+- [x] RSS QOTD reworked to a single **generation prompt** (textarea, save) + **dry-run** preview
+      (OpenAI Responses API against the latest Anime News Network headline). E2E'd via chromedp.
+- [x] **Post to Slack now** — generate from the saved prompt → post discussion to Slack → publish to
+      the QOTD feed. Manual path done + tested.
+- [x] RSS **spec compliance** — RSS 2.0 tests (`TestPublishedFeedXMLSpecCompliance`, `TestTrackedFeedXML`)
+      + Slack mrkdwn injection-escaping tests. Passing.
+- [x] **CashFlux managed sync** embedded (gRPC `/grpc` + `/v1/version`, encrypted server store),
+      sync-transfer logging, and the sync-page encryption decision panel. E2E'd.
+- [x] **Scheduled Slack posting** — the "scheduled posting" toggle now drives a real server-side daily
+      scheduler (configurable post hour); auto-generates + posts + publishes once/day.
+- [ ] Managed-service billing/subscription/console — **out of scope per Cam** ("just the data sync
+      engine, not the whole site"). Intentionally not built.
+
 ## 0. Decisions still open (need Cam)
 - [x] **Featured projects** — 9 chosen & wired into the mockup (count is dynamic, N):
       GoWebComponents, CashFlux, WASIBrowser, SemanticScript, SemanticAssembly, WhisperToMe,

@@ -149,8 +149,9 @@ func (x *PostPreview) GetNews() string {
 type SlackConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WebhookUrl    string                 `protobuf:"bytes,1,opt,name=webhook_url,json=webhookUrl,proto3" json:"webhook_url,omitempty"`
-	Enabled       bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Enabled       bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"` // when true, the server auto-posts the daily discussion (scheduled posting)
 	WebhookSet    bool                   `protobuf:"varint,3,opt,name=webhook_set,json=webhookSet,proto3" json:"webhook_set,omitempty"`
+	PostHour      int32                  `protobuf:"varint,4,opt,name=post_hour,json=postHour,proto3" json:"post_hour,omitempty"` // hour of day (0–23, server local time) the scheduled daily post fires
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -204,6 +205,13 @@ func (x *SlackConfig) GetWebhookSet() bool {
 		return x.WebhookSet
 	}
 	return false
+}
+
+func (x *SlackConfig) GetPostHour() int32 {
+	if x != nil {
+		return x.PostHour
+	}
+	return 0
 }
 
 // TailoringId identifies a saved variant.
@@ -1762,13 +1770,14 @@ const file_admin_proto_rawDesc = "" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
 	"\x03rss\x18\x03 \x01(\tR\x03rss\x12\x14\n" +
 	"\x05error\x18\x04 \x01(\tR\x05error\x12\x12\n" +
-	"\x04news\x18\x05 \x01(\tR\x04news\"i\n" +
+	"\x04news\x18\x05 \x01(\tR\x04news\"\x86\x01\n" +
 	"\vSlackConfig\x12\x1f\n" +
 	"\vwebhook_url\x18\x01 \x01(\tR\n" +
 	"webhookUrl\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1f\n" +
 	"\vwebhook_set\x18\x03 \x01(\bR\n" +
-	"webhookSet\"\x1d\n" +
+	"webhookSet\x12\x1b\n" +
+	"\tpost_hour\x18\x04 \x01(\x05R\bpostHour\"\x1d\n" +
 	"\vTailoringId\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\"\xa3\x01\n" +
 	"\rTailoringMeta\x12\x0e\n" +

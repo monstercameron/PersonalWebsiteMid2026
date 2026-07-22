@@ -41,6 +41,7 @@ type Server struct {
 	page     []byte // the standard site, server-rendered once at startup
 	anime    *anime.Service
 	sessions *admin.Sessions
+	adminSvc *admin.Service // for the scheduled daily Slack post
 	// budgetGate is the password door in front of the CashFlux app at /budget/ (guest bypass grants a
 	// local-only session). Disabled (pass-through) when no BudgetPassword is configured.
 	budgetGate *budget.Gate
@@ -93,7 +94,8 @@ func New(cfg config.Config) (*Server, error) {
 	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))
 	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
-	sitepb.RegisterAdminServiceServer(grpcSrv, admin.NewService(animeSvc, sessions, st, cfg.BaseURL, resolveOpenAI))
+	adminSvc := admin.NewService(animeSvc, sessions, st, cfg.BaseURL, resolveOpenAI)
+	sitepb.RegisterAdminServiceServer(grpcSrv, adminSvc)
 
 	tunnel, err := grpctunnel.BuildBridgeHandler(grpcSrv, grpctunnel.BridgeConfig{
 		CheckOrigin: originChecker(cfg.AllowedOrigins),
@@ -142,7 +144,7 @@ func New(cfg config.Config) (*Server, error) {
 		}
 	}
 
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, budgetGate: budget.NewGate(cfg.BudgetPassword, cfg.AdminSecret), cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose}, nil
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, adminSvc: adminSvc, budgetGate: budget.NewGate(cfg.BudgetPassword, cfg.AdminSecret), cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
@@ -235,10 +237,15 @@ func (s *Server) Run() error {
 		}
 	}()
 
+	// Daily scheduled Slack discussion post (only acts when the owner enabled it).
+	schedCtx, schedCancel := context.WithCancel(context.Background())
+	go s.runSlackScheduler(schedCtx)
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
+	schedCancel()
 	s.grpc.GracefulStop()
 	_ = s.store.Close()
 	if s.cashfluxClose != nil {
@@ -247,4 +254,24 @@ func (s *Server) Run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return srv.Shutdown(ctx)
+}
+
+// runSlackScheduler checks once a minute whether the configured daily Slack post is due and, if so,
+// generates and posts it. The service guards against double-posting within a day; a failed attempt
+// skips the day rather than retrying every tick. Stops when ctx is cancelled (shutdown).
+func (s *Server) runSlackScheduler(ctx context.Context) {
+	t := time.NewTicker(time.Minute)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			if posted, err := s.adminSvc.PostScheduledIfDue(ctx, time.Now()); err != nil {
+				s.log.Warn("scheduled slack post failed", "err", err)
+			} else if posted {
+				s.log.Info("scheduled slack post sent")
+			}
+		}
+	}
 }

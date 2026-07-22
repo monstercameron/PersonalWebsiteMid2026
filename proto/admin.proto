@@ -94,8 +94,9 @@ message PostPreview {
 // reports whether one is stored; on write, a blank webhook_url leaves the stored value unchanged.
 message SlackConfig {
   string webhook_url = 1;
-  bool enabled = 2;
+  bool enabled = 2;      // when true, the server auto-posts the daily discussion (scheduled posting)
   bool webhook_set = 3;
+  int32 post_hour = 4;   // hour of day (0–23, server local time) the scheduled daily post fires
 }
 
 // TailoringId identifies a saved variant.

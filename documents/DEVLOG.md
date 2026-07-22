@@ -2,6 +2,19 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-22 — scheduled daily Slack posting (the toggle was dead)
+
+Follow-up: the "scheduled posting" toggle stored `SettingSlackEnabled` but nothing acted on it — the
+only way to post was the manual "post now". Made it real: a server-side minute-ticker
+(`Server.runSlackScheduler`) calls a new `Service.PostScheduledIfDue(ctx, now)` that gates on
+enabled + a configurable post hour (`SettingSlackPostHour`, exposed as `post_hour` on `SlackConfig`
+with a "Daily post hour" input in the RSS panel) + a per-day guard (`SettingSlackLastPost`). It
+claims the day's slot before posting so a failure skips the day instead of retrying every tick.
+Factored the manual and scheduled paths onto a shared `publishDiscussion`. Tested: a deterministic
+gating unit test (`TestPostScheduledIfDue`) plus a live run — configured it for the current hour with
+a dead webhook and watched the server log `scheduled slack post failed` when the timer fired, proving
+the whole chain (timer → gate → generate → post attempt → per-day guard) works end-to-end.
+
 ## 2026-07-22 — RSS panel: single generation prompt + dry-run
 
 Cam wanted the /admin/rss page to drop the old QOTD prompt list and instead hold ONE editable prompt

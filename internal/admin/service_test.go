@@ -83,6 +83,45 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	}
 }
 
+// TestPostScheduledIfDue covers the daily Slack scheduler's gating: disabled, before the post hour,
+// the once-per-day guard, and that the day's slot is claimed even when the actual post can't proceed.
+func TestPostScheduledIfDue(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	defer st.Close()
+	sessions := NewSessions(st, "cam", "pw12345678", "sekret", "", "")
+	// No OpenAI key and no webhook: publishDiscussion will fail, but the gating is what we test.
+	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "" })
+	ctx := context.Background()
+	at := func(h int) time.Time { return time.Date(2026, 7, 22, h, 0, 0, 0, time.Local) }
+
+	// Disabled → never posts.
+	if posted, err := svc.PostScheduledIfDue(ctx, at(10)); posted || err != nil {
+		t.Fatalf("disabled must not post: posted=%v err=%v", posted, err)
+	}
+	_ = st.SetSetting(ctx, store.SettingSlackEnabled, "1")
+	_ = st.SetSetting(ctx, store.SettingSlackPostHour, "9")
+
+	// Enabled but before the post hour → no post.
+	if posted, err := svc.PostScheduledIfDue(ctx, at(8)); posted || err != nil {
+		t.Fatalf("before hour must not post: posted=%v err=%v", posted, err)
+	}
+	// Hour reached, but no webhook configured → the day's slot is claimed and publish errors.
+	posted, err := svc.PostScheduledIfDue(ctx, at(10))
+	if posted {
+		t.Fatal("no webhook: should not report a successful post")
+	}
+	if err == nil {
+		t.Fatal("expected an error when no webhook is configured")
+	}
+	// The slot is now claimed for the day, so a second tick the same day is a clean no-op (no retry).
+	if posted, err := svc.PostScheduledIfDue(ctx, at(11)); posted || err != nil {
+		t.Fatalf("already-posted day must no-op: posted=%v err=%v", posted, err)
+	}
+}
+
 // TestAuthThrottleNotBypassable proves the credential-check delay can't be skipped by cancelling the
 // context (the timing-oracle / throttle-bypass a cancellable delay would allow): a failed Login on an
 // already-cancelled context still takes at least the uniform authFloor.

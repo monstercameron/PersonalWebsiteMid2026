@@ -592,9 +592,14 @@ func settingRow(label, hint string, field ui.Node) ui.Node {
 // rssView renders the RSS control panel: the public feed links, the single QOTD generation prompt
 // (edit → dry-run preview → save), and the Slack "generate & publish" config.
 func rssView(promptText ui.State[string], onSavePrompt, onDryRun ui.Handler, dryRunning bool, preview *sitepb.PostPreview,
-	slackWebhook ui.State[string], slackSet, slackEnabled bool, onToggleSlack, onSaveSlack, onPostNow ui.Handler) ui.Node {
+	slackWebhook ui.State[string], slackSet, slackEnabled bool, slackHour ui.State[int], onToggleSlack, onSaveSlack, onPostNow ui.Handler) ui.Node {
 	onPrompt := ui.WrapHandler(func(e ui.Event) { promptText.Set(e.GetValue()) })
 	onWebhook := ui.WrapHandler(func(e ui.Event) { slackWebhook.Set(e.GetValue()) })
+	onHour := ui.WrapHandler(func(e ui.Event) {
+		if h, err := strconv.Atoi(strings.TrimSpace(e.GetValue())); err == nil && h >= 0 && h <= 23 {
+			slackHour.Set(h)
+		}
+	})
 
 	webhookPlaceholder := "https://hooks.slack.com/services/…"
 	if slackSet {
@@ -632,9 +637,11 @@ func rssView(promptText ui.State[string], onSavePrompt, onDryRun ui.Handler, dry
 		Div(Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(560))),
 			sectionLabel("slack — generate & publish"),
 			P(Class(Fg(theme.Dim), TextSize(TextSm)),
-				"Generates a post from the saved prompt, posts it to your Slack channel, and publishes it to the QOTD RSS feed."),
+				"Generates a post from the saved prompt, posts it to your Slack channel, and publishes it to the QOTD RSS feed. Turn on scheduled posting to have the server do this automatically once a day."),
 			settingRow("Webhook URL ("+keyStatus(slackSet)+")", "stored in the backend, never shown",
 				textInput(slackWebhook.Get(), onWebhook, webhookPlaceholder, "password", false)),
+			settingRow("Daily post hour (0–23, server time)", "when scheduled posting is on, the post fires once a day around this hour",
+				textInput(strconv.Itoa(slackHour.Get()), onHour, "9", "number", false)),
 			Div(Class(Flex, Gap(Spacing3), ItemsCenter, css.Raw("flex-wrap", "wrap")),
 				ghostButton(schedule, onToggleSlack),
 				primaryButton("Save Slack config", onSaveSlack),

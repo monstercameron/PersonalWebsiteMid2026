@@ -15,6 +15,8 @@ const (
 	SettingSlackEnabled = "slack_enabled"     // "1"/"true" to enable scheduled Slack posting
 	SettingQOTDPrompt   = "qotd_prompt"       // the single generation instruction for the anime discussion post
 	SettingQOTDPublished = "qotd_published"   // JSON of the last generated-and-published post (served by the QOTD feed)
+	SettingSlackPostHour = "slack_post_hour"  // hour of day (0–23, server local time) the daily scheduled Slack post fires
+	SettingSlackLastPost = "slack_last_post"  // YYYY-MM-DD of the last scheduled post, so it fires at most once per day
 )
 
 // GetSetting returns the stored value for key, or "" if it has never been set.

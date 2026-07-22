@@ -4,6 +4,14 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Added
+- **Scheduled daily Slack posting.** The "scheduled posting" toggle now drives a real server-side
+  scheduler: when enabled, the server auto-generates the anime discussion post from the saved prompt,
+  posts it to Slack, and publishes it to the QOTD feed **once a day** at a configurable hour (new
+  "Daily post hour" control in the RSS panel; `post_hour` on `SlackConfig`). A per-day guard prevents
+  double-posting, and a failed attempt skips the day rather than retrying every tick. Verified with a
+  gating unit test and a live firing test (the timer fired and attempted the post on schedule).
+
 ### Changed
 - **RSS/anime panel: one generation prompt + dry-run** (replaces the QOTD prompt list). The admin RSS
   page now edits a single **generation instruction** (a textarea, saved to `SettingQOTDPrompt`) instead

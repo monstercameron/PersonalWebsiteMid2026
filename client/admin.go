@@ -40,6 +40,7 @@ func AdminApp() ui.Node {
 	slackWebhook := ui.UseState("")
 	slackSet := ui.UseState(false)
 	slackEnabled := ui.UseState(false)
+	slackHour := ui.UseState(9) // daily scheduled-post hour (0–23)
 
 	keySet := ui.UseState(false)
 	model := ui.UseState("")
@@ -156,6 +157,7 @@ func AdminApp() ui.Node {
 				if sc, err := c.GetSlackConfig(ctx, &sitepb.Empty{}); err == nil {
 					slackSet.Set(sc.GetWebhookSet())
 					slackEnabled.Set(sc.GetEnabled())
+					slackHour.Set(int(sc.GetPostHour()))
 				}
 			}()
 		}
@@ -617,7 +619,7 @@ func AdminApp() ui.Node {
 			}
 			ctx, cancel := callCtx(token.Get())
 			defer cancel()
-			if _, err := c.SaveSlackConfig(ctx, &sitepb.SlackConfig{WebhookUrl: slackWebhook.Get(), Enabled: slackEnabled.Get()}); err != nil {
+			if _, err := c.SaveSlackConfig(ctx, &sitepb.SlackConfig{WebhookUrl: slackWebhook.Get(), Enabled: slackEnabled.Get(), PostHour: int32(slackHour.Get())}); err != nil {
 				if onAuthErr(err) {
 					return
 				}
@@ -657,7 +659,7 @@ func AdminApp() ui.Node {
 	case "settings":
 		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
 	case "rss":
-		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), onToggleSlack, onSaveSlack, onPostNow)
+		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), slackHour, onToggleSlack, onSaveSlack, onPostNow)
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}
