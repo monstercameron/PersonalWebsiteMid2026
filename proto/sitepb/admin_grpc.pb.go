@@ -20,6 +20,9 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	AdminService_Login_FullMethodName            = "/site.v1.AdminService/Login"
+	AdminService_AuthState_FullMethodName        = "/site.v1.AdminService/AuthState"
+	AdminService_Setup_FullMethodName            = "/site.v1.AdminService/Setup"
+	AdminService_ResetPassword_FullMethodName    = "/site.v1.AdminService/ResetPassword"
 	AdminService_SearchAnime_FullMethodName      = "/site.v1.AdminService/SearchAnime"
 	AdminService_ListTracked_FullMethodName      = "/site.v1.AdminService/ListTracked"
 	AdminService_TrackAnime_FullMethodName       = "/site.v1.AdminService/TrackAnime"
@@ -57,6 +60,15 @@ const (
 type AdminServiceClient interface {
 	// Login exchanges the admin password for a signed session token used by every other method.
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginReply, error)
+	// AuthState reports whether the deployed site still needs first-run owner setup, and the recovery
+	// hint to show on the reset screen. Public (no session): the client calls it before login.
+	AuthState(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AuthStateReply, error)
+	// Setup creates the owner account on first run and returns the one-time recovery phrase. Public,
+	// but the server refuses once an account exists or when env credentials manage auth.
+	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*SetupReply, error)
+	// ResetPassword verifies the recovery phrase (or the env break-glass) and sets a new password,
+	// returning the rotated recovery phrase. Public (the owner is locked out by definition).
+	ResetPassword(ctx context.Context, in *ResetRequest, opts ...grpc.CallOption) (*ResetReply, error)
 	// SearchAnime queries AniList and marks which results are already tracked.
 	SearchAnime(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*AnimeList, error)
 	// ListTracked returns the currently tracked shows.
@@ -118,6 +130,36 @@ func (c *adminServiceClient) Login(ctx context.Context, in *LoginRequest, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginReply)
 	err := c.cc.Invoke(ctx, AdminService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) AuthState(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AuthStateReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthStateReply)
+	err := c.cc.Invoke(ctx, AdminService_AuthState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*SetupReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetupReply)
+	err := c.cc.Invoke(ctx, AdminService_Setup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ResetPassword(ctx context.Context, in *ResetRequest, opts ...grpc.CallOption) (*ResetReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetReply)
+	err := c.cc.Invoke(ctx, AdminService_ResetPassword_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -357,6 +399,15 @@ func (c *adminServiceClient) PostToSlackNow(ctx context.Context, in *Empty, opts
 type AdminServiceServer interface {
 	// Login exchanges the admin password for a signed session token used by every other method.
 	Login(context.Context, *LoginRequest) (*LoginReply, error)
+	// AuthState reports whether the deployed site still needs first-run owner setup, and the recovery
+	// hint to show on the reset screen. Public (no session): the client calls it before login.
+	AuthState(context.Context, *Empty) (*AuthStateReply, error)
+	// Setup creates the owner account on first run and returns the one-time recovery phrase. Public,
+	// but the server refuses once an account exists or when env credentials manage auth.
+	Setup(context.Context, *SetupRequest) (*SetupReply, error)
+	// ResetPassword verifies the recovery phrase (or the env break-glass) and sets a new password,
+	// returning the rotated recovery phrase. Public (the owner is locked out by definition).
+	ResetPassword(context.Context, *ResetRequest) (*ResetReply, error)
 	// SearchAnime queries AniList and marks which results are already tracked.
 	SearchAnime(context.Context, *SearchRequest) (*AnimeList, error)
 	// ListTracked returns the currently tracked shows.
@@ -416,6 +467,15 @@ type UnimplementedAdminServiceServer struct{}
 
 func (UnimplementedAdminServiceServer) Login(context.Context, *LoginRequest) (*LoginReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedAdminServiceServer) AuthState(context.Context, *Empty) (*AuthStateReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuthState not implemented")
+}
+func (UnimplementedAdminServiceServer) Setup(context.Context, *SetupRequest) (*SetupReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Setup not implemented")
+}
+func (UnimplementedAdminServiceServer) ResetPassword(context.Context, *ResetRequest) (*ResetReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetPassword not implemented")
 }
 func (UnimplementedAdminServiceServer) SearchAnime(context.Context, *SearchRequest) (*AnimeList, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchAnime not implemented")
@@ -518,6 +578,60 @@ func _AdminService_Login_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_AuthState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).AuthState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_AuthState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).AuthState(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_Setup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).Setup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_Setup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).Setup(ctx, req.(*SetupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ResetPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ResetPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ResetPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ResetPassword(ctx, req.(*ResetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -928,6 +1042,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _AdminService_Login_Handler,
+		},
+		{
+			MethodName: "AuthState",
+			Handler:    _AdminService_AuthState_Handler,
+		},
+		{
+			MethodName: "Setup",
+			Handler:    _AdminService_Setup_Handler,
+		},
+		{
+			MethodName: "ResetPassword",
+			Handler:    _AdminService_ResetPassword_Handler,
 		},
 		{
 			MethodName: "SearchAnime",

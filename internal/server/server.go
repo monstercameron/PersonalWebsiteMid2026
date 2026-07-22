@@ -69,7 +69,17 @@ func New(cfg config.Config) (*Server, error) {
 
 	cs := content.New()
 	animeSvc := anime.New(st)
-	sessions := admin.NewSessions(cfg.AdminUsername, cfg.AdminPassword, cfg.AdminSecret)
+	sessions := admin.NewSessions(st, cfg.AdminUsername, cfg.AdminPassword, cfg.AdminSecret, cfg.AdminRecoveryToken, cfg.AdminSetupToken)
+	// Surface two auth footguns loudly at boot rather than silently:
+	//   - first-run setup is open to whoever reaches the site first when no setup token gates it;
+	//   - a stored owner account makes ADMIN_PASSWORD inert, so setting it looks like it changed the
+	//     password when it did nothing.
+	if sessions.NeedsSetup(context.Background()) && cfg.AdminSetupToken == "" {
+		log.Warn("owner setup is OPEN — the first visitor to complete setup claims the account; set ADMIN_SETUP_TOKEN to gate it on an internet-reachable deploy")
+	}
+	if has, _ := st.HasCredential(context.Background()); has && cfg.AdminPassword != "" {
+		log.Warn("ADMIN_PASSWORD is set but a stored owner account exists — the env password is inert; log in with the stored account, or reset it via the recovery phrase")
+	}
 
 	// resolveOpenAI reads the effective OpenAI config: a DB setting (settings page) overrides the env.
 	resolveOpenAI := func(ctx context.Context) (string, string) {

@@ -80,6 +80,19 @@ func migrate(db *sql.DB) error {
 		// Unique prompt text: makes seeding and adds idempotent (INSERT OR IGNORE), so a concurrent
 		// double-seed or a duplicate add can never duplicate a prompt.
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_qotd_prompt ON qotd_prompts(prompt)`,
+		// The single owner account for the deployed site (first-run setup writes row id=1). The CHECK
+		// pins it to one row: there is exactly one owner. Password and recovery phrase are stored only
+		// as bcrypt hashes; the hint is plaintext (it is a memory jog the owner chooses, shown on the
+		// reset screen). password_changed_at invalidates sessions minted before the last change.
+		`CREATE TABLE IF NOT EXISTS owner_credentials (
+			id                  INTEGER PRIMARY KEY CHECK (id = 1),
+			username            TEXT    NOT NULL,
+			password_hash       TEXT    NOT NULL,
+			recovery_hash       TEXT    NOT NULL DEFAULT '',
+			recovery_hint       TEXT    NOT NULL DEFAULT '',
+			password_changed_at INTEGER NOT NULL DEFAULT 0,
+			created_at          INTEGER NOT NULL
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

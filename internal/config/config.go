@@ -24,6 +24,13 @@ type Config struct {
 	AdminPassword string
 	// AdminSecret signs admin session cookies (defaults to an insecure dev value if empty).
 	AdminSecret string
+	// AdminRecoveryToken is the break-glass reset secret (ADMIN_RECOVERY_TOKEN): if set, it can reset
+	// the owner password when the recovery phrase is lost. Empty disables the break-glass path.
+	AdminRecoveryToken string
+	// AdminSetupToken (ADMIN_SETUP_TOKEN), when set, is required to complete first-run owner setup —
+	// closing the window where a stranger could claim a freshly deployed, unconfigured site. Empty
+	// leaves first-run setup open (fine when you set up immediately after deploy).
+	AdminSetupToken string
 	// BudgetPassword gates the CashFlux app at /budget/: entering it grants a "full" session (your
 	// synced budget), while a guest bypass grants a local-only session. Defaults to AdminPassword;
 	// empty disables the gate entirely (the app is served open).
@@ -49,8 +56,10 @@ func Load() Config {
 		AllowedOrigins: splitCSV(os.Getenv("ALLOWED_ORIGINS")),
 		AdminUsername:  env("ADMIN_USERNAME", "cam"),
 		AdminPassword:  os.Getenv("ADMIN_PASSWORD"),
-		AdminSecret:    os.Getenv("ADMIN_SECRET"),
-		BudgetPassword: env("BUDGET_PASSWORD", os.Getenv("ADMIN_PASSWORD")),
+		AdminSecret:        os.Getenv("ADMIN_SECRET"),
+		AdminRecoveryToken: os.Getenv("ADMIN_RECOVERY_TOKEN"),
+		AdminSetupToken:    os.Getenv("ADMIN_SETUP_TOKEN"),
+		BudgetPassword:     env("BUDGET_PASSWORD", os.Getenv("ADMIN_PASSWORD")),
 		BaseURL:        env("BASE_URL", "http://127.0.0.1:8095"),
 		OpenAIKey:       os.Getenv("OPENAI_API_KEY"),
 		OpenAIModel:     env("OPENAI_MODEL", "gpt-4o-mini"),

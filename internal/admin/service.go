@@ -76,18 +76,60 @@ func (s *Service) ListModels(ctx context.Context, _ *sitepb.Empty) (*sitepb.Mode
 	return &sitepb.ModelList{Models: models}, nil
 }
 
+// authFloor is the minimum wall-clock time every credential-checking RPC takes. Applied uniformly to
+// success AND failure and NOT cancellable, it (a) removes the timing oracle that a fast success vs a
+// slow failure would otherwise leak, and (b) can't be skipped by a client that cancels its context or
+// sets a short deadline — so it actually caps guessing to ~1/authFloor per connection.
+const authFloor = 900 * time.Millisecond
+
+// settleAuth sleeps until authFloor has elapsed since start. It uses time.Sleep (not a ctx-aware
+// select) deliberately: a cancellable delay would let an attacker skip the throttle.
+func settleAuth(start time.Time) {
+	if d := authFloor - time.Since(start); d > 0 {
+		time.Sleep(d)
+	}
+}
+
 // Login exchanges the admin password for a signed session token used by every other method.
 func (s *Service) Login(ctx context.Context, req *sitepb.LoginRequest) (*sitepb.LoginReply, error) {
-	if !s.sessions.CheckCredentials(req.GetUsername(), req.GetPassword()) {
-		// Throttle brute-forcing: a fixed delay on failure caps attempts to ~1/sec per connection
-		// without a lockout that a griefer could use to lock the owner out.
-		select {
-		case <-time.After(time.Second):
-		case <-ctx.Done():
-		}
+	defer settleAuth(time.Now())
+	if !s.sessions.CheckCredentials(ctx, req.GetUsername(), req.GetPassword()) {
 		return &sitepb.LoginReply{Ok: false}, nil
 	}
-	return &sitepb.LoginReply{Ok: true, Token: s.sessions.Mint()}, nil
+	return &sitepb.LoginReply{Ok: true, Token: s.sessions.Mint(ctx)}, nil
+}
+
+// AuthState reports whether first-run setup is still needed and the recovery hint for the reset
+// screen. It is public (no session) so the client can pick the right screen before login.
+func (s *Service) AuthState(ctx context.Context, _ *sitepb.Empty) (*sitepb.AuthStateReply, error) {
+	return &sitepb.AuthStateReply{
+		NeedsSetup:   s.sessions.NeedsSetup(ctx),
+		RecoveryHint: s.sessions.RecoveryHint(ctx),
+	}, nil
+}
+
+// Setup creates the first owner account and returns a session token plus the one-time recovery
+// phrase. Failures (setup closed, bad token, weak password) are returned as ok=false with a reason.
+// The uniform settleAuth floor blunts brute-forcing of the setup token.
+func (s *Service) Setup(ctx context.Context, req *sitepb.SetupRequest) (*sitepb.SetupReply, error) {
+	defer settleAuth(time.Now())
+	phrase, err := s.sessions.Setup(ctx, req.GetUsername(), req.GetPassword(), req.GetHint(), req.GetSetupToken())
+	if err != nil {
+		return &sitepb.SetupReply{Ok: false, Error: err.Error()}, nil
+	}
+	return &sitepb.SetupReply{Ok: true, Token: s.sessions.Mint(ctx), RecoveryPhrase: phrase}, nil
+}
+
+// ResetPassword verifies the recovery phrase (or the env break-glass) and sets a new password,
+// returning the rotated recovery phrase. Failures are returned as ok=false; the uniform settleAuth
+// floor blunts brute-forcing of the phrase / break-glass token.
+func (s *Service) ResetPassword(ctx context.Context, req *sitepb.ResetRequest) (*sitepb.ResetReply, error) {
+	defer settleAuth(time.Now())
+	phrase, err := s.sessions.ResetPassword(ctx, req.GetRecoveryPhrase(), req.GetNewPassword())
+	if err != nil {
+		return &sitepb.ResetReply{Ok: false, Error: err.Error()}, nil
+	}
+	return &sitepb.ResetReply{Ok: true, RecoveryPhrase: phrase}, nil
 }
 
 // SearchAnime queries AniList and flags results that are already tracked.

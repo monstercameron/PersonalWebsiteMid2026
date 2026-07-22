@@ -5,6 +5,16 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **First-run owner setup + password reset** (`internal/admin`, `internal/store`): the deployed site
+  no longer needs credentials baked into the environment. On a fresh deploy the admin client shows a
+  setup screen that creates the owner account (username + password), stored as **bcrypt hashes** in a
+  single-row `owner_credentials` table, and returns a one-time **recovery phrase** (6 words) plus an
+  owner-chosen **hint**. Password reset uses that phrase (verified via bcrypt) or an
+  `ADMIN_RECOVERY_TOKEN` env break-glass, rotates the phrase, and invalidates every prior session (a
+  `pwa` token claim vs `password_changed_at`). `ADMIN_PASSWORD` still works as a bootstrap (setup is
+  then closed); `ADMIN_SETUP_TOKEN`, when set, gates first-run setup to close the land-grab window.
+  New public gRPC methods `AuthState`/`Setup`/`ResetPassword`; new client screens (setup, recovery
+  phrase, reset). Wrong-credential paths are throttled ~1s.
 - **Password gate for CashFlux** at `/budget/` (`internal/budget`, `BUDGET_PASSWORD`): a locked
   terminal-window door (typed GWC, matching the site's identity) with a password field and a
   **guest bypass**. Entering the password grants a "full" session (your synced budget); the guest

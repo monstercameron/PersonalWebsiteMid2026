@@ -5,6 +5,7 @@ import (
 	"net"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -28,7 +29,8 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	}
 	defer st.Close()
 
-	sessions := NewSessions("cam", "secret-pw", "test-secret")
+	// No stored account: falls back to the env bootstrap credentials.
+	sessions := NewSessions(st, "cam", "secret-pw", "test-secret", "", "")
 	// empty OpenAI key → tailoring disabled
 	svc := NewService(anime.New(st), sessions, st, func(context.Context) (string, string) { return "", "gpt-4o-mini" })
 
@@ -78,5 +80,30 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	// Tailoring is authenticated but disabled without an OpenAI key.
 	if _, err := client.TailorResume(authCtx, &sitepb.TailorRequest{JobUrl: "https://example.com/job"}); status.Code(err) != codes.FailedPrecondition {
 		t.Fatalf("TailorResume without key: want FailedPrecondition, got %v", err)
+	}
+}
+
+// TestAuthThrottleNotBypassable proves the credential-check delay can't be skipped by cancelling the
+// context (the timing-oracle / throttle-bypass a cancellable delay would allow): a failed Login on an
+// already-cancelled context still takes at least the uniform authFloor.
+func TestAuthThrottleNotBypassable(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	defer st.Close()
+	sessions := NewSessions(st, "cam", "envpassword", "sekret", "", "")
+	svc := NewService(anime.New(st), sessions, st, func(context.Context) (string, string) { return "", "" })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // already cancelled: a cancellable throttle would return immediately
+	start := time.Now()
+	rep, _ := svc.Login(ctx, &sitepb.LoginRequest{Username: "cam", Password: "wrong"})
+	elapsed := time.Since(start)
+	if rep.GetOk() {
+		t.Fatal("a wrong password must fail")
+	}
+	if elapsed < authFloor-100*time.Millisecond {
+		t.Fatalf("throttle bypassed via context cancel: Login returned in %v, want >= %v", elapsed, authFloor)
 	}
 }

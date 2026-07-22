@@ -45,6 +45,18 @@ func AdminApp() ui.Node {
 	models := ui.UseState[[]string](nil)
 	apiKey := ui.UseState("")
 
+	// Auth flow: first-run setup + password reset (the owner has no session in these cases).
+	needsSetup := ui.UseState(false)
+	recoveryHint := ui.UseState("")
+	authScreen := ui.UseState("login") // "login" | "reset"
+	setupHint := ui.UseState("")
+	setupToken := ui.UseState("")
+	newPass := ui.UseState("")
+	phraseInput := ui.UseState("")
+	recoveryPhrase := ui.UseState("") // a freshly generated phrase, shown once
+	phraseIsSetup := ui.UseState(false)
+	pendingToken := ui.UseState("") // session token held until the recovery phrase is acknowledged
+
 	authed := token.Get() != ""
 
 	// onAuthErr clears the session when a call is rejected as unauthenticated (expired/forged token).
@@ -151,8 +163,107 @@ func AdminApp() ui.Node {
 		return onPopState(func() { view.Set(currentAdminView()) })
 	}, "popstate-mount")
 
+	// Discover whether the deployed site still needs first-run setup, and the reset hint. Runs once.
+	ui.UseEffect(func() func() {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx("")
+			defer cancel()
+			if st, err := c.AuthState(ctx, &sitepb.Empty{}); err == nil {
+				needsSetup.Set(st.GetNeedsSetup())
+				recoveryHint.Set(st.GetRecoveryHint())
+			}
+		}()
+		return func() {}
+	}, "authstate-mount")
+
 	if !authed {
-		onLogin := ui.UseEvent(func() {
+		// A freshly generated recovery phrase is shown once before proceeding. Handlers here use
+		// WrapHandler (not the hook-indexed UseEvent) so the auth sub-screens can branch freely.
+		if recoveryPhrase.Get() != "" {
+			onContinue := ui.WrapHandler(func() {
+				isSetup := phraseIsSetup.Get()
+				recoveryPhrase.Set("")
+				if isSetup {
+					tok := pendingToken.Get()
+					pendingToken.Set("")
+					saveToken(tok)
+					token.Set(tok)
+				} else {
+					authScreen.Set("login")
+				}
+			})
+			return phraseView(recoveryPhrase.Get(), phraseIsSetup.Get(), onContinue)
+		}
+
+		if needsSetup.Get() {
+			onSetup := ui.WrapHandler(func() {
+				flash.Set("")
+				go func() {
+					c, err := adminClient()
+					if err != nil {
+						flash.Set("connection error: " + err.Error())
+						return
+					}
+					ctx, cancel := callCtx("")
+					defer cancel()
+					rep, err := c.Setup(ctx, &sitepb.SetupRequest{
+						Username: username.Get(), Password: password.Get(),
+						Hint: setupHint.Get(), SetupToken: setupToken.Get(),
+					})
+					if err != nil {
+						flash.Set("setup failed: " + err.Error())
+						return
+					}
+					if !rep.GetOk() {
+						flash.Set(rep.GetError())
+						return
+					}
+					needsSetup.Set(false)
+					pendingToken.Set(rep.GetToken())
+					phraseIsSetup.Set(true)
+					recoveryPhrase.Set(rep.GetRecoveryPhrase())
+				}()
+			})
+			return setupView(username, password, setupHint, setupToken, onSetup, flash.Get())
+		}
+
+		if authScreen.Get() == "reset" {
+			onReset := ui.WrapHandler(func() {
+				flash.Set("")
+				go func() {
+					c, err := adminClient()
+					if err != nil {
+						flash.Set("connection error: " + err.Error())
+						return
+					}
+					ctx, cancel := callCtx("")
+					defer cancel()
+					rep, err := c.ResetPassword(ctx, &sitepb.ResetRequest{
+						RecoveryPhrase: phraseInput.Get(), NewPassword: newPass.Get(),
+					})
+					if err != nil {
+						flash.Set("reset failed: " + err.Error())
+						return
+					}
+					if !rep.GetOk() {
+						flash.Set(rep.GetError())
+						return
+					}
+					phraseInput.Set("")
+					newPass.Set("")
+					phraseIsSetup.Set(false)
+					recoveryPhrase.Set(rep.GetRecoveryPhrase())
+				}()
+			})
+			onBack := ui.WrapHandler(func() { flash.Set(""); authScreen.Set("login") })
+			return resetView(recoveryHint.Get(), phraseInput, newPass, onReset, onBack, flash.Get())
+		}
+
+		onLogin := ui.WrapHandler(func() {
 			flash.Set("")
 			go func() {
 				c, err := adminClient()
@@ -175,7 +286,8 @@ func AdminApp() ui.Node {
 				token.Set(rep.GetToken())
 			}()
 		})
-		return loginView(username, password, onLogin, flash.Get())
+		onForgot := ui.WrapHandler(func() { flash.Set(""); authScreen.Set("reset") })
+		return loginView(username, password, onLogin, onForgot, flash.Get())
 	}
 
 	// Console handlers.

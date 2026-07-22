@@ -15,6 +15,15 @@ import "site.proto";
 service AdminService {
   // Login exchanges the admin password for a signed session token used by every other method.
   rpc Login(LoginRequest) returns (LoginReply);
+  // AuthState reports whether the deployed site still needs first-run owner setup, and the recovery
+  // hint to show on the reset screen. Public (no session): the client calls it before login.
+  rpc AuthState(Empty) returns (AuthStateReply);
+  // Setup creates the owner account on first run and returns the one-time recovery phrase. Public,
+  // but the server refuses once an account exists or when env credentials manage auth.
+  rpc Setup(SetupRequest) returns (SetupReply);
+  // ResetPassword verifies the recovery phrase (or the env break-glass) and sets a new password,
+  // returning the rotated recovery phrase. Public (the owner is locked out by definition).
+  rpc ResetPassword(ResetRequest) returns (ResetReply);
   // SearchAnime queries AniList and marks which results are already tracked.
   rpc SearchAnime(SearchRequest) returns (AnimeList);
   // ListTracked returns the currently tracked shows.
@@ -140,6 +149,43 @@ message LoginRequest {
 message LoginReply {
   bool ok = 1;
   string token = 2;
+}
+
+// AuthStateReply tells the client which auth screen to show.
+message AuthStateReply {
+  bool needs_setup = 1;    // true on a fresh, unconfigured deploy — show the setup screen
+  string recovery_hint = 2; // owner-chosen memory jog for the reset screen ("" if no account/hint)
+}
+
+// SetupRequest creates the first owner account. setup_token is required only when the server has
+// ADMIN_SETUP_TOKEN configured.
+message SetupRequest {
+  string username = 1;
+  string password = 2;
+  string hint = 3;
+  string setup_token = 4;
+}
+
+// SetupReply returns a session token and the one-time recovery phrase (shown once). On failure ok is
+// false and error carries a human-readable reason.
+message SetupReply {
+  bool ok = 1;
+  string token = 2;
+  string recovery_phrase = 3;
+  string error = 4;
+}
+
+// ResetRequest resets the owner password using the recovery phrase (or the env break-glass token).
+message ResetRequest {
+  string recovery_phrase = 1;
+  string new_password = 2;
+}
+
+// ResetReply returns the rotated recovery phrase (shown once) on success; error on failure.
+message ResetReply {
+  bool ok = 1;
+  string recovery_phrase = 2;
+  string error = 3;
 }
 
 // SearchRequest is an AniList search query.

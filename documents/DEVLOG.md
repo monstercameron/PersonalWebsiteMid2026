@@ -2,6 +2,26 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-21 — first-run owner setup + password reset
+
+Cam wanted the deployed site to set up its own username/password on first run (not baked into env),
+plus a reset strategy — he chose a recovery phrase with a hint, backed by an env break-glass. Built
+bottom-up: a single-row `owner_credentials` table (bcrypt password + recovery hashes, plaintext
+hint, nanosecond `password_changed_at`); a `recovery` package (embedded 286-word list, crypto/rand
+rejection-free phrase generation, bcrypt helpers); a rewritten `Sessions` that prefers the stored
+account, falls back to the `ADMIN_PASSWORD` env bootstrap, and reports `NeedsSetup` when neither
+exists. Setup is guarded three ways — closed once an account exists, refused when env creds manage
+auth (so a stranger can't seize an env-configured box), and gated by `ADMIN_SETUP_TOKEN` when set.
+Reset verifies the phrase (or `ADMIN_RECOVERY_TOKEN`), rotates it, and bumps `password_changed_at`,
+which a `pwa` JWT claim checks so a password change invalidates every prior token. New public gRPC
+`AuthState`/`Setup`/`ResetPassword`; new WASM screens (setup, one-time phrase, reset). Tested:
+comprehensive session unit tests (setup guards, reset, break-glass, token invalidation,
+weak-password, setup-token, env-bootstrap) plus a chromedp drive of the whole flow — setup → phrase
+(`orchid jelly pumpkin pouch canyon quartz`) → console → logout → forgot → reset — and a fresh-load
+check that the hint ("first pet") renders on the reset screen. One test caught a real bug: a
+second-resolution `password_changed_at` collided with the token's own mint second, so a same-second
+password change didn't invalidate the token — switched to nanoseconds.
+
 ## 2026-07-21 — password gate + guest bypass for CashFlux
 
 Cam wanted CashFlux on the home page for quick access, but gated with a password — with a guest

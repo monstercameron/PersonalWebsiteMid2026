@@ -13,8 +13,14 @@ import (
 // adminMethodPrefix is the fully-qualified gRPC method prefix for AdminService.
 const adminMethodPrefix = "/site.v1.AdminService/"
 
-// loginMethod is the one AdminService method reachable without a session token.
-const loginMethod = "/site.v1.AdminService/Login"
+// publicMethods are the AdminService methods reachable without a session token: login and the
+// first-run / lockout auth flows (the owner has no token in exactly these cases).
+var publicMethods = map[string]bool{
+	"/site.v1.AdminService/Login":         true,
+	"/site.v1.AdminService/AuthState":     true,
+	"/site.v1.AdminService/Setup":         true,
+	"/site.v1.AdminService/ResetPassword": true,
+}
 
 // UnaryAuthInterceptor returns a gRPC unary interceptor that enforces the admin session: every
 // AdminService method except Login requires a valid token in the "authorization" metadata
@@ -22,7 +28,7 @@ const loginMethod = "/site.v1.AdminService/Login"
 // untouched, so the public data plane is unaffected.
 func (s *Sessions) UnaryAuthInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		if !strings.HasPrefix(info.FullMethod, adminMethodPrefix) || info.FullMethod == loginMethod {
+		if !strings.HasPrefix(info.FullMethod, adminMethodPrefix) || publicMethods[info.FullMethod] {
 			return handler(ctx, req)
 		}
 		if !s.tokenFromContext(ctx) {
@@ -39,7 +45,7 @@ func (s *Sessions) tokenFromContext(ctx context.Context) bool {
 		return false
 	}
 	for _, v := range md.Get("authorization") {
-		if s.Verify(strings.TrimPrefix(v, "Bearer ")) {
+		if s.Verify(ctx, strings.TrimPrefix(v, "Bearer ")) {
 			return true
 		}
 	}

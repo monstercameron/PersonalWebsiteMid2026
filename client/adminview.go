@@ -20,7 +20,7 @@ import (
 // --- login ---
 
 // loginView renders the centered sign-in card.
-func loginView(username, password ui.State[string], onLogin ui.Handler, flash string) ui.Node {
+func loginView(username, password ui.State[string], onLogin, onForgot ui.Handler, flash string) ui.Node {
 	onU := ui.WrapHandler(func(e ui.Event) { username.Set(e.GetValue()) })
 	onP := ui.WrapHandler(func(e ui.Event) { password.Set(e.GetValue()) })
 	card := Div(Class(Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing6), Flex, FlexCol, Gap(Spacing4), rawWidth("100%"), MaxWidth(Px(380))),
@@ -31,11 +31,100 @@ func loginView(username, password ui.State[string], onLogin ui.Handler, flash st
 		textInput(password.Get(), onP, "password", "password", false),
 		flashLine(flash, theme.Red),
 		primaryButton("Sign in", onLogin),
+		Span(Class(Fg(theme.Dim), TextSize(TextSm), css.Raw("cursor", "pointer"), Hover(Fg(theme.Accent))),
+			Props{OnClick: onForgot}, "Forgot password?"),
 	)
 	return Div(Class(Flex, FlexCol, ItemsCenter, JustifyCenter, Gap(Spacing4), rawMinScreen(), Pad(Spacing5)),
 		card,
 		A(Class(Fg(theme.Dim), TextSize(TextSm)), Props{Href: "/"}, "← back to the site"),
 	)
+}
+
+// setupView is the first-run screen: create the owner account. On success the client shows the
+// recovery phrase (phraseView) once. setupToken is only needed when the server sets ADMIN_SETUP_TOKEN.
+func setupView(username, password, hint, setupToken ui.State[string], onSetup ui.Handler, flash string) ui.Node {
+	onU := ui.WrapHandler(func(e ui.Event) { username.Set(e.GetValue()) })
+	onP := ui.WrapHandler(func(e ui.Event) { password.Set(e.GetValue()) })
+	onH := ui.WrapHandler(func(e ui.Event) { hint.Set(e.GetValue()) })
+	onT := ui.WrapHandler(func(e ui.Event) { setupToken.Set(e.GetValue()) })
+	card := Div(Class(Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing6), Flex, FlexCol, Gap(Spacing4), rawWidth("100%"), MaxWidth(Px(400))),
+		eyebrow("~/admin · first run"),
+		H2(Class(FontSize(Rem(1.5)), FontSemibold), "Create your owner account"),
+		P(Class(Fg(theme.Dim), TextSize(TextSm)), "This is a fresh deploy. Choose the credentials that will protect the admin tools. You'll get a one-time recovery phrase to save."),
+		labelled("Username", textInput(username.Get(), onU, "username", "text", true)),
+		labelled("Password", textInput(password.Get(), onP, "at least 8 characters", "password", false)),
+		labelled("Recovery hint", textInput(hint.Get(), onH, "shown on the reset screen — keep it vague (optional)", "text", false)),
+		labelled("Setup token", textInput(setupToken.Get(), onT, "only if your server requires one", "password", false)),
+		flashLine(flash, theme.Red),
+		primaryButton("Create account", onSetup),
+	)
+	return Div(Class(Flex, FlexCol, ItemsCenter, JustifyCenter, Gap(Spacing4), rawMinScreen(), Pad(Spacing5)),
+		card,
+		A(Class(Fg(theme.Dim), TextSize(TextSm)), Props{Href: "/"}, "← back to the site"),
+	)
+}
+
+// resetView is the password-reset screen: the owner enters the recovery phrase (or the env
+// break-glass token) plus a new password. The stored hint is shown to jog their memory.
+func resetView(hint string, phrase, newPass ui.State[string], onReset, onBack ui.Handler, flash string) ui.Node {
+	onPh := ui.WrapHandler(func(e ui.Event) { phrase.Set(e.GetValue()) })
+	onNp := ui.WrapHandler(func(e ui.Event) { newPass.Set(e.GetValue()) })
+	rows := []ui.Node{
+		eyebrow("~/admin · reset"),
+		H2(Class(FontSize(Rem(1.5)), FontSemibold), "Reset your password"),
+		P(Class(Fg(theme.Dim), TextSize(TextSm)), "Enter your recovery phrase to set a new password."),
+	}
+	if hint != "" {
+		rows = append(rows, Div(Class(Bg(theme.Bg), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm), Fg(theme.Dim)),
+			Span(Class(Fg(theme.Faint)), "hint: "), Span(hint)))
+	}
+	rows = append(rows,
+		labelled("Recovery phrase", textInput(phrase.Get(), onPh, "the words from setup", "text", true)),
+		labelled("New password", textInput(newPass.Get(), onNp, "at least 8 characters", "password", false)),
+		flashLine(flash, theme.Red),
+		primaryButton("Reset password", onReset),
+		Span(Class(Fg(theme.Dim), TextSize(TextSm), css.Raw("cursor", "pointer"), Hover(Fg(theme.Accent))),
+			Props{OnClick: onBack}, "← back to sign in"),
+	)
+	card := Div(append([]any{Class(Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing6), Flex, FlexCol, Gap(Spacing4), rawWidth("100%"), MaxWidth(Px(400)))}, toAny(rows)...)...)
+	return Div(Class(Flex, FlexCol, ItemsCenter, JustifyCenter, Gap(Spacing4), rawMinScreen(), Pad(Spacing5)), card)
+}
+
+// phraseView shows a freshly generated recovery phrase once, with a strong save-it warning, then a
+// continue button. It's shown after setup (isSetup: the user is now logged in) and after a reset.
+func phraseView(phrase string, isSetup bool, onContinue ui.Handler) ui.Node {
+	next := "Continue to admin"
+	if !isSetup {
+		next = "Back to sign in"
+	}
+	card := Div(Class(Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing6), Flex, FlexCol, Gap(Spacing4), rawWidth("100%"), MaxWidth(Px(440))),
+		eyebrow("~/admin · recovery phrase"),
+		H2(Class(FontSize(Rem(1.5)), FontSemibold), "Save your recovery phrase"),
+		P(Class(Fg(theme.Yellow), TextSize(TextSm)), "This is shown only once. Write it down and keep it somewhere safe — it's the only way to reset your password if you forget it."),
+		Div(Class(Bg(theme.Bg), Border(theme.Accent), Rounded(RadiusLg), Pad(Spacing4),
+			css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), FontSize(Rem(1.05)),
+			css.Raw("letter-spacing", "0.02em"), css.Raw("line-height", "1.7"), Fg(theme.Fg),
+			css.Raw("word-spacing", "0.25em")), phrase),
+		primaryButton(next, onContinue),
+	)
+	return Div(Class(Flex, FlexCol, ItemsCenter, JustifyCenter, Gap(Spacing4), rawMinScreen(), Pad(Spacing5)), card)
+}
+
+// labelled wraps a control with a small uppercase field label above it.
+func labelled(label string, control ui.Node) ui.Node {
+	return Div(Class(Flex, FlexCol, Gap(Spacing1)),
+		Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em")), strings.ToUpper(label)),
+		control,
+	)
+}
+
+// toAny converts a node slice to an []any for spreading into an element's variadic children.
+func toAny(nodes []ui.Node) []any {
+	out := make([]any, len(nodes))
+	for i, n := range nodes {
+		out[i] = n
+	}
+	return out
 }
 
 // --- console shell ---
