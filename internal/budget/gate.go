@@ -1,0 +1,221 @@
+package budget
+
+import (
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
+	"net/http"
+	"net/url"
+	"path"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// cookieName is the gate session cookie. It is scoped to the /budget/ path and carries the session
+// mode ("full" or "guest") signed so it cannot be forged into a higher mode.
+const cookieName = "cf_gate"
+
+// enterPath is the (prefix-stripped) path the gate form posts to. Under the "/budget/" mount this is
+// reached as POST /budget/__enter.
+const enterPath = "/__enter"
+
+// Session modes. "full" is granted by the password (the owner's synced budget); "guest" is the
+// password-bypass (a local-only session). Both open the same app — the sync difference is enforced
+// by the sync access token, which a guest is never given.
+const (
+	modeFull  = "full"
+	modeGuest = "guest"
+)
+
+// Gate is a password door in front of the CashFlux app. Entering the password grants a full session;
+// a guest bypass grants a local-only session. It signs the session cookie with an HMAC secret so a
+// guest cannot forge a full session.
+type Gate struct {
+	password string
+	secret   []byte
+	ttl      time.Duration
+}
+
+// NewGate builds a gate for the given password and cookie-signing secret. An empty password disables
+// the gate (see Enabled). An empty secret generates a random 32-byte secret per process — deliberate,
+// matching the admin session manager: a fixed fallback would let anyone forge a full session, so we
+// never ship a known default (set ADMIN_SECRET to keep sessions valid across restarts).
+func NewGate(password, secret string) *Gate {
+	var sec []byte
+	if secret != "" {
+		// Domain-separate from any other use of the same secret (the admin JWT signing key is the same
+		// ADMIN_SECRET): derive a gate-specific sub-key so the two signing schemes never share raw key
+		// material and a token from one can't be replayed against the other.
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write([]byte("cashflux-budget-gate-v1"))
+		sec = mac.Sum(nil)
+	} else {
+		sec = make([]byte, 32)
+		if _, err := rand.Read(sec); err != nil {
+			panic("budget: cannot generate a gate secret: " + err.Error())
+		}
+	}
+	return &Gate{password: password, secret: sec, ttl: 30 * 24 * time.Hour}
+}
+
+// Enabled reports whether the gate is active (a password is configured). When disabled the app is
+// served open, with no gate page.
+func (g *Gate) Enabled() bool { return g.password != "" }
+
+// checkPassword reports whether pw matches the configured password, in constant time.
+func (g *Gate) checkPassword(pw string) bool {
+	if g.password == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(pw), []byte(g.password)) == 1
+}
+
+// sign returns the HMAC-SHA256 of msg as hex, keyed by the gate secret.
+func (g *Gate) sign(msg string) string {
+	mac := hmac.New(sha256.New, g.secret)
+	mac.Write([]byte(msg))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// issue mints a signed cookie value for mode: "<mode>.<expUnix>.<hexHMAC>".
+func (g *Gate) issue(mode string) string {
+	exp := strconv.FormatInt(time.Now().Add(g.ttl).Unix(), 10)
+	msg := mode + "." + exp
+	return msg + "." + g.sign(msg)
+}
+
+// session returns the valid, unexpired mode carried by value, or ("", false) if it is malformed,
+// tampered with, or expired.
+func (g *Gate) session(value string) (string, bool) {
+	parts := strings.Split(value, ".")
+	if len(parts) != 3 {
+		return "", false
+	}
+	mode, exp, sig := parts[0], parts[1], parts[2]
+	if mode != modeFull && mode != modeGuest {
+		return "", false
+	}
+	if subtle.ConstantTimeCompare([]byte(sig), []byte(g.sign(mode+"."+exp))) != 1 {
+		return "", false
+	}
+	sec, err := strconv.ParseInt(exp, 10, 64)
+	if err != nil || time.Now().Unix() >= sec {
+		return "", false
+	}
+	return mode, true
+}
+
+// modeFromRequest returns the valid session mode carried by the request's gate cookie, or ("", false).
+func (g *Gate) modeFromRequest(r *http.Request) (string, bool) {
+	c, err := r.Cookie(cookieName)
+	if err != nil {
+		return "", false
+	}
+	return g.session(c.Value)
+}
+
+// setCookie writes the signed gate cookie for mode, scoped to the /budget/ path. It is HttpOnly and
+// SameSite=Lax, and Secure whenever the request arrived over HTTPS — including behind a TLS-
+// terminating reverse proxy (Nginx), where the Go server sees plaintext and r.TLS is nil, so the
+// proxy's X-Forwarded-Proto is trusted for the Secure flag.
+func (g *Gate) setCookie(w http.ResponseWriter, r *http.Request, mode string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     cookieName,
+		Value:    g.issue(mode),
+		Path:     "/budget/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   requestIsHTTPS(r),
+		Expires:  time.Now().Add(g.ttl),
+	})
+}
+
+// requestIsHTTPS reports whether the original client request was HTTPS: either a direct TLS
+// connection, or a plaintext hop from a reverse proxy that terminated TLS and set X-Forwarded-Proto.
+func requestIsHTTPS(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
+// sameOrigin reports whether the request is same-origin (CSRF defense for the state-changing POST):
+// it allows a missing Origin header (non-browser clients / same-origin navigations that omit it) and
+// requires any present Origin's host to match the request Host. This mirrors the WebSocket tunnel's
+// origin check and stops a hostile third-party page from silently forcing a session (e.g. downgrading
+// a full session to guest) by auto-submitting the form.
+func sameOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(u.Host, r.Host)
+}
+
+// Wrap puts the gate in front of the app handler. When the gate is disabled it returns app unchanged.
+// Otherwise: a valid session cookie passes through to app; POST /__enter processes the password or
+// guest bypass and redirects back to the app; any other request without a valid session renders the
+// gate page.
+func (g *Gate) Wrap(app http.Handler) http.Handler {
+	if !g.Enabled() {
+		return app
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Normalize the path: this handler is mounted behind http.StripPrefix("/budget/"), which strips
+		// the leading slash too, so a POST to /budget/__enter arrives here as "__enter". Cleaning with a
+		// leading slash makes the match robust to that (and to any "//"/".." noise).
+		if r.Method == http.MethodPost && path.Clean("/"+r.URL.Path) == enterPath {
+			g.handleEnter(w, r)
+			return
+		}
+		if _, ok := g.modeFromRequest(r); ok {
+			app.ServeHTTP(w, r)
+			return
+		}
+		// No valid session: show the door. Serve it for every unauthenticated GET — the SPA never
+		// requests its assets until index.html has run, which requires a session, so this only ever
+		// renders for the initial navigation.
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(renderGatePage("")))
+	})
+}
+
+// handleEnter processes the gate form: a "guest" bypass grants a local-only session; otherwise the
+// password field is checked and, on success, grants a full session. Both redirect back to the app; a
+// wrong password re-renders the gate with an error (401).
+func (g *Gate) handleEnter(w http.ResponseWriter, r *http.Request) {
+	// CSRF: reject cross-origin POSTs so a hostile page can't silently force a session (e.g. downgrade
+	// a full session to guest) via an auto-submitting form.
+	if !sameOrigin(r) {
+		http.Error(w, "bad origin", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if r.FormValue("mode") == modeGuest {
+		g.setCookie(w, r, modeGuest)
+		http.Redirect(w, r, "/budget/", http.StatusSeeOther)
+		return
+	}
+	if g.checkPassword(r.FormValue("password")) {
+		g.setCookie(w, r, modeFull)
+		http.Redirect(w, r, "/budget/", http.StatusSeeOther)
+		return
+	}
+	// Throttle brute-forcing: a fixed delay on failure caps attempts to ~1/sec per connection without a
+	// lockout a griefer could use to lock the owner out (matches the admin Login throttle).
+	select {
+	case <-time.After(time.Second):
+	case <-r.Context().Done():
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusUnauthorized)
+	_, _ = w.Write([]byte(renderGatePage("That password didn't match. Try again, or continue as a guest.")))
+}

@@ -5,6 +5,12 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Password gate for CashFlux** at `/budget/` (`internal/budget`, `BUDGET_PASSWORD`): a locked
+  terminal-window door (typed GWC, matching the site's identity) with a password field and a
+  **guest bypass**. Entering the password grants a "full" session (your synced budget); the guest
+  button grants a local-only session (no sync — a guest is never given the sync token). The session
+  is an HMAC-SHA256-signed, HttpOnly, path-scoped cookie (30-day TTL; a guest cannot forge a full
+  session). Defaults to `ADMIN_PASSWORD`; unset disables the gate (open access).
 - **RSS / anime control panel** (`internal/rss`, wasm admin → gRPC): a fully in-app RSS surface.
   Configurable **QOTD prompts** with add/delete (50 seeded defaults, `qotd_prompts` table); the daily
   prompt feed is built from them. **Spec-compliant RSS 2.0** feeds at `/anime.xml` + `/anime/qotd.xml`

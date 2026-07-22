@@ -24,6 +24,10 @@ type Config struct {
 	AdminPassword string
 	// AdminSecret signs admin session cookies (defaults to an insecure dev value if empty).
 	AdminSecret string
+	// BudgetPassword gates the CashFlux app at /budget/: entering it grants a "full" session (your
+	// synced budget), while a guest bypass grants a local-only session. Defaults to AdminPassword;
+	// empty disables the gate entirely (the app is served open).
+	BudgetPassword string
 	// BaseURL is the public origin, used to build absolute RSS links.
 	BaseURL string
 	// OpenAIKey enables the résumé tailoring tool. Empty disables it. Secret — env only.
@@ -46,6 +50,7 @@ func Load() Config {
 		AdminUsername:  env("ADMIN_USERNAME", "cam"),
 		AdminPassword:  os.Getenv("ADMIN_PASSWORD"),
 		AdminSecret:    os.Getenv("ADMIN_SECRET"),
+		BudgetPassword: env("BUDGET_PASSWORD", os.Getenv("ADMIN_PASSWORD")),
 		BaseURL:        env("BASE_URL", "http://127.0.0.1:8095"),
 		OpenAIKey:       os.Getenv("OPENAI_API_KEY"),
 		OpenAIModel:     env("OPENAI_MODEL", "gpt-4o-mini"),

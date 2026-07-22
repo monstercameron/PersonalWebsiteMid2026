@@ -2,6 +2,20 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-21 — password gate + guest bypass for CashFlux
+
+Cam wanted CashFlux on the home page for quick access, but gated with a password — with a guest
+mode that bypasses it. He picked the semantics: password → your synced budget, guest → the full app
+but local-only (no sync, my data never loads). Since CashFlux's sync config lives in its own
+IndexedDB (not reachable from outside without touching the frozen frontend), the guest/full split is
+enforced naturally by the sync token: a guest is simply never given it. So the gate is pure
+server-side access control — an HMAC-signed, HttpOnly, path-scoped mode cookie in front of the SPA.
+Built as a locked terminal-window door in the site's own visual language (mac chrome, `$ unlock
+cashflux` prompt, aubergine). One bug caught in testing: `http.StripPrefix("/budget/")` strips the
+leading slash, so the POST /__enter match had to clean the path first — before the fix every POST
+fell through to the gate page (no cookie set). Next: the bigger ask — first-run credential setup +
+a password-reset strategy for the deployed site.
+
 ## 2026-07-21 — CashFlux becomes a managed service (embedded sync engine)
 
 Cam wanted CashFlux hosted here as a managed budgeting app with server-side storage, but explicitly

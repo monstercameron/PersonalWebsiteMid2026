@@ -42,6 +42,9 @@ type Server struct {
 	page     []byte // the standard site, server-rendered once at startup
 	anime    *anime.Service
 	sessions *admin.Sessions
+	// budgetGate is the password door in front of the CashFlux app at /budget/ (guest bypass grants a
+	// local-only session). Disabled (pass-through) when no BudgetPassword is configured.
+	budgetGate *budget.Gate
 	// cashfluxSync is the embedded CashFlux data-sync bridge — its SyncService exposed over its own
 	// gRPC-over-WebSocket tunnel (the sync engine only, not the full CashFlux site), backed by an
 	// encrypted server-side SQLite store. nil when disabled. cashfluxClose releases its store at
@@ -134,7 +137,7 @@ func New(cfg config.Config) (*Server, error) {
 		}
 	}
 
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose}, nil
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, budgetGate: budget.NewGate(cfg.BudgetPassword, cfg.AdminSecret), cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
@@ -190,7 +193,7 @@ func (s *Server) routes() *http.ServeMux {
 	// engine served in-process over gRPC-over-WebSocket at /grpc (the bridge path the CashFlux
 	// frontend dials), backed by our encrypted server-side SQLite store — so multi-device sync
 	// persists on our backend. Point CashFlux's "server URL" at this origin.
-	mux.Handle("/budget/", http.StripPrefix("/budget/", budget.Handler()))
+	mux.Handle("/budget/", http.StripPrefix("/budget/", s.budgetGate.Wrap(budget.Handler())))
 	if s.cashfluxSync != nil {
 		mux.Handle("/grpc", s.cashfluxSync)
 	}
