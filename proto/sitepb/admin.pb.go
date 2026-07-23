@@ -1756,6 +1756,279 @@ func (x *Rationale) GetReason() string {
 	return ""
 }
 
+// CashFluxClientMeta is one enrolled phone/SMS account.
+type CashFluxClientMeta struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	PhoneNumber     string                 `protobuf:"bytes,1,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
+	CreatedAt       int64                  `protobuf:"varint,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                     // unix seconds
+	PhoneVerifiedAt int64                  `protobuf:"varint,3,opt,name=phone_verified_at,json=phoneVerifiedAt,proto3" json:"phone_verified_at,omitempty"` // unix seconds
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CashFluxClientMeta) Reset() {
+	*x = CashFluxClientMeta{}
+	mi := &file_admin_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxClientMeta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxClientMeta) ProtoMessage() {}
+
+func (x *CashFluxClientMeta) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxClientMeta.ProtoReflect.Descriptor instead.
+func (*CashFluxClientMeta) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *CashFluxClientMeta) GetPhoneNumber() string {
+	if x != nil {
+		return x.PhoneNumber
+	}
+	return ""
+}
+
+func (x *CashFluxClientMeta) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *CashFluxClientMeta) GetPhoneVerifiedAt() int64 {
+	if x != nil {
+		return x.PhoneVerifiedAt
+	}
+	return 0
+}
+
+// CashFluxClientList is enrolled accounts, newest first.
+type CashFluxClientList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*CashFluxClientMeta  `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxClientList) Reset() {
+	*x = CashFluxClientList{}
+	mi := &file_admin_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxClientList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxClientList) ProtoMessage() {}
+
+func (x *CashFluxClientList) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxClientList.ProtoReflect.Descriptor instead.
+func (*CashFluxClientList) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *CashFluxClientList) GetItems() []*CashFluxClientMeta {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// CashFluxInviteCode is a freshly minted invite code and its expiry.
+type CashFluxInviteCode struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	ExpiresAt     int64                  `protobuf:"varint,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // unix seconds
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxInviteCode) Reset() {
+	*x = CashFluxInviteCode{}
+	mi := &file_admin_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxInviteCode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxInviteCode) ProtoMessage() {}
+
+func (x *CashFluxInviteCode) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxInviteCode.ProtoReflect.Descriptor instead.
+func (*CashFluxInviteCode) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *CashFluxInviteCode) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *CashFluxInviteCode) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+// CashFluxInviteCodeMeta is one minted invite code's status, for the admin list.
+type CashFluxInviteCodeMeta struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	ConsumedAt    int64                  `protobuf:"varint,4,opt,name=consumed_at,json=consumedAt,proto3" json:"consumed_at,omitempty"` // 0 if still outstanding
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxInviteCodeMeta) Reset() {
+	*x = CashFluxInviteCodeMeta{}
+	mi := &file_admin_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxInviteCodeMeta) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxInviteCodeMeta) ProtoMessage() {}
+
+func (x *CashFluxInviteCodeMeta) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxInviteCodeMeta.ProtoReflect.Descriptor instead.
+func (*CashFluxInviteCodeMeta) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *CashFluxInviteCodeMeta) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *CashFluxInviteCodeMeta) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *CashFluxInviteCodeMeta) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+func (x *CashFluxInviteCodeMeta) GetConsumedAt() int64 {
+	if x != nil {
+		return x.ConsumedAt
+	}
+	return 0
+}
+
+// CashFluxInviteCodeList is minted invite codes, newest first.
+type CashFluxInviteCodeList struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Items         []*CashFluxInviteCodeMeta `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxInviteCodeList) Reset() {
+	*x = CashFluxInviteCodeList{}
+	mi := &file_admin_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxInviteCodeList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxInviteCodeList) ProtoMessage() {}
+
+func (x *CashFluxInviteCodeList) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxInviteCodeList.ProtoReflect.Descriptor instead.
+func (*CashFluxInviteCodeList) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *CashFluxInviteCodeList) GetItems() []*CashFluxInviteCodeMeta {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_admin_proto protoreflect.FileDescriptor
 
 const file_admin_proto_rawDesc = "" +
@@ -1889,8 +2162,28 @@ const file_admin_proto_rawDesc = "" +
 	"\frequirements\x18\x04 \x03(\tR\frequirements\"9\n" +
 	"\tRationale\x12\x14\n" +
 	"\x05focus\x18\x01 \x01(\tR\x05focus\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason2\xf7\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"\x82\x01\n" +
+	"\x12CashFluxClientMeta\x12!\n" +
+	"\fphone_number\x18\x01 \x01(\tR\vphoneNumber\x12\x1d\n" +
 	"\n" +
+	"created_at\x18\x02 \x01(\x03R\tcreatedAt\x12*\n" +
+	"\x11phone_verified_at\x18\x03 \x01(\x03R\x0fphoneVerifiedAt\"G\n" +
+	"\x12CashFluxClientList\x121\n" +
+	"\x05items\x18\x01 \x03(\v2\x1b.site.v1.CashFluxClientMetaR\x05items\"G\n" +
+	"\x12CashFluxInviteCode\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x02 \x01(\x03R\texpiresAt\"\x8b\x01\n" +
+	"\x16CashFluxInviteCodeMeta\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x02 \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\x12\x1f\n" +
+	"\vconsumed_at\x18\x04 \x01(\x03R\n" +
+	"consumedAt\"O\n" +
+	"\x16CashFluxInviteCodeList\x125\n" +
+	"\x05items\x18\x01 \x03(\v2\x1f.site.v1.CashFluxInviteCodeMetaR\x05items2\xce\f\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x124\n" +
 	"\tAuthState\x12\x0e.site.v1.Empty\x1a\x17.site.v1.AuthStateReply\x123\n" +
@@ -1920,7 +2213,10 @@ const file_admin_proto_rawDesc = "" +
 	"\fDryRunPrompt\x12\x13.site.v1.PromptText\x1a\x14.site.v1.PostPreview\x126\n" +
 	"\x0eGetSlackConfig\x12\x0e.site.v1.Empty\x1a\x14.site.v1.SlackConfig\x125\n" +
 	"\x0fSaveSlackConfig\x12\x14.site.v1.SlackConfig\x1a\f.site.v1.Ack\x12.\n" +
-	"\x0ePostToSlackNow\x12\x0e.site.v1.Empty\x1a\f.site.v1.AckB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
+	"\x0ePostToSlackNow\x12\x0e.site.v1.Empty\x1a\f.site.v1.Ack\x12B\n" +
+	"\x13ListCashFluxClients\x12\x0e.site.v1.Empty\x1a\x1b.site.v1.CashFluxClientList\x12E\n" +
+	"\x16MintCashFluxInviteCode\x12\x0e.site.v1.Empty\x1a\x1b.site.v1.CashFluxInviteCode\x12J\n" +
+	"\x17ListCashFluxInviteCodes\x12\x0e.site.v1.Empty\x1a\x1f.site.v1.CashFluxInviteCodeListB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -1934,38 +2230,43 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_admin_proto_goTypes = []any{
-	(*PromptText)(nil),     // 0: site.v1.PromptText
-	(*PostPreview)(nil),    // 1: site.v1.PostPreview
-	(*SlackConfig)(nil),    // 2: site.v1.SlackConfig
-	(*TailoringId)(nil),    // 3: site.v1.TailoringId
-	(*TailoringMeta)(nil),  // 4: site.v1.TailoringMeta
-	(*TailoringList)(nil),  // 5: site.v1.TailoringList
-	(*Settings)(nil),       // 6: site.v1.Settings
-	(*ModelList)(nil),      // 7: site.v1.ModelList
-	(*Empty)(nil),          // 8: site.v1.Empty
-	(*LoginRequest)(nil),   // 9: site.v1.LoginRequest
-	(*LoginReply)(nil),     // 10: site.v1.LoginReply
-	(*AuthStateReply)(nil), // 11: site.v1.AuthStateReply
-	(*SetupRequest)(nil),   // 12: site.v1.SetupRequest
-	(*SetupReply)(nil),     // 13: site.v1.SetupReply
-	(*ResetRequest)(nil),   // 14: site.v1.ResetRequest
-	(*ResetReply)(nil),     // 15: site.v1.ResetReply
-	(*SearchRequest)(nil),  // 16: site.v1.SearchRequest
-	(*AnimeId)(nil),        // 17: site.v1.AnimeId
-	(*CheckReply)(nil),     // 18: site.v1.CheckReply
-	(*Anime)(nil),          // 19: site.v1.Anime
-	(*AnimeList)(nil),      // 20: site.v1.AnimeList
-	(*Resume)(nil),         // 21: site.v1.Resume
-	(*ResumeJob)(nil),      // 22: site.v1.ResumeJob
-	(*ResumeSkill)(nil),    // 23: site.v1.ResumeSkill
-	(*ResumeProject)(nil),  // 24: site.v1.ResumeProject
-	(*TailorRequest)(nil),  // 25: site.v1.TailorRequest
-	(*TailorResult)(nil),   // 26: site.v1.TailorResult
-	(*JobAnalysis)(nil),    // 27: site.v1.JobAnalysis
-	(*Rationale)(nil),      // 28: site.v1.Rationale
-	(*Ack)(nil),            // 29: site.v1.Ack
+	(*PromptText)(nil),             // 0: site.v1.PromptText
+	(*PostPreview)(nil),            // 1: site.v1.PostPreview
+	(*SlackConfig)(nil),            // 2: site.v1.SlackConfig
+	(*TailoringId)(nil),            // 3: site.v1.TailoringId
+	(*TailoringMeta)(nil),          // 4: site.v1.TailoringMeta
+	(*TailoringList)(nil),          // 5: site.v1.TailoringList
+	(*Settings)(nil),               // 6: site.v1.Settings
+	(*ModelList)(nil),              // 7: site.v1.ModelList
+	(*Empty)(nil),                  // 8: site.v1.Empty
+	(*LoginRequest)(nil),           // 9: site.v1.LoginRequest
+	(*LoginReply)(nil),             // 10: site.v1.LoginReply
+	(*AuthStateReply)(nil),         // 11: site.v1.AuthStateReply
+	(*SetupRequest)(nil),           // 12: site.v1.SetupRequest
+	(*SetupReply)(nil),             // 13: site.v1.SetupReply
+	(*ResetRequest)(nil),           // 14: site.v1.ResetRequest
+	(*ResetReply)(nil),             // 15: site.v1.ResetReply
+	(*SearchRequest)(nil),          // 16: site.v1.SearchRequest
+	(*AnimeId)(nil),                // 17: site.v1.AnimeId
+	(*CheckReply)(nil),             // 18: site.v1.CheckReply
+	(*Anime)(nil),                  // 19: site.v1.Anime
+	(*AnimeList)(nil),              // 20: site.v1.AnimeList
+	(*Resume)(nil),                 // 21: site.v1.Resume
+	(*ResumeJob)(nil),              // 22: site.v1.ResumeJob
+	(*ResumeSkill)(nil),            // 23: site.v1.ResumeSkill
+	(*ResumeProject)(nil),          // 24: site.v1.ResumeProject
+	(*TailorRequest)(nil),          // 25: site.v1.TailorRequest
+	(*TailorResult)(nil),           // 26: site.v1.TailorResult
+	(*JobAnalysis)(nil),            // 27: site.v1.JobAnalysis
+	(*Rationale)(nil),              // 28: site.v1.Rationale
+	(*CashFluxClientMeta)(nil),     // 29: site.v1.CashFluxClientMeta
+	(*CashFluxClientList)(nil),     // 30: site.v1.CashFluxClientList
+	(*CashFluxInviteCode)(nil),     // 31: site.v1.CashFluxInviteCode
+	(*CashFluxInviteCodeMeta)(nil), // 32: site.v1.CashFluxInviteCodeMeta
+	(*CashFluxInviteCodeList)(nil), // 33: site.v1.CashFluxInviteCodeList
+	(*Ack)(nil),                    // 34: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
 	4,  // 0: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
@@ -1976,63 +2277,71 @@ var file_admin_proto_depIdxs = []int32{
 	21, // 5: site.v1.TailorResult.resume:type_name -> site.v1.Resume
 	27, // 6: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
 	28, // 7: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
-	9,  // 8: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
-	8,  // 9: site.v1.AdminService.AuthState:input_type -> site.v1.Empty
-	12, // 10: site.v1.AdminService.Setup:input_type -> site.v1.SetupRequest
-	14, // 11: site.v1.AdminService.ResetPassword:input_type -> site.v1.ResetRequest
-	16, // 12: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
-	8,  // 13: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
-	17, // 14: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
-	17, // 15: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
-	8,  // 16: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
-	8,  // 17: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
-	21, // 18: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
-	25, // 19: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
-	8,  // 20: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
-	6,  // 21: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
-	8,  // 22: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
-	8,  // 23: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
-	8,  // 24: site.v1.AdminService.GetBaseResume:input_type -> site.v1.Empty
-	8,  // 25: site.v1.AdminService.ListTailorings:input_type -> site.v1.Empty
-	3,  // 26: site.v1.AdminService.GetTailoring:input_type -> site.v1.TailoringId
-	3,  // 27: site.v1.AdminService.DeleteTailoring:input_type -> site.v1.TailoringId
-	8,  // 28: site.v1.AdminService.GetPrompt:input_type -> site.v1.Empty
-	0,  // 29: site.v1.AdminService.SavePrompt:input_type -> site.v1.PromptText
-	0,  // 30: site.v1.AdminService.DryRunPrompt:input_type -> site.v1.PromptText
-	8,  // 31: site.v1.AdminService.GetSlackConfig:input_type -> site.v1.Empty
-	2,  // 32: site.v1.AdminService.SaveSlackConfig:input_type -> site.v1.SlackConfig
-	8,  // 33: site.v1.AdminService.PostToSlackNow:input_type -> site.v1.Empty
-	10, // 34: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	11, // 35: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
-	13, // 36: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
-	15, // 37: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
-	20, // 38: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	20, // 39: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	29, // 40: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	29, // 41: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	18, // 42: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	21, // 43: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	29, // 44: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	26, // 45: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	6,  // 46: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	29, // 47: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	7,  // 48: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	26, // 49: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	21, // 50: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
-	5,  // 51: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
-	26, // 52: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
-	29, // 53: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
-	0,  // 54: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
-	29, // 55: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
-	1,  // 56: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
-	2,  // 57: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
-	29, // 58: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
-	29, // 59: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
-	34, // [34:60] is the sub-list for method output_type
-	8,  // [8:34] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	29, // 8: site.v1.CashFluxClientList.items:type_name -> site.v1.CashFluxClientMeta
+	32, // 9: site.v1.CashFluxInviteCodeList.items:type_name -> site.v1.CashFluxInviteCodeMeta
+	9,  // 10: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
+	8,  // 11: site.v1.AdminService.AuthState:input_type -> site.v1.Empty
+	12, // 12: site.v1.AdminService.Setup:input_type -> site.v1.SetupRequest
+	14, // 13: site.v1.AdminService.ResetPassword:input_type -> site.v1.ResetRequest
+	16, // 14: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
+	8,  // 15: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
+	17, // 16: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
+	17, // 17: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
+	8,  // 18: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
+	8,  // 19: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
+	21, // 20: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
+	25, // 21: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
+	8,  // 22: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
+	6,  // 23: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
+	8,  // 24: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
+	8,  // 25: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
+	8,  // 26: site.v1.AdminService.GetBaseResume:input_type -> site.v1.Empty
+	8,  // 27: site.v1.AdminService.ListTailorings:input_type -> site.v1.Empty
+	3,  // 28: site.v1.AdminService.GetTailoring:input_type -> site.v1.TailoringId
+	3,  // 29: site.v1.AdminService.DeleteTailoring:input_type -> site.v1.TailoringId
+	8,  // 30: site.v1.AdminService.GetPrompt:input_type -> site.v1.Empty
+	0,  // 31: site.v1.AdminService.SavePrompt:input_type -> site.v1.PromptText
+	0,  // 32: site.v1.AdminService.DryRunPrompt:input_type -> site.v1.PromptText
+	8,  // 33: site.v1.AdminService.GetSlackConfig:input_type -> site.v1.Empty
+	2,  // 34: site.v1.AdminService.SaveSlackConfig:input_type -> site.v1.SlackConfig
+	8,  // 35: site.v1.AdminService.PostToSlackNow:input_type -> site.v1.Empty
+	8,  // 36: site.v1.AdminService.ListCashFluxClients:input_type -> site.v1.Empty
+	8,  // 37: site.v1.AdminService.MintCashFluxInviteCode:input_type -> site.v1.Empty
+	8,  // 38: site.v1.AdminService.ListCashFluxInviteCodes:input_type -> site.v1.Empty
+	10, // 39: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	11, // 40: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
+	13, // 41: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
+	15, // 42: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
+	20, // 43: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	20, // 44: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	34, // 45: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	34, // 46: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	18, // 47: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	21, // 48: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	34, // 49: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	26, // 50: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	6,  // 51: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	34, // 52: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	7,  // 53: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	26, // 54: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	21, // 55: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	5,  // 56: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	26, // 57: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	34, // 58: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	0,  // 59: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
+	34, // 60: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
+	1,  // 61: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
+	2,  // 62: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
+	34, // 63: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
+	34, // 64: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
+	30, // 65: site.v1.AdminService.ListCashFluxClients:output_type -> site.v1.CashFluxClientList
+	31, // 66: site.v1.AdminService.MintCashFluxInviteCode:output_type -> site.v1.CashFluxInviteCode
+	33, // 67: site.v1.AdminService.ListCashFluxInviteCodes:output_type -> site.v1.CashFluxInviteCodeList
+	39, // [39:68] is the sub-list for method output_type
+	10, // [10:39] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_admin_proto_init() }
@@ -2047,7 +2356,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   29,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

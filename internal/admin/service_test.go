@@ -36,7 +36,7 @@ func TestAdminServiceAuthPlane(t *testing.T) {
 	// No stored account: falls back to the env bootstrap credentials.
 	sessions := NewSessions(st, "cam", "secret-pw", "test-secret", "", "")
 	// empty OpenAI key → tailoring disabled
-	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "gpt-4o-mini" })
+	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "gpt-4o-mini" }, nil)
 
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))
@@ -97,7 +97,7 @@ func TestPostScheduledIfDue(t *testing.T) {
 	defer st.Close()
 	sessions := NewSessions(st, "cam", "pw12345678", "sekret", "", "")
 	// No OpenAI key and no webhook: publishDiscussion will fail, but the gating is what we test.
-	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "" })
+	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "" }, nil)
 	ctx := context.Background()
 	at := func(h int) time.Time { return time.Date(2026, 7, 22, h, 0, 0, 0, time.Local) }
 
@@ -153,7 +153,7 @@ func TestPublishDiscussionRecordsAndDecouplesSlack(t *testing.T) {
 	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(ctx context.Context) (string, string) {
 		k, _ := st.GetSetting(ctx, store.SettingOpenAIKey)
 		return k, "test-model"
-	})
+	}, nil)
 
 	// (a) No webhook: the RSS post is still recorded; the message says Slack was skipped.
 	msg, err := svc.publishDiscussion(ctx)
@@ -199,7 +199,7 @@ func TestAuthThrottleNotBypassable(t *testing.T) {
 	}
 	defer st.Close()
 	sessions := NewSessions(st, "cam", "envpassword", "sekret", "", "")
-	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "" })
+	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(context.Context) (string, string) { return "", "" }, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // already cancelled: a cancellable throttle would return immediately

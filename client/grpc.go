@@ -75,6 +75,8 @@ func currentAdminView() string {
 		return "settings"
 	case strings.HasSuffix(p, "/rss"):
 		return "rss"
+	case strings.HasSuffix(p, "/cashflux"):
+		return "cashflux"
 	default:
 		return "anime"
 	}

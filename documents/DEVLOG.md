@@ -2,6 +2,46 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-23 — Building the admin UI the last change actually needed
+
+Shipped the per-person CashFlux embedding, went looking for it in the admin console, found nothing.
+Fair — a security gate isn't a feature if nobody can operate it. "One time setup code, KISS" was
+the right starting scope, but KISS was never supposed to mean "no way to see who's registered or
+add someone without editing an env var and restarting."
+
+CashFlux's side of the fix (documented in its own DEVLOG) evolved the static code into an
+additional, admin-mintable source — short-lived, single-use invite codes living alongside the
+static one, both valid at once. This side just needed to expose that through the admin console
+already sitting at `/admin`: three new `AdminService` RPCs
+(`ListCashFluxClients`/`MintCashFluxInviteCode`/`ListCashFluxInviteCodes`) and a new "cashflux" tab,
+built exactly the way every other tab here already works — same `tab()`/`navTo`/data-loading-effect
+pattern the anime/résumé/settings/rss tabs use, no new UI patterns invented. A `CashFluxAdmin`
+interface (not the concrete `*cashfluxembed.Admin` type) keeps `internal/admin.Service`
+unit-testable with a fake instead of needing a real embedded CashFlux store just to test error
+paths — cheap to add, and it's exactly what let the new RPC tests run without touching the real
+embedding.
+
+Verified this one for real, not just with unit tests: built a completely isolated scratch copy
+(throwaway data dir, throwaway admin database, a port nothing else was using) so I could run actual
+first-run owner setup, log in, click into the new tab, and mint a real code through the real wire —
+never touching Cam's actual admin credentials or the real invited-clients list. The screenshot after
+minting shows exactly what it should: a large highlighted code with its expiry, and the same code
+already sitting in the outstanding-codes list below it.
+
+The mandatory adversarial review (sequential, one Sonnet agent, same discipline as the prior pass)
+came back mostly clean — no enrollment-gate bypass, no double-spend race (CashFlux's store runs on
+a single physical SQLite connection, so the consume transaction can't race with itself even in
+theory), the `Register`/`Login`-disabling fix from before was confirmed still intact. It did catch
+one real bug worth remembering the shape of: the admin tab's data-loading code correctly handled
+"not configured" (`FailedPrecondition`) and "session expired" (`Unauthenticated`), but any OTHER
+error — a real database failure, say — fell through every branch silently. Because an empty client
+list and a *failed* client list render identically ("No clients registered yet."), a real backend
+outage would have looked exactly like a healthy, simply-unused feature. Fixed by making the
+fall-through case explicit: anything that isn't the two expected error shapes now surfaces a flash
+message instead of disappearing. The lesson isn't new but it keeps proving true — an error-handling
+chain built as a sequence of early-returns needs an explicit *default* arm, or "no case matched" and
+"nothing went wrong" become indistinguishable to whoever's staring at the screen.
+
 ## 2026-07-23 — CashFlux embedding: per-person accounts, gated by a manual invite code
 
 The whole point of the earlier Custom Sync work on the CashFlux side (identity, token lifecycle,

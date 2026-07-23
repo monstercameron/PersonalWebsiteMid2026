@@ -73,6 +73,14 @@ service AdminService {
   // PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
   // QOTD RSS feed.
   rpc PostToSlackNow(Empty) returns (Ack);
+  // --- CashFlux client management (embedded per-person sync/auth) ---
+  // ListCashFluxClients returns enrolled phone/SMS accounts, newest first. Fails FailedPrecondition
+  // when CashFlux embedding isn't configured on this deployment.
+  rpc ListCashFluxClients(Empty) returns (CashFluxClientList);
+  // MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
+  rpc MintCashFluxInviteCode(Empty) returns (CashFluxInviteCode);
+  // ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
+  rpc ListCashFluxInviteCodes(Empty) returns (CashFluxInviteCodeList);
 }
 
 // PromptText carries the single QOTD generation instruction.
@@ -276,4 +284,37 @@ message JobAnalysis {
 message Rationale {
   string focus = 1;  // what changed / was emphasized (e.g. "Summary", "UKG bullet on React")
   string reason = 2; // why, tied to a job signal
+}
+
+// --- CashFlux client management ---
+
+// CashFluxClientMeta is one enrolled phone/SMS account.
+message CashFluxClientMeta {
+  string phone_number = 1;
+  int64 created_at = 2;        // unix seconds
+  int64 phone_verified_at = 3; // unix seconds
+}
+
+// CashFluxClientList is enrolled accounts, newest first.
+message CashFluxClientList {
+  repeated CashFluxClientMeta items = 1;
+}
+
+// CashFluxInviteCode is a freshly minted invite code and its expiry.
+message CashFluxInviteCode {
+  string code = 1;
+  int64 expires_at = 2; // unix seconds
+}
+
+// CashFluxInviteCodeMeta is one minted invite code's status, for the admin list.
+message CashFluxInviteCodeMeta {
+  string code = 1;
+  int64 created_at = 2;
+  int64 expires_at = 3;
+  int64 consumed_at = 4; // 0 if still outstanding
+}
+
+// CashFluxInviteCodeList is minted invite codes, newest first.
+message CashFluxInviteCodeList {
+  repeated CashFluxInviteCodeMeta items = 1;
 }

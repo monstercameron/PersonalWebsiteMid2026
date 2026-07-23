@@ -4,6 +4,20 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Added
+- **Admin console: CashFlux client management tab.** New "cashflux" tab in `/admin` lists enrolled
+  phone/SMS clients and mints fresh, single-use, 15-minute invite codes on demand — no more editing
+  `CASHFLUX_SERVER_SETUP_CODE` and restarting the server to add one person. Three new owner-only
+  `AdminService` RPCs (`ListCashFluxClients`/`MintCashFluxInviteCode`/`ListCashFluxInviteCodes`),
+  backed by a new `CashFluxAdmin` interface in `internal/admin` (fake-able in tests) wrapping
+  CashFlux's new `pkg/embed.Admin` handle. (CashFlux-side: admin-mintable invite codes work
+  alongside the existing static setup code — see CashFlux's own CHANGELOG.) Verified end-to-end in
+  an isolated scratch environment (fresh owner setup → login → mint → code appears in the list) and
+  by a mandatory adversarial review, which found and this shipped a fix for: the admin tab silently
+  showed "no clients"/"no codes" on a real backend error indistinguishable from a genuinely empty,
+  healthy deployment — now surfaces a flash message for any error that isn't the expected
+  "not configured" or "session expired."
+
 ### Changed
 - **Embedded CashFlux: per-person accounts instead of one shared token.** Switched from
   `cashfluxembed.NewSyncBridge` to `cashfluxembed.NewSyncAndAuthBridge`, which adds CashFlux's

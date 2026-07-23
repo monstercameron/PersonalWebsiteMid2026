@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	cashfluxembed "github.com/monstercameron/CashFlux/pkg/embed"
 	"github.com/monstercameron/earlcameron/internal/anime"
 	"github.com/monstercameron/earlcameron/internal/openai"
 	"github.com/monstercameron/earlcameron/internal/resume"
@@ -23,6 +24,15 @@ import (
 	"github.com/monstercameron/earlcameron/internal/store"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
+
+// CashFluxAdmin is the subset of *cashfluxembed.Admin the CashFlux client-management RPCs need —
+// an interface (not the concrete type) so Service stays unit-testable with a fake, and so this
+// package doesn't have to construct a real embedded CashFlux store just to test error paths.
+type CashFluxAdmin interface {
+	ListClients() ([]cashfluxembed.PhoneClient, error)
+	MintInviteCode() (code string, expiresAt time.Time, err error)
+	ListInviteCodes() ([]cashfluxembed.InviteCode, error)
+}
 
 // Service implements sitepb.AdminServiceServer — the anime tracker and résumé tailoring data plane.
 // Auth is enforced upstream by Sessions.UnaryAuthInterceptor (every method but Login), so the
@@ -37,12 +47,16 @@ type Service struct {
 	// default), so a key added via the settings page takes effect without a restart. Empty key
 	// disables résumé tailoring.
 	openAI func(context.Context) (key, model string)
+	// cashflux is nil when CashFlux embedding isn't configured on this deployment
+	// (cfg.CashFluxDataDir == "") — every CashFlux RPC below reports FailedPrecondition in that case.
+	cashflux CashFluxAdmin
 }
 
 // NewService builds the admin gRPC service over the anime service, session manager, store (for
-// web-editable settings), the public base URL (for RSS links), and an OpenAI config resolver.
-func NewService(a *anime.Service, s *Sessions, st *store.Store, baseURL string, openAI func(context.Context) (string, string)) *Service {
-	return &Service{anime: a, sessions: s, store: st, baseURL: baseURL, openAI: openAI}
+// web-editable settings), the public base URL (for RSS links), an OpenAI config resolver, and the
+// CashFlux admin handle (nil when CashFlux embedding isn't configured).
+func NewService(a *anime.Service, s *Sessions, st *store.Store, baseURL string, openAI func(context.Context) (string, string), cashflux CashFluxAdmin) *Service {
+	return &Service{anime: a, sessions: s, store: st, baseURL: baseURL, openAI: openAI, cashflux: cashflux}
 }
 
 // GetSettings returns the current settings — the API key itself is never returned, only whether one
@@ -518,6 +532,64 @@ func (s *Service) PostScheduledIfDue(ctx context.Context, now time.Time) (string
 		return "", false, err
 	}
 	return msg, true, nil
+}
+
+// --- CashFlux client management ---
+
+// errCashFluxNotConfigured is returned by every CashFlux RPC when this deployment has no embedded
+// CashFlux instance (cfg.CashFluxDataDir == "").
+var errCashFluxNotConfigured = status.Error(codes.FailedPrecondition, "CashFlux sync is not configured on this deployment")
+
+// ListCashFluxClients returns enrolled phone/SMS accounts, newest first.
+func (s *Service) ListCashFluxClients(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxClientList, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	clients, err := s.cashflux.ListClients()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list clients failed: %v", err)
+	}
+	out := &sitepb.CashFluxClientList{}
+	for _, c := range clients {
+		out.Items = append(out.Items, &sitepb.CashFluxClientMeta{
+			PhoneNumber: c.PhoneNumber, CreatedAt: c.CreatedAt.Unix(), PhoneVerifiedAt: c.PhoneVerifiedAt.Unix(),
+		})
+	}
+	return out, nil
+}
+
+// MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
+func (s *Service) MintCashFluxInviteCode(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxInviteCode, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	code, expiresAt, err := s.cashflux.MintInviteCode()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "mint invite code failed: %v", err)
+	}
+	return &sitepb.CashFluxInviteCode{Code: code, ExpiresAt: expiresAt.Unix()}, nil
+}
+
+// ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
+func (s *Service) ListCashFluxInviteCodes(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxInviteCodeList, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	invites, err := s.cashflux.ListInviteCodes()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list invite codes failed: %v", err)
+	}
+	out := &sitepb.CashFluxInviteCodeList{}
+	for _, c := range invites {
+		var consumedAt int64
+		if !c.ConsumedAt.IsZero() {
+			consumedAt = c.ConsumedAt.Unix()
+		}
+		out.Items = append(out.Items, &sitepb.CashFluxInviteCodeMeta{
+			Code: c.Code, CreatedAt: c.CreatedAt.Unix(), ExpiresAt: c.ExpiresAt.Unix(), ConsumedAt: consumedAt,
+		})
+	}
+	return out, nil
 }
 
 // unmarshalResult decodes a stored TailorResult (protojson), returning an empty result on error.

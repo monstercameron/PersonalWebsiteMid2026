@@ -141,7 +141,7 @@ func consoleShell(active string, navTo func(string) ui.Handler, onLogout ui.Hand
 	header := Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), PadY(Spacing4)),
 		A(Class(FontSemibold, Fg(theme.Accent)), Props{Href: "/"}, "~/earlcameron"),
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
-			tab("anime", "anime"), tab("resume", "résumé"), tab("rss", "rss"), tab("settings", "settings"),
+			tab("anime", "anime"), tab("resume", "résumé"), tab("rss", "rss"), tab("cashflux", "cashflux"), tab("settings", "settings"),
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)), Props{Href: "/budget/", Target: "_blank", Rel: "noopener"}, "budget ↗"),
 			ghostButton("logout", onLogout),
 		),
@@ -535,6 +535,108 @@ func resumeDocument(r *sitepb.Resume) ui.Node {
 	}
 	items = append(items, Tag("ul", eul...))
 	return Div(items...)
+}
+
+// --- cashflux client management ---
+
+// cashfluxView renders the CashFlux client-management panel: a "mint invite code" button, the
+// just-minted code shown large and copyable (nil once none has been minted this session), the
+// outstanding/recent invite codes, and the registered clients list. configured is false when
+// CashFlux embedding isn't set up on this deployment, in which case everything else is skipped.
+func cashfluxView(configured, minting bool, justMinted *sitepb.CashFluxInviteCode, codes []*sitepb.CashFluxInviteCodeMeta, clients []*sitepb.CashFluxClientMeta, onMint ui.Handler) ui.Node {
+	if !configured {
+		return Div(Class(Flex, FlexCol, Gap(Spacing2)),
+			sectionLabel("cashflux clients"),
+			P(Class(Fg(theme.Dim), TextSize(TextSm)), "CashFlux sync isn't configured on this deployment (no CASHFLUX_DATA_DIR set)."),
+		)
+	}
+
+	mintLabel := "Mint invite code"
+	if minting {
+		mintLabel = "Minting…"
+	}
+	sections := []any{Class(Flex, FlexCol, Gap(Spacing5)),
+		Div(Class(Flex, FlexCol, Gap(Spacing2), MaxWidth(Px(560))),
+			sectionLabel("invite a new client"),
+			P(Class(Fg(theme.Dim), TextSize(TextSm)),
+				"Mints a fresh, single-use code good for 15 minutes. Send it to the person you're inviting — they enter it as the “setup code” when signing in with their phone number."),
+			primaryButton(mintLabel, onMint),
+		),
+	}
+	if justMinted != nil {
+		sections = append(sections, mintedCodeCallout(justMinted))
+	}
+	sections = append(sections,
+		Div(Class(Flex, FlexCol, Gap(Spacing3)),
+			sectionLabel("invite codes ("+strconv.Itoa(len(codes))+")"),
+			inviteCodeList(codes),
+		),
+		Div(Class(Flex, FlexCol, Gap(Spacing3)),
+			sectionLabel("registered clients ("+strconv.Itoa(len(clients))+")"),
+			cashfluxClientList(clients),
+		),
+	)
+	return Div(sections...)
+}
+
+// mintedCodeCallout highlights a freshly minted invite code — large, monospace, with its expiry —
+// mirroring phraseView's "shown once, save it" treatment for the recovery phrase.
+func mintedCodeCallout(c *sitepb.CashFluxInviteCode) ui.Node {
+	expires := time.Unix(c.GetExpiresAt(), 0).Format("3:04:05 pm")
+	return Div(Class(Bg(theme.Bg), Border(theme.Accent), Rounded(RadiusLg), Pad(Spacing4), Flex, FlexCol, Gap(Spacing2), MaxWidth(Px(360))),
+		Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em")), "GIVE THIS TO YOUR INVITEE"),
+		Div(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), FontSize(Rem(1.6)),
+			css.Raw("letter-spacing", "0.08em"), FontSemibold, Fg(theme.Fg)), c.GetCode()),
+		Span(Class(TextSize(TextSm), Fg(theme.Dim)), "expires at "+expires),
+	)
+}
+
+// inviteCodeList renders minted invite codes as scannable rows (code, created, expiry/status).
+func inviteCodeList(codes []*sitepb.CashFluxInviteCodeMeta) ui.Node {
+	if len(codes) == 0 {
+		return P(Class(Fg(theme.Dim), TextSize(TextSm)), "No invite codes minted yet.")
+	}
+	nodes := []any{Class(Flex, FlexCol, Gap(Spacing2))}
+	for _, c := range codes {
+		nodes = append(nodes, inviteCodeRow(c))
+	}
+	return Div(nodes...)
+}
+
+// inviteCodeRow renders one invite code's status: consumed, expired, or outstanding with a countdown-
+// free "expires at" time (matching mintedCodeCallout's plain timestamp, no live ticking clock).
+func inviteCodeRow(c *sitepb.CashFluxInviteCodeMeta) ui.Node {
+	status := "expires " + time.Unix(c.GetExpiresAt(), 0).Format("Jan 2 · 3:04 pm")
+	statusColor := theme.Dim
+	if c.GetConsumedAt() != 0 {
+		status = "redeemed " + time.Unix(c.GetConsumedAt(), 0).Format("Jan 2 · 3:04 pm")
+		statusColor = theme.Accent2
+	}
+	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
+		Span(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), TextSize(TextSm)), c.GetCode()),
+		Span(Class(TextSize(TextSm), Fg(statusColor)), status),
+	)
+}
+
+// cashfluxClientList renders registered phone/SMS accounts as scannable rows.
+func cashfluxClientList(clients []*sitepb.CashFluxClientMeta) ui.Node {
+	if len(clients) == 0 {
+		return P(Class(Fg(theme.Dim), TextSize(TextSm)), "No clients registered yet.")
+	}
+	nodes := []any{Class(Flex, FlexCol, Gap(Spacing2))}
+	for _, c := range clients {
+		nodes = append(nodes, cashfluxClientRow(c))
+	}
+	return Div(nodes...)
+}
+
+// cashfluxClientRow renders one enrolled client: phone number, joined date, verified date.
+func cashfluxClientRow(c *sitepb.CashFluxClientMeta) ui.Node {
+	joined := time.Unix(c.GetCreatedAt(), 0).Format("Jan 2 · 3:04 pm")
+	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
+		Span(Class(FontSemibold, TextSize(TextSm)), c.GetPhoneNumber()),
+		Span(Class(TextSize(TextSm), Fg(theme.Dim)), "joined "+joined),
+	)
 }
 
 // --- settings view ---

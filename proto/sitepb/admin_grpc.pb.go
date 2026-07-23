@@ -19,32 +19,35 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminService_Login_FullMethodName            = "/site.v1.AdminService/Login"
-	AdminService_AuthState_FullMethodName        = "/site.v1.AdminService/AuthState"
-	AdminService_Setup_FullMethodName            = "/site.v1.AdminService/Setup"
-	AdminService_ResetPassword_FullMethodName    = "/site.v1.AdminService/ResetPassword"
-	AdminService_SearchAnime_FullMethodName      = "/site.v1.AdminService/SearchAnime"
-	AdminService_ListTracked_FullMethodName      = "/site.v1.AdminService/ListTracked"
-	AdminService_TrackAnime_FullMethodName       = "/site.v1.AdminService/TrackAnime"
-	AdminService_UntrackAnime_FullMethodName     = "/site.v1.AdminService/UntrackAnime"
-	AdminService_RunReleaseCheck_FullMethodName  = "/site.v1.AdminService/RunReleaseCheck"
-	AdminService_GetResume_FullMethodName        = "/site.v1.AdminService/GetResume"
-	AdminService_ApplyResume_FullMethodName      = "/site.v1.AdminService/ApplyResume"
-	AdminService_TailorResume_FullMethodName     = "/site.v1.AdminService/TailorResume"
-	AdminService_GetSettings_FullMethodName      = "/site.v1.AdminService/GetSettings"
-	AdminService_SaveSettings_FullMethodName     = "/site.v1.AdminService/SaveSettings"
-	AdminService_ListModels_FullMethodName       = "/site.v1.AdminService/ListModels"
-	AdminService_GetLastTailoring_FullMethodName = "/site.v1.AdminService/GetLastTailoring"
-	AdminService_GetBaseResume_FullMethodName    = "/site.v1.AdminService/GetBaseResume"
-	AdminService_ListTailorings_FullMethodName   = "/site.v1.AdminService/ListTailorings"
-	AdminService_GetTailoring_FullMethodName     = "/site.v1.AdminService/GetTailoring"
-	AdminService_DeleteTailoring_FullMethodName  = "/site.v1.AdminService/DeleteTailoring"
-	AdminService_GetPrompt_FullMethodName        = "/site.v1.AdminService/GetPrompt"
-	AdminService_SavePrompt_FullMethodName       = "/site.v1.AdminService/SavePrompt"
-	AdminService_DryRunPrompt_FullMethodName     = "/site.v1.AdminService/DryRunPrompt"
-	AdminService_GetSlackConfig_FullMethodName   = "/site.v1.AdminService/GetSlackConfig"
-	AdminService_SaveSlackConfig_FullMethodName  = "/site.v1.AdminService/SaveSlackConfig"
-	AdminService_PostToSlackNow_FullMethodName   = "/site.v1.AdminService/PostToSlackNow"
+	AdminService_Login_FullMethodName                   = "/site.v1.AdminService/Login"
+	AdminService_AuthState_FullMethodName               = "/site.v1.AdminService/AuthState"
+	AdminService_Setup_FullMethodName                   = "/site.v1.AdminService/Setup"
+	AdminService_ResetPassword_FullMethodName           = "/site.v1.AdminService/ResetPassword"
+	AdminService_SearchAnime_FullMethodName             = "/site.v1.AdminService/SearchAnime"
+	AdminService_ListTracked_FullMethodName             = "/site.v1.AdminService/ListTracked"
+	AdminService_TrackAnime_FullMethodName              = "/site.v1.AdminService/TrackAnime"
+	AdminService_UntrackAnime_FullMethodName            = "/site.v1.AdminService/UntrackAnime"
+	AdminService_RunReleaseCheck_FullMethodName         = "/site.v1.AdminService/RunReleaseCheck"
+	AdminService_GetResume_FullMethodName               = "/site.v1.AdminService/GetResume"
+	AdminService_ApplyResume_FullMethodName             = "/site.v1.AdminService/ApplyResume"
+	AdminService_TailorResume_FullMethodName            = "/site.v1.AdminService/TailorResume"
+	AdminService_GetSettings_FullMethodName             = "/site.v1.AdminService/GetSettings"
+	AdminService_SaveSettings_FullMethodName            = "/site.v1.AdminService/SaveSettings"
+	AdminService_ListModels_FullMethodName              = "/site.v1.AdminService/ListModels"
+	AdminService_GetLastTailoring_FullMethodName        = "/site.v1.AdminService/GetLastTailoring"
+	AdminService_GetBaseResume_FullMethodName           = "/site.v1.AdminService/GetBaseResume"
+	AdminService_ListTailorings_FullMethodName          = "/site.v1.AdminService/ListTailorings"
+	AdminService_GetTailoring_FullMethodName            = "/site.v1.AdminService/GetTailoring"
+	AdminService_DeleteTailoring_FullMethodName         = "/site.v1.AdminService/DeleteTailoring"
+	AdminService_GetPrompt_FullMethodName               = "/site.v1.AdminService/GetPrompt"
+	AdminService_SavePrompt_FullMethodName              = "/site.v1.AdminService/SavePrompt"
+	AdminService_DryRunPrompt_FullMethodName            = "/site.v1.AdminService/DryRunPrompt"
+	AdminService_GetSlackConfig_FullMethodName          = "/site.v1.AdminService/GetSlackConfig"
+	AdminService_SaveSlackConfig_FullMethodName         = "/site.v1.AdminService/SaveSlackConfig"
+	AdminService_PostToSlackNow_FullMethodName          = "/site.v1.AdminService/PostToSlackNow"
+	AdminService_ListCashFluxClients_FullMethodName     = "/site.v1.AdminService/ListCashFluxClients"
+	AdminService_MintCashFluxInviteCode_FullMethodName  = "/site.v1.AdminService/MintCashFluxInviteCode"
+	AdminService_ListCashFluxInviteCodes_FullMethodName = "/site.v1.AdminService/ListCashFluxInviteCodes"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -118,6 +121,14 @@ type AdminServiceClient interface {
 	// PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
 	// QOTD RSS feed.
 	PostToSlackNow(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Ack, error)
+	// --- CashFlux client management (embedded per-person sync/auth) ---
+	// ListCashFluxClients returns enrolled phone/SMS accounts, newest first. Fails FailedPrecondition
+	// when CashFlux embedding isn't configured on this deployment.
+	ListCashFluxClients(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxClientList, error)
+	// MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
+	MintCashFluxInviteCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCode, error)
+	// ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
+	ListCashFluxInviteCodes(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCodeList, error)
 }
 
 type adminServiceClient struct {
@@ -388,6 +399,36 @@ func (c *adminServiceClient) PostToSlackNow(ctx context.Context, in *Empty, opts
 	return out, nil
 }
 
+func (c *adminServiceClient) ListCashFluxClients(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxClientList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxClientList)
+	err := c.cc.Invoke(ctx, AdminService_ListCashFluxClients_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) MintCashFluxInviteCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCode, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxInviteCode)
+	err := c.cc.Invoke(ctx, AdminService_MintCashFluxInviteCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListCashFluxInviteCodes(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCodeList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxInviteCodeList)
+	err := c.cc.Invoke(ctx, AdminService_ListCashFluxInviteCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -459,6 +500,14 @@ type AdminServiceServer interface {
 	// PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
 	// QOTD RSS feed.
 	PostToSlackNow(context.Context, *Empty) (*Ack, error)
+	// --- CashFlux client management (embedded per-person sync/auth) ---
+	// ListCashFluxClients returns enrolled phone/SMS accounts, newest first. Fails FailedPrecondition
+	// when CashFlux embedding isn't configured on this deployment.
+	ListCashFluxClients(context.Context, *Empty) (*CashFluxClientList, error)
+	// MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
+	MintCashFluxInviteCode(context.Context, *Empty) (*CashFluxInviteCode, error)
+	// ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
+	ListCashFluxInviteCodes(context.Context, *Empty) (*CashFluxInviteCodeList, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -546,6 +595,15 @@ func (UnimplementedAdminServiceServer) SaveSlackConfig(context.Context, *SlackCo
 }
 func (UnimplementedAdminServiceServer) PostToSlackNow(context.Context, *Empty) (*Ack, error) {
 	return nil, status.Error(codes.Unimplemented, "method PostToSlackNow not implemented")
+}
+func (UnimplementedAdminServiceServer) ListCashFluxClients(context.Context, *Empty) (*CashFluxClientList, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCashFluxClients not implemented")
+}
+func (UnimplementedAdminServiceServer) MintCashFluxInviteCode(context.Context, *Empty) (*CashFluxInviteCode, error) {
+	return nil, status.Error(codes.Unimplemented, "method MintCashFluxInviteCode not implemented")
+}
+func (UnimplementedAdminServiceServer) ListCashFluxInviteCodes(context.Context, *Empty) (*CashFluxInviteCodeList, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCashFluxInviteCodes not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -1036,6 +1094,60 @@ func _AdminService_PostToSlackNow_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListCashFluxClients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListCashFluxClients(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListCashFluxClients_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListCashFluxClients(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_MintCashFluxInviteCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).MintCashFluxInviteCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_MintCashFluxInviteCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).MintCashFluxInviteCode(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListCashFluxInviteCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListCashFluxInviteCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListCashFluxInviteCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListCashFluxInviteCodes(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1146,6 +1258,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PostToSlackNow",
 			Handler:    _AdminService_PostToSlackNow_Handler,
+		},
+		{
+			MethodName: "ListCashFluxClients",
+			Handler:    _AdminService_ListCashFluxClients_Handler,
+		},
+		{
+			MethodName: "MintCashFluxInviteCode",
+			Handler:    _AdminService_MintCashFluxInviteCode_Handler,
+		},
+		{
+			MethodName: "ListCashFluxInviteCodes",
+			Handler:    _AdminService_ListCashFluxInviteCodes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

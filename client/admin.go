@@ -34,9 +34,9 @@ func AdminApp() ui.Node {
 	variants := ui.UseState[[]*sitepb.TailoringMeta](nil) // saved tailoring variants (the CRUD list)
 
 	// RSS / anime control panel
-	promptText := ui.UseState("")                    // the single QOTD generation instruction
-	dryRun := ui.UseState[*sitepb.PostPreview](nil)  // last dry-run preview
-	dryRunning := ui.UseState(false)                 // dry-run in flight
+	promptText := ui.UseState("")                   // the single QOTD generation instruction
+	dryRun := ui.UseState[*sitepb.PostPreview](nil) // last dry-run preview
+	dryRunning := ui.UseState(false)                // dry-run in flight
 	slackWebhook := ui.UseState("")
 	slackSet := ui.UseState(false)
 	slackEnabled := ui.UseState(false)
@@ -46,6 +46,13 @@ func AdminApp() ui.Node {
 	model := ui.UseState("")
 	models := ui.UseState[[]string](nil)
 	apiKey := ui.UseState("")
+
+	// CashFlux client management
+	cashfluxConfigured := ui.UseState(true) // flips false only on a FailedPrecondition from the server
+	cashfluxClients := ui.UseState[[]*sitepb.CashFluxClientMeta](nil)
+	cashfluxCodes := ui.UseState[[]*sitepb.CashFluxInviteCodeMeta](nil)
+	cashfluxMinting := ui.UseState(false)
+	cashfluxJustMinted := ui.UseState[*sitepb.CashFluxInviteCode](nil) // the code from the last mint, shown once until the tab reloads
 
 	// Auth flow: first-run setup + password reset (the owner has no session in these cases).
 	needsSetup := ui.UseState(false)
@@ -159,6 +166,39 @@ func AdminApp() ui.Node {
 					slackEnabled.Set(sc.GetEnabled())
 					slackHour.Set(int(sc.GetPostHour()))
 				}
+			}()
+		case "cashflux":
+			go func() {
+				c, err := adminClient()
+				if err != nil {
+					flash.Set("connection error")
+					return
+				}
+				ctx, cancel := callCtx(token.Get())
+				defer cancel()
+				clients, err := c.ListCashFluxClients(ctx, &sitepb.Empty{})
+				switch {
+				case onAuthErr(err):
+					return
+				case status.Code(err) == codes.FailedPrecondition:
+					cashfluxConfigured.Set(false)
+					return
+				case err != nil:
+					flash.Set("couldn't load CashFlux clients: " + err.Error())
+					return
+				default:
+					cashfluxConfigured.Set(true)
+					cashfluxClients.Set(clients.GetItems())
+				}
+				codesResp, err := c.ListCashFluxInviteCodes(ctx, &sitepb.Empty{})
+				if onAuthErr(err) {
+					return
+				}
+				if err != nil {
+					flash.Set("couldn't load invite codes: " + err.Error())
+					return
+				}
+				cashfluxCodes.Set(codesResp.GetItems())
 			}()
 		}
 		return nil
@@ -651,6 +691,34 @@ func AdminApp() ui.Node {
 			flash.Set(ack.GetMessage())
 		}()
 	})
+	onMintInviteCode := ui.UseEvent(func() {
+		flash.Set("")
+		cashfluxMinting.Set(true)
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				cashfluxMinting.Set(false)
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			code, err := c.MintCashFluxInviteCode(ctx, &sitepb.Empty{})
+			cashfluxMinting.Set(false)
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("mint failed: " + err.Error())
+				return
+			}
+			cashfluxJustMinted.Set(code)
+			// Re-fetch so the new code appears in the list immediately, at the top (newest first).
+			if codesResp, err := c.ListCashFluxInviteCodes(ctx, &sitepb.Empty{}); err == nil {
+				cashfluxCodes.Set(codesResp.GetItems())
+			}
+		}()
+	})
 
 	var content ui.Node
 	switch view.Get() {
@@ -660,6 +728,8 @@ func AdminApp() ui.Node {
 		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
 	case "rss":
 		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), slackHour, onToggleSlack, onSaveSlack, onPostNow)
+	case "cashflux":
+		content = cashfluxView(cashfluxConfigured.Get(), cashfluxMinting.Get(), cashfluxJustMinted.Get(), cashfluxCodes.Get(), cashfluxClients.Get(), onMintInviteCode)
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}
