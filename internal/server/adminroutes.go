@@ -1,14 +1,11 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/monstercameron/earlcameron/internal/rss"
-	"github.com/monstercameron/earlcameron/internal/store"
 )
 
 // registerAdminRoutes wires the public anime RSS feeds and the admin console shell.
@@ -40,17 +37,20 @@ func (s *Server) animeFeed(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprint(w, xml)
 }
 
-// qotdFeed serves the QOTD RSS feed: the single last-published generated post (an empty but valid
-// feed until the owner publishes one via "Post to Slack now").
+// qotdFeedItemCap bounds how many posts the QOTD feed serves. Older posts stay recorded in the
+// qotd_posts table; they just fall off the feed.
+const qotdFeedItemCap = 30
+
+// qotdFeed serves the QOTD RSS feed from the stored post history: the newest posts, one item per
+// published day (an empty but valid feed until the first publish). The content is never generated
+// on request — this only renders what the scheduler/manual publish already recorded.
 func (s *Server) qotdFeed(w http.ResponseWriter, r *http.Request) {
-	var post *rss.PublishedPost
-	if raw, _ := s.store.GetSetting(r.Context(), store.SettingQOTDPublished); strings.TrimSpace(raw) != "" {
-		var p rss.PublishedPost
-		if json.Unmarshal([]byte(raw), &p) == nil {
-			post = &p
-		}
+	posts, err := s.store.RecentQOTDPosts(r.Context(), qotdFeedItemCap)
+	if err != nil {
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
 	}
-	xml, err := rss.PublishedFeedXML(post, s.cfg.BaseURL, time.Now())
+	xml, err := rss.PublishedFeedXML(posts, s.cfg.BaseURL, time.Now())
 	if err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return

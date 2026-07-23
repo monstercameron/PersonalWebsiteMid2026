@@ -69,14 +69,15 @@ type FeedItem struct {
 
 // buildFeed renders a fully spec-compliant RSS 2.0 document: title/link/description/language on
 // the channel, a self-referencing atom:link, lastBuildDate stamped at now, and one <item> per
-// entry in items. selfURL is the feed's own public URL (used for both <link> and atom:link href).
-func buildFeed(title, description, selfURL string, items []FeedItem, now time.Time) (string, error) {
+// entry in items. siteURL is the HTML website the channel <link> points at (per the RSS 2.0 spec —
+// not the feed itself); selfURL is the feed's own public URL, used for the atom:link self href.
+func buildFeed(title, description, siteURL, selfURL string, items []FeedItem, now time.Time) (string, error) {
 	doc := feedDoc{
 		Version:   "2.0",
 		AtomXMLNS: atomNS,
 		Channel: channelDoc{
 			Title:         title,
-			Link:          selfURL,
+			Link:          siteURL,
 			Description:   description,
 			Language:      "en-us",
 			LastBuildDate: now.UTC().Format(rssDateFormat),
@@ -120,5 +121,5 @@ func TrackedFeedXML(list []store.TrackedAnime, baseURL string, now time.Time) (s
 			PubDate:     time.Unix(a.UpdatedAt, 0).UTC(),
 		})
 	}
-	return buildFeed("Anime Release Radar — Tracked Releases", "Tracked show release updates and status snapshots.", self, items, now)
+	return buildFeed("Anime Release Radar — Tracked Releases", "Tracked show release updates and status snapshots.", baseURL, self, items, now)
 }

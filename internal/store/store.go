@@ -5,8 +5,12 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -75,6 +79,14 @@ func migrate(db *sql.DB) error {
 		// The old multi-prompt QOTD list was replaced by a single generation instruction stored in
 		// settings (SettingQOTDPrompt); drop the legacy table so its seeded rows don't linger.
 		`DROP TABLE IF EXISTS qotd_prompts`,
+		// Every generated-and-published QOTD post, one row per publish — the feed's durable history
+		// (the feed serves the newest N rows; past days stay recorded here).
+		`CREATE TABLE IF NOT EXISTS qotd_posts (
+			id           INTEGER PRIMARY KEY AUTOINCREMENT,
+			title        TEXT    NOT NULL,
+			body         TEXT    NOT NULL,
+			published_at INTEGER NOT NULL
+		)`,
 		// The single owner account for the deployed site (first-run setup writes row id=1). The CHECK
 		// pins it to one row: there is exactly one owner. Password and recovery phrase are stored only
 		// as bcrypt hashes; the hint is plaintext (it is a memory jog the owner chooses, shown on the
@@ -102,7 +114,43 @@ func migrate(db *sql.DB) error {
 	} {
 		_, _ = db.Exec(alter)
 	}
-	return nil
+	return migrateLegacyQOTDPublished(db)
+}
+
+// migrateLegacyQOTDPublished moves the pre-history single published post (a JSON blob in the
+// qotd_published settings row) into the qotd_posts table, then deletes the settings row so the
+// migration runs exactly once. Insert + delete run in one transaction so a crash between them
+// can't leave the settings row behind and re-insert a duplicate on the next startup. A malformed
+// blob is dropped rather than failing startup.
+func migrateLegacyQOTDPublished(db *sql.DB) error {
+	var raw string
+	err := db.QueryRow(`SELECT value FROM settings WHERE key = ?`, SettingQOTDPublished).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var legacy struct {
+		Title       string    `json:"title"`
+		Body        string    `json:"body"`
+		PublishedAt time.Time `json:"publishedAt"`
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if json.Unmarshal([]byte(raw), &legacy) == nil && strings.TrimSpace(legacy.Body) != "" {
+		if _, err := tx.Exec(`INSERT INTO qotd_posts (title, body, published_at) VALUES (?, ?, ?)`,
+			legacy.Title, legacy.Body, legacy.PublishedAt.Unix()); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(`DELETE FROM settings WHERE key = ?`, SettingQOTDPublished); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // ContactMessage is a stored inbound message.

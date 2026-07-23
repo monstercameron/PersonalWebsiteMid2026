@@ -33,9 +33,9 @@ import (
 
 // Server owns the ingress lifecycle.
 type Server struct {
-	cfg    config.Config
-	log    *slog.Logger
-	grpc   *grpc.Server
+	cfg      config.Config
+	log      *slog.Logger
+	grpc     *grpc.Server
 	tunnel   http.Handler
 	store    *store.Store
 	page     []byte // the standard site, server-rendered once at startup
@@ -256,9 +256,11 @@ func (s *Server) Run() error {
 	return srv.Shutdown(ctx)
 }
 
-// runSlackScheduler checks once a minute whether the configured daily Slack post is due and, if so,
-// generates and posts it. The service guards against double-posting within a day; a failed attempt
-// skips the day rather than retrying every tick. Stops when ctx is cancelled (shutdown).
+// runSlackScheduler checks once a minute whether the configured daily post is due and, if so,
+// generates and publishes it (RSS always; Slack best-effort). The service guards against
+// double-posting within a day; a failed attempt skips the day rather than retrying every tick.
+// The outcome message is logged verbatim so a skipped/failed Slack delivery is visible in the
+// server log, not just in the manual path's Ack. Stops when ctx is cancelled (shutdown).
 func (s *Server) runSlackScheduler(ctx context.Context) {
 	t := time.NewTicker(time.Minute)
 	defer t.Stop()
@@ -267,10 +269,10 @@ func (s *Server) runSlackScheduler(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			if posted, err := s.adminSvc.PostScheduledIfDue(ctx, time.Now()); err != nil {
-				s.log.Warn("scheduled slack post failed", "err", err)
+			if msg, posted, err := s.adminSvc.PostScheduledIfDue(ctx, time.Now()); err != nil {
+				s.log.Warn("scheduled daily post failed", "err", err)
 			} else if posted {
-				s.log.Info("scheduled slack post sent")
+				s.log.Info("scheduled daily post", "outcome", msg)
 			}
 		}
 	}

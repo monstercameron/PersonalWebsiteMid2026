@@ -8,15 +8,15 @@ import (
 
 // Setting keys used by the admin console. Kept as constants so callers don't hardcode strings.
 const (
-	SettingOpenAIKey    = "openai_api_key"
-	SettingOpenAIModel  = "openai_model"
-	SettingActiveResume = "active_resume"     // JSON of the applied résumé (overrides the canonical)
-	SettingSlackWebhook = "slack_webhook_url" // Slack incoming-webhook URL for QOTD/news posts
-	SettingSlackEnabled = "slack_enabled"     // "1"/"true" to enable scheduled Slack posting
-	SettingQOTDPrompt   = "qotd_prompt"       // the single generation instruction for the anime discussion post
-	SettingQOTDPublished = "qotd_published"   // JSON of the last generated-and-published post (served by the QOTD feed)
-	SettingSlackPostHour = "slack_post_hour"  // hour of day (0–23, server local time) the daily scheduled Slack post fires
-	SettingSlackLastPost = "slack_last_post"  // YYYY-MM-DD of the last scheduled post, so it fires at most once per day
+	SettingOpenAIKey     = "openai_api_key"
+	SettingOpenAIModel   = "openai_model"
+	SettingActiveResume  = "active_resume"     // JSON of the applied résumé (overrides the canonical)
+	SettingSlackWebhook  = "slack_webhook_url" // Slack incoming-webhook URL for QOTD/news posts
+	SettingSlackEnabled  = "slack_enabled"     // "1"/"true" to enable scheduled Slack posting
+	SettingQOTDPrompt    = "qotd_prompt"       // the single generation instruction for the anime discussion post
+	SettingQOTDPublished = "qotd_published"    // LEGACY: pre-history single published post; migrated into qotd_posts at startup
+	SettingSlackPostHour = "slack_post_hour"   // hour of day (0–23, server local time) the daily scheduled Slack post fires
+	SettingSlackLastPost = "slack_last_post"   // YYYY-MM-DD of the last scheduled post, so it fires at most once per day
 )
 
 // GetSetting returns the stored value for key, or "" if it has never been set.

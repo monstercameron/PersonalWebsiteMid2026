@@ -1,8 +1,11 @@
 package rss
 
 import (
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/monstercameron/earlcameron/internal/store"
 )
 
 // DefaultQOTDPrompt is the starter generation instruction shown when no prompt has been saved. It is
@@ -13,46 +16,43 @@ const DefaultQOTDPrompt = "You are the host of a friendly anime watercooler chan
 	"prompt (1–2 sentences) that gets coworkers talking. Reference the news naturally, keep it inclusive " +
 	"and spoiler-free, and end with a question. Output only the prompt text — no preamble, no quotes."
 
-// PublishedPost is a generated anime discussion post that has been published (served by the QOTD
-// feed). Title defaults to a dated label; Body is the generated prompt text.
-type PublishedPost struct {
-	Title       string    `json:"title"`
-	Body        string    `json:"body"`
-	PublishedAt time.Time `json:"publishedAt"`
-}
-
 // PostTitle returns a dated title for a post generated/published at t.
 func PostTitle(t time.Time) string {
 	return "Anime discussion — " + t.Format("Jan 2, 2006")
 }
 
-// PublishedFeedXML renders the QOTD feed from the single last-published post (or an empty but valid
-// feed when nothing has been published yet).
-func PublishedFeedXML(post *PublishedPost, baseURL string, now time.Time) (string, error) {
+// PublishedFeedXML renders the QOTD feed from the stored post history (newest first, as given —
+// callers pass store.RecentQOTDPosts output). An empty history renders an empty but valid feed.
+// GUIDs come from the immutable DB row id, so they are unique per publish (even two in the same
+// minute) and stable across requests — readers key/de-dupe on guid.
+func PublishedFeedXML(posts []store.QOTDPost, baseURL string, now time.Time) (string, error) {
 	self := baseURL + "/anime/qotd.xml"
-	var items []FeedItem
-	if post != nil && strings.TrimSpace(post.Body) != "" {
-		items = append(items, postItem(post.Title, post.Body, self, post.PublishedAt))
+	items := make([]FeedItem, 0, len(posts))
+	for _, p := range posts {
+		if strings.TrimSpace(p.Body) == "" {
+			continue
+		}
+		items = append(items, postItem(p.Title, p.Body, baseURL, fmt.Sprintf("anime-qotd-%d", p.ID), time.Unix(p.PublishedAt, 0)))
 	}
-	return buildFeed("Anime Release Radar — Daily Prompt", "AI-generated anime discussion prompts for engagement.", self, items, now)
+	return buildFeed("Anime Release Radar — Daily Prompt", "AI-generated anime discussion prompts for engagement.", baseURL, self, items, now)
 }
 
 // PreviewFeedXML renders a one-item feed for a dry-run: exactly what publishing title+body would
-// produce, but never served publicly.
+// produce, but never served publicly (so its fixed preview guid is harmless).
 func PreviewFeedXML(title, body, baseURL string, now time.Time) (string, error) {
 	self := baseURL + "/anime/qotd.xml"
-	items := []FeedItem{postItem(title, body, self, now)}
-	return buildFeed("Anime Release Radar — Daily Prompt (preview)", "Preview of a generated anime discussion prompt.", self, items, now)
+	items := []FeedItem{postItem(title, body, baseURL, "anime-qotd-preview", now)}
+	return buildFeed("Anime Release Radar — Daily Prompt (preview)", "Preview of a generated anime discussion prompt.", baseURL, self, items, now)
 }
 
-// postItem builds the single RSS item for a generated post. The guid is minute-stamped so each
-// publish is a distinct entry.
-func postItem(title, body, self string, at time.Time) FeedItem {
+// postItem builds one RSS item for a generated post. The item links to the site's anime section
+// (items should link to a web page, not the feed itself).
+func postItem(title, body, baseURL, guid string, at time.Time) FeedItem {
 	return FeedItem{
 		Title:       title,
-		Link:        self,
+		Link:        baseURL + "/#anime",
 		Description: body,
-		GUID:        "anime-qotd-" + at.UTC().Format("2006-01-02-1504"),
+		GUID:        guid,
 		PubDate:     at.UTC(),
 	}
 }

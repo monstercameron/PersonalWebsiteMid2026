@@ -637,7 +637,7 @@ func rssView(promptText ui.State[string], onSavePrompt, onDryRun ui.Handler, dry
 		Div(Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(560))),
 			sectionLabel("slack — generate & publish"),
 			P(Class(Fg(theme.Dim), TextSize(TextSm)),
-				"Generates a post from the saved prompt, posts it to your Slack channel, and publishes it to the QOTD RSS feed. Turn on scheduled posting to have the server do this automatically once a day."),
+				"Generates a post from the saved prompt and publishes it to the QOTD RSS feed; if a Slack webhook is set, it also posts to your Slack channel. Turn on scheduled posting to have the server do this automatically once a day."),
 			settingRow("Webhook URL ("+keyStatus(slackSet)+")", "stored in the backend, never shown",
 				textInput(slackWebhook.Get(), onWebhook, webhookPlaceholder, "password", false)),
 			settingRow("Daily post hour (0–23, server time)", "when scheduled posting is on, the post fires once a day around this hour",

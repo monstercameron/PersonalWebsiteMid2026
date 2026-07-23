@@ -14,6 +14,10 @@ import (
 // stream unbounded data into memory.
 const maxGenerateBody = 1 << 20 // 1 MiB
 
+// BaseURL is the OpenAI API origin. It is a variable only so tests can point Generate at a local
+// httptest server; production code must never change it.
+var BaseURL = "https://api.openai.com"
+
 // Generate calls the OpenAI Responses API (/v1/responses) for free-form text: instructions is the
 // system role, input is the user role. It returns the aggregated output text. temperature is
 // intentionally omitted — newer models only accept the default and reject an explicit value.
@@ -28,7 +32,7 @@ func Generate(ctx context.Context, apiKey, model, instructions, input string) (s
 	if err != nil {
 		return "", err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.openai.com/v1/responses", bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, BaseURL+"/v1/responses", bytes.NewReader(reqBody))
 	if err != nil {
 		return "", err
 	}

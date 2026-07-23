@@ -2,6 +2,33 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-23 — QOTD feed: durable post history + Slack decoupled
+
+Cam asked to make sure the RSS engine generates on schedule, the format is right, nothing is
+generated on the fly, and **past days are properly recorded**. Audit found the last point broken:
+each publish overwrote the single `qotd_published` settings blob, so the feed only ever held one
+item — and publishing was hard-coupled to Slack (no webhook → no RSS post at all).
+
+Built: a `qotd_posts` table (one row per publish, kept forever; the feed serves the newest 30 via
+`RecentQOTDPosts`), a transactional startup migration that moves the legacy blob into the table
+exactly once, and a reordered `publishDiscussion`: generate → **record to RSS first** (this can
+error) → best-effort Slack (missing webhook or failed POST no longer blocks the publish, and the
+outcome lands in the Ack *and* the scheduler's log line — `PostScheduledIfDue` now returns the
+message so a broken webhook isn't silent). Scheduling itself was already sound (minute ticker,
+enabled+hour gates, claim-the-day-slot-before-posting). Format fixes: channel `<link>` now points
+at the site, not the feed (RSS 2.0 spec); items link to `/#anime`; GUIDs now come from the
+immutable DB row id, so two publishes in the same minute can't collide (readers de-dupe on guid).
+
+Adversarial review caught four real issues in the first cut, all fixed: non-transactional
+migration (crash between insert+delete → duplicate row next boot), minute-stamped GUID collisions
+(double-click "post now"), the scheduler discarding the outcome message, and zero test coverage of
+the decoupling. Added `openai.BaseURL` as a test seam and
+`TestPublishDiscussionRecordsAndDecouplesSlack` (httptest OpenAI + failing Slack: both branches
+record the post). Live-verified on a scratch server: seeded legacy blob + history row → feed
+served both items newest-first, RFC1123Z dates, unique GUIDs. Known leftovers: no WAL/busy_timeout
+pragmas on the shared SQLite handle (pre-existing), same-day manual+scheduled posts share a
+day-granular title.
+
 ## 2026-07-23 — recruiter-readability pass on the home page
 
 Cam asked for a review of how the home page reads to recruiters/hiring managers, then "refine it".

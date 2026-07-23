@@ -4,6 +4,19 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Changed
+- **QOTD feed: durable post history + Slack decoupled.** Every generated anime discussion post is
+  now recorded in a `qotd_posts` table (one row per publish, past days kept forever); the
+  `/anime/qotd.xml` feed serves the newest 30 from that history instead of a single overwritten
+  settings blob (a one-time transactional startup migration moves the legacy blob over). Publishing
+  now records to RSS **first** and treats Slack as best-effort delivery: a missing webhook or a
+  failed Slack POST no longer blocks the feed post, and the outcome is reported in the manual Ack
+  and the scheduler's log line. RSS format: channel `<link>` now points at the site (per spec, not
+  the feed itself), items link to `/#anime`, and GUIDs derive from the immutable DB row id (unique
+  even for same-minute publishes). Feed content is never generated on request — the handler only
+  renders stored rows. New `openai.BaseURL` test seam + coverage for the record-first/Slack-optional
+  contract.
+
 ### Fixed
 - **Mobile horizontal overflow on the home page.** The wasm terminal's nowrap rows and text input
   set a flex `min-width:auto` floor that widened the page column past narrow viewports, clipping the

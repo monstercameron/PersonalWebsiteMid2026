@@ -446,14 +446,12 @@ func (s *Service) postHour(ctx context.Context) int {
 	return defaultPostHour
 }
 
-// publishDiscussion generates a post from the saved prompt, posts it to the configured Slack webhook,
-// and publishes it to the QOTD RSS feed. Returns a human-readable status message, or an error when it
-// can't proceed (no webhook / no OpenAI key / post failed). Shared by the manual and scheduled paths.
+// publishDiscussion generates a post from the saved prompt, records it in the QOTD post history
+// (the RSS feed's durable source — never generated on the fly), then posts it to Slack as
+// best-effort delivery. It errors only when the post can't be generated or recorded; a missing
+// webhook or a failed Slack POST still counts as a published day and is reported in the message.
+// Shared by the manual and scheduled paths.
 func (s *Service) publishDiscussion(ctx context.Context) (string, error) {
-	webhook, _ := s.store.GetSetting(ctx, store.SettingSlackWebhook)
-	if strings.TrimSpace(webhook) == "" {
-		return "", errors.New("no Slack webhook configured — add one in settings")
-	}
 	prompt, _ := s.store.GetSetting(ctx, store.SettingQOTDPrompt)
 	if strings.TrimSpace(prompt) == "" {
 		prompt = rss.DefaultQOTDPrompt
@@ -462,6 +460,16 @@ func (s *Service) publishDiscussion(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Record the post first: the feed history is the durable artifact.
+	now := time.Now()
+	if err := s.store.AddQOTDPost(ctx, store.QOTDPost{Title: rss.PostTitle(now), Body: body, PublishedAt: now.Unix()}); err != nil {
+		return "", fmt.Errorf("publishing to the RSS feed failed: %w", err)
+	}
+	msg := "published to the RSS feed"
+	webhook, _ := s.store.GetSetting(ctx, store.SettingSlackWebhook)
+	if strings.TrimSpace(webhook) == "" {
+		return msg + " (no Slack webhook configured, Slack skipped)", nil
+	}
 	// Post to Slack: the generated body is the question; pair it with the headline (title + link) so
 	// the Slack "Debate topic" link is clickable.
 	news := []rss.NewsItem{}
@@ -469,18 +477,9 @@ func (s *Service) publishDiscussion(ctx context.Context) (string, error) {
 		news = append(news, top)
 	}
 	if err := rss.PostToSlack(ctx, webhook, rss.BuildDiscussionMessage(news, body)); err != nil {
-		return "", fmt.Errorf("post failed: %w", err)
+		return msg + ", but the Slack post failed: " + err.Error(), nil
 	}
-	// Publish to the QOTD feed. Slack already went out, so a store failure here is reported honestly
-	// rather than falsely claiming the feed was published.
-	now := time.Now()
-	msg := "posted to Slack and published to the RSS feed"
-	if data, err := json.Marshal(rss.PublishedPost{Title: rss.PostTitle(now), Body: body, PublishedAt: now}); err != nil {
-		msg = "posted to Slack, but couldn't render the feed post: " + err.Error()
-	} else if err := s.store.SetSetting(ctx, store.SettingQOTDPublished, string(data)); err != nil {
-		msg = "posted to Slack, but publishing to the RSS feed failed: " + err.Error()
-	}
-	return msg, nil
+	return msg + " and posted to Slack", nil
 }
 
 // PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
@@ -495,28 +494,30 @@ func (s *Service) PostToSlackNow(ctx context.Context, _ *sitepb.Empty) (*sitepb.
 
 // PostScheduledIfDue posts the daily discussion when scheduled posting is enabled, the configured post
 // hour has arrived, and it hasn't already fired today (guarded by a stored last-post date). It returns
-// (true, nil) when it posted. Called on a timer by the server; silently no-ops when not due or when
-// generation/posting fails (the failure is logged by the caller).
-func (s *Service) PostScheduledIfDue(ctx context.Context, now time.Time) (bool, error) {
+// (msg, true, nil) when it published — msg is publishDiscussion's outcome (including a skipped or
+// failed Slack delivery), which the caller must log so a broken webhook isn't silent. Called on a
+// timer by the server; no-ops when not due; returns an error when generation/recording fails.
+func (s *Service) PostScheduledIfDue(ctx context.Context, now time.Time) (string, bool, error) {
 	if v, _ := s.store.GetSetting(ctx, store.SettingSlackEnabled); v != "1" && v != "true" {
-		return false, nil
+		return "", false, nil
 	}
 	if now.Hour() < s.postHour(ctx) {
-		return false, nil
+		return "", false, nil
 	}
 	today := now.Format("2006-01-02")
 	if last, _ := s.store.GetSetting(ctx, store.SettingSlackLastPost); last == today {
-		return false, nil
+		return "", false, nil
 	}
 	// Claim today's slot BEFORE posting so a slow/failed attempt can't loop every tick; a failure just
 	// skips today rather than spamming retries.
 	if err := s.store.SetSetting(ctx, store.SettingSlackLastPost, today); err != nil {
-		return false, err
+		return "", false, err
 	}
-	if _, err := s.publishDiscussion(ctx); err != nil {
-		return false, err
+	msg, err := s.publishDiscussion(ctx)
+	if err != nil {
+		return "", false, err
 	}
-	return true, nil
+	return msg, true, nil
 }
 
 // unmarshalResult decodes a stored TailorResult (protojson), returning an empty result on error.

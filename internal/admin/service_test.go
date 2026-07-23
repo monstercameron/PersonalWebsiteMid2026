@@ -3,7 +3,10 @@ package admin
 import (
 	"context"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +18,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/monstercameron/earlcameron/internal/anime"
+	"github.com/monstercameron/earlcameron/internal/openai"
 	"github.com/monstercameron/earlcameron/internal/store"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
@@ -98,27 +102,90 @@ func TestPostScheduledIfDue(t *testing.T) {
 	at := func(h int) time.Time { return time.Date(2026, 7, 22, h, 0, 0, 0, time.Local) }
 
 	// Disabled → never posts.
-	if posted, err := svc.PostScheduledIfDue(ctx, at(10)); posted || err != nil {
+	if _, posted, err := svc.PostScheduledIfDue(ctx, at(10)); posted || err != nil {
 		t.Fatalf("disabled must not post: posted=%v err=%v", posted, err)
 	}
 	_ = st.SetSetting(ctx, store.SettingSlackEnabled, "1")
 	_ = st.SetSetting(ctx, store.SettingSlackPostHour, "9")
 
 	// Enabled but before the post hour → no post.
-	if posted, err := svc.PostScheduledIfDue(ctx, at(8)); posted || err != nil {
+	if _, posted, err := svc.PostScheduledIfDue(ctx, at(8)); posted || err != nil {
 		t.Fatalf("before hour must not post: posted=%v err=%v", posted, err)
 	}
-	// Hour reached, but no webhook configured → the day's slot is claimed and publish errors.
-	posted, err := svc.PostScheduledIfDue(ctx, at(10))
+	// Hour reached, but no OpenAI key → generation fails; the day's slot is still claimed so a
+	// broken config can't retry every tick. (A missing webhook alone no longer blocks publishing —
+	// the RSS post is recorded and Slack is skipped.)
+	_, posted, err := svc.PostScheduledIfDue(ctx, at(10))
 	if posted {
-		t.Fatal("no webhook: should not report a successful post")
+		t.Fatal("no OpenAI key: should not report a successful post")
 	}
 	if err == nil {
-		t.Fatal("expected an error when no webhook is configured")
+		t.Fatal("expected an error when generation cannot run (no OpenAI key)")
 	}
 	// The slot is now claimed for the day, so a second tick the same day is a clean no-op (no retry).
-	if posted, err := svc.PostScheduledIfDue(ctx, at(11)); posted || err != nil {
+	if _, posted, err := svc.PostScheduledIfDue(ctx, at(11)); posted || err != nil {
 		t.Fatalf("already-posted day must no-op: posted=%v err=%v", posted, err)
+	}
+}
+
+// TestPublishDiscussionRecordsAndDecouplesSlack proves the changed contract end-to-end (with the
+// OpenAI call stubbed via openai.BaseURL): a publish RECORDS the post in the qotd_posts history
+// even when (a) no Slack webhook is configured and (b) the Slack POST fails — Slack is best-effort
+// delivery, and each outcome is stated in the returned message.
+func TestPublishDiscussionRecordsAndDecouplesSlack(t *testing.T) {
+	fakeOpenAI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"output_text":"What arc should have ended sooner?"}`))
+	}))
+	defer fakeOpenAI.Close()
+	oldBase := openai.BaseURL
+	openai.BaseURL = fakeOpenAI.URL
+	defer func() { openai.BaseURL = oldBase }()
+
+	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	defer st.Close()
+	ctx := context.Background()
+	_ = st.SetSetting(ctx, store.SettingOpenAIKey, "test-key")
+	sessions := NewSessions(st, "cam", "pw12345678", "sekret", "", "")
+	svc := NewService(anime.New(st), sessions, st, "https://example.com", func(ctx context.Context) (string, string) {
+		k, _ := st.GetSetting(ctx, store.SettingOpenAIKey)
+		return k, "test-model"
+	})
+
+	// (a) No webhook: the RSS post is still recorded; the message says Slack was skipped.
+	msg, err := svc.publishDiscussion(ctx)
+	if err != nil {
+		t.Fatalf("publish without webhook must succeed: %v", err)
+	}
+	if !strings.Contains(msg, "published to the RSS feed") || !strings.Contains(msg, "no Slack webhook") {
+		t.Fatalf("message must state RSS publish + Slack skip, got %q", msg)
+	}
+	posts, err := st.RecentQOTDPosts(ctx, 10)
+	if err != nil || len(posts) != 1 {
+		t.Fatalf("want 1 recorded post, got %d (err %v)", len(posts), err)
+	}
+	if posts[0].Body != "What arc should have ended sooner?" {
+		t.Fatalf("recorded body = %q", posts[0].Body)
+	}
+
+	// (b) Failing webhook: still recorded, message reports the Slack failure.
+	deadSlack := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "nope", http.StatusInternalServerError)
+	}))
+	defer deadSlack.Close()
+	_ = st.SetSetting(ctx, store.SettingSlackWebhook, deadSlack.URL)
+	msg, err = svc.publishDiscussion(ctx)
+	if err != nil {
+		t.Fatalf("publish with failing webhook must still succeed: %v", err)
+	}
+	if !strings.Contains(msg, "published to the RSS feed") || !strings.Contains(msg, "Slack post failed") {
+		t.Fatalf("message must state RSS publish + Slack failure, got %q", msg)
+	}
+	if posts, _ := st.RecentQOTDPosts(ctx, 10); len(posts) != 2 {
+		t.Fatalf("want 2 recorded posts after second publish, got %d", len(posts))
 	}
 }
 

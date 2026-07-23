@@ -37,12 +37,17 @@ type parsedFeed struct {
 }
 
 // TestPublishedFeedXMLSpecCompliance parses the QOTD (published-post) feed and asserts every
-// RSS-2.0-required element and the atom:self link are present and well-formed.
+// RSS-2.0-required element and the atom:self link are present and well-formed, that the feed
+// carries the full history it is given (one item per post, newest first), and that the channel
+// <link> points at the site — not the feed itself.
 func TestPublishedFeedXMLSpecCompliance(t *testing.T) {
 	now := time.Date(2026, 7, 21, 12, 0, 0, 0, time.UTC)
-	post := &PublishedPost{Title: "Anime discussion", Body: "Prompt B & C <escaped>", PublishedAt: now}
+	posts := []store.QOTDPost{
+		{ID: 2, Title: "Anime discussion — Jul 21", Body: "Prompt B & C <escaped>", PublishedAt: now.Unix()},
+		{ID: 1, Title: "Anime discussion — Jul 20", Body: "Yesterday's prompt", PublishedAt: now.AddDate(0, 0, -1).Unix()},
+	}
 
-	xmlStr, err := PublishedFeedXML(post, "https://example.com", now)
+	xmlStr, err := PublishedFeedXML(posts, "https://example.com", now)
 	if err != nil {
 		t.Fatalf("PublishedFeedXML: %v", err)
 	}
@@ -61,8 +66,8 @@ func TestPublishedFeedXMLSpecCompliance(t *testing.T) {
 	if i := strings.Index(channelSection, "<item>"); i >= 0 {
 		channelSection = channelSection[:i]
 	}
-	if !strings.Contains(channelSection, "<link>https://example.com/anime/qotd.xml</link>") {
-		t.Errorf("missing channel-level link:\n%s", channelSection)
+	if !strings.Contains(channelSection, "<link>https://example.com</link>") {
+		t.Errorf("channel-level link must be the site URL, not the feed:\n%s", channelSection)
 	}
 
 	var parsed parsedFeed
@@ -81,8 +86,14 @@ func TestPublishedFeedXMLSpecCompliance(t *testing.T) {
 	if _, err := time.Parse(time.RFC1123Z, parsed.Channel.LastBuildDate); err != nil {
 		t.Errorf("lastBuildDate %q not RFC1123Z: %v", parsed.Channel.LastBuildDate, err)
 	}
-	if len(parsed.Channel.Items) != 1 {
-		t.Fatalf("got %d items, want 1", len(parsed.Channel.Items))
+	if len(parsed.Channel.Items) != 2 {
+		t.Fatalf("got %d items, want 2 (one per recorded day)", len(parsed.Channel.Items))
+	}
+	if parsed.Channel.Items[0].Title != "Anime discussion — Jul 21" || parsed.Channel.Items[1].Title != "Anime discussion — Jul 20" {
+		t.Errorf("items out of order (want newest first): %+v", parsed.Channel.Items)
+	}
+	if g0, g1 := parsed.Channel.Items[0].GUID.Value, parsed.Channel.Items[1].GUID.Value; g0 == g1 {
+		t.Errorf("guids must be unique per post, both %q", g0)
 	}
 	for i, it := range parsed.Channel.Items {
 		if it.Title == "" || it.Link == "" || it.Description == "" {
