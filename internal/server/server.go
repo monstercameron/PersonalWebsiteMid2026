@@ -112,8 +112,15 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
-	// Embed the CashFlux data-sync engine in-process (owns its encrypted server-side SQLite store)
-	// when enabled — the SyncService only, over its own gRPC-over-WebSocket bridge, not the full site.
+	// Embed CashFlux's per-person sync engine in-process (owns its encrypted server-side SQLite
+	// store) when enabled: SyncService + AuthService + BlobService over its own gRPC-over-WebSocket
+	// bridge, not the full CashFlux site (no billing/portal/OAuth/admin surfaces). AuthService gives
+	// real per-person identity (phone/SMS sign-in) instead of one shared static token, so this site
+	// and a small, manually-invited set of people can each have their own account on one server.
+	// New-account creation is gated by CASHFLUX_SERVER_SETUP_CODE (read directly from the process
+	// environment by CashFlux's own Config.FromEnv — nothing to plumb through here): set it to a
+	// value only Cam knows, hand it to an invitee once, and their phone number can enroll; a
+	// returning, already-verified phone number never needs it again.
 	var cashfluxSync http.Handler
 	var cashfluxClose func() error
 	if cfg.CashFluxDataDir != "" {
@@ -127,14 +134,14 @@ func New(cfg config.Config) (*Server, error) {
 				_ = os.Setenv("CASHFLUX_SERVER_APP_ORIGIN", origin)
 			}
 		}
-		h, closeFn, token, err := cashfluxembed.NewSyncBridge(cfg.CashFluxDataDir)
+		h, closeFn, token, err := cashfluxembed.NewSyncAndAuthBridge(cfg.CashFluxDataDir)
 		if err != nil {
 			// A degraded managed service is not a silent condition: the site advertises CashFlux sync,
 			// so surface the failure loudly (common cause: a BASE_URL that isn't a bare origin).
 			log.Error("embedded CashFlux sync engine disabled", "err", err)
 		} else {
 			cashfluxSync, cashfluxClose = h, closeFn
-			log.Info("embedded CashFlux sync engine", "data_dir", cfg.CashFluxDataDir)
+			log.Info("embedded CashFlux sync engine", "data_dir", cfg.CashFluxDataDir, "setup_code_gated", os.Getenv("CASHFLUX_SERVER_SETUP_CODE") != "")
 			if token != "" {
 				// The token was auto-generated (no CASHFLUX_SERVER_TOKEN pinned). Surface it once so it
 				// can be entered as the CashFlux frontend's "server token"; otherwise sync is
@@ -196,14 +203,18 @@ func (s *Server) routes() *http.ServeMux {
 	mux.Handle("/socket/", s.tunnel)
 	// Document plane (HTTP GET).
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
-	// CashFlux, hosted as a managed budgeting app: the WASM SPA (web/cashflux) plus its data-sync
-	// engine served in-process over gRPC-over-WebSocket at /grpc (the bridge path the CashFlux
-	// frontend dials), backed by our encrypted server-side SQLite store — so multi-device sync
-	// persists on our backend. Point CashFlux's "server URL" at this origin.
+	// CashFlux, hosted as a managed budgeting app: the WASM SPA (web/cashflux) plus its per-person
+	// sync/auth engine served in-process over gRPC-over-WebSocket at /grpc (the bridge path the
+	// CashFlux frontend dials), backed by our encrypted server-side SQLite store — so multi-device
+	// sync persists on our backend. Point CashFlux's "server URL" at this origin.
 	mux.Handle("/budget/", http.StripPrefix("/budget/", s.budgetGate.Wrap(budget.Handler())))
 	if s.cashfluxSync != nil {
-		// The embedded sync engine serves the /grpc WebSocket tunnel and the /v1/version discovery
-		// handshake the CashFlux frontend probes before it will connect ("Test connection").
+		// /grpc and /v1/version are deliberately NOT behind s.budgetGate: real access control now
+		// lives in AuthService itself (a bearer token from phone/SMS sign-in, gated at account
+		// creation by CASHFLUX_SERVER_SETUP_CODE — see the embed call site above), not in keeping
+		// this path secret. The embedded engine serves the /grpc WebSocket tunnel and the
+		// /v1/version discovery handshake the CashFlux frontend probes before it will connect
+		// ("Test connection").
 		mux.Handle("/grpc", s.cashfluxSync)
 		mux.Handle("/v1/version", s.cashfluxSync)
 	}

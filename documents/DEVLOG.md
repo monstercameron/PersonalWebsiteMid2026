@@ -2,6 +2,38 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-23 — CashFlux embedding: per-person accounts, gated by a manual invite code
+
+The whole point of the earlier Custom Sync work on the CashFlux side (identity, token lifecycle,
+gRPC-only transport) turns out to have been this: embed a live CashFlux instance here so it syncs
+for Cam and a small, manually-invited set of people — not open self-service signup, no billing. The
+previous wiring (`cashfluxembed.NewSyncBridge`) only gave the embedded engine `SyncService` behind
+one shared static token; every caller holding it was indistinguishable from any other, and there
+was no way to add or revoke one person without rotating the token for everyone.
+
+Switched to `cashfluxembed.NewSyncAndAuthBridge`, which brings CashFlux's `AuthService` (phone/SMS
+sign-in, real per-person identity) and `BlobService` into the same embedded bridge. New-account
+creation is gated on the CashFlux side by `CASHFLUX_SERVER_SETUP_CODE` — an env var only Cam sets,
+handed to an invitee once; a phone number that's already verified never needs it again on a later
+device. Nothing to plumb through on this side: CashFlux reads its own env var directly in the same
+process. `/grpc`/`/v1/version` stay outside this site's `budgetGate` deliberately — that password
+gate only ever protected `/budget/`, and real access control for the sync engine now lives in
+AuthService's own bearer-token + setup-code gate, not in keeping the WebSocket path secret.
+
+Before wiring this in, ran a sequential adversarial review agent (per this repo's standing rule)
+against the whole CashFlux-side mechanism. It found something real and severe: `AuthService.Register`
+(username/password enrollment) had no setup-code check at all — it predates the gate — so the new
+bridge's registration of the *full* `AuthServiceServer` left a live, ungated account-creation door
+reachable directly over `/grpc`, defeating the entire point of the feature. Fixed on the CashFlux
+side (a `phoneOnlyAuthServer` decorator disables `Register`/`Login` outright for this embedding,
+rather than adding a redundant second gate) and verified end-to-end before this site's own change
+landed. Full mechanism, the vulnerability, and the fix are documented in CashFlux's own
+DEVLOG/CHANGELOG/TODOS — not duplicated here beyond this summary.
+
+Left for the next session: rebuild/restart this site's own running `bin/server.exe` to pick up the
+change (a compiled binary, not hot-reloaded), and set `CASHFLUX_SERVER_SETUP_CODE` plus the Twilio
+env vars on the actual deployment before telling anyone the invite code.
+
 ## 2026-07-23 — QOTD feed: durable post history + Slack decoupled
 
 Cam asked to make sure the RSS engine generates on schedule, the format is right, nothing is

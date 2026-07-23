@@ -5,6 +5,18 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Changed
+- **Embedded CashFlux: per-person accounts instead of one shared token.** Switched from
+  `cashfluxembed.NewSyncBridge` to `cashfluxembed.NewSyncAndAuthBridge`, which adds CashFlux's
+  `AuthService` (phone/SMS sign-in) and `BlobService` alongside `SyncService` — everyone syncing
+  against this server now has their own account instead of sharing one indistinguishable static
+  token. New-account creation is gated by `CASHFLUX_SERVER_SETUP_CODE` (set on the server process,
+  read directly by CashFlux — nothing to configure here): a returning, already-verified phone
+  number is never asked for it again. `/grpc` and `/v1/version` stay outside `budgetGate` on
+  purpose — access control now lives in AuthService's own bearer-token + setup-code gate, not in
+  keeping the path secret. (CashFlux-side: `Config.SetupCode`, migration v11, and a
+  `phoneOnlyAuthServer` decorator disabling username/password enrollment entirely for this
+  embedding — see CashFlux's own CHANGELOG for the full mechanism and a critical bypass an
+  adversarial review caught and closed before this shipped.)
 - **QOTD feed: durable post history + Slack decoupled.** Every generated anime discussion post is
   now recorded in a `qotd_posts` table (one row per publish, past days kept forever); the
   `/anime/qotd.xml` feed serves the newest 30 from that history instead of a single overwritten
