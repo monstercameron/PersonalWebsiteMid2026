@@ -18,6 +18,8 @@ Semantic Versioning once released.
   stays) and renames "budget" → "cashflux"; a secondary outlined **Read the résumé** CTA next to the
   terminal button; a one-line role-fit sentence in the contact section; the GoWebComponents card
   states its React benchmark result.
+- The top-nav **cashflux** link now opens in a new tab (`target="_blank"`), matching the elsewhere
+  CashFlux card — it's a separate full app, so the portfolio stays put.
 
 ### Added
 - **Scheduled daily Slack posting.** The "scheduled posting" toggle now drives a real server-side

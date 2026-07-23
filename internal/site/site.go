@@ -100,7 +100,10 @@ func topNav() ui.Node {
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
 			link("#work", "work"),
 			link("/resume", "résumé"),
-			link("/budget/", "cashflux"),
+			// CashFlux is a separate full app — open it in its own tab so the portfolio stays put
+			// (matches the elsewhere() CashFlux card).
+			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
+				Props{Href: "/budget/", Target: "_blank", Rel: "noopener"}, "cashflux"),
 			link("#anime", "anime"),
 			link("#contact", "contact"),
 		),
