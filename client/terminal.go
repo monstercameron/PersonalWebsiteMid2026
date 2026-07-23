@@ -152,7 +152,9 @@ func windowFrame(expanded bool, onExpand, onShrink, onFocus ui.Handler, prompt s
 			css.Raw("left", "24px"), css.Raw("right", "24px"), css.Raw("bottom", "24px"),
 			css.Raw("z-index", "60"))
 	} else {
-		rules = append(rules, WFull, MaxWidth(Px(900)))
+		// min-width:0 lets the frame shrink below its content's min-content width (nowrap prompt
+		// rows + the input) so it never widens the page column on narrow viewports.
+		rules = append(rules, WFull, MaxWidth(Px(900)), css.Raw("min-width", "0"))
 	}
 	frame := Div(Class(rules...),
 		titleBar(onExpand, onShrink, expanded),
@@ -193,7 +195,10 @@ func lightBtn(hex, id string, on ui.Handler) ui.Node {
 
 // termBody renders the scrollback and the live input line.
 func termBody(expanded bool, onFocus ui.Handler, prompt string, sb []ui.Node, inputVal string, onInput, onKey ui.Handler) ui.Node {
+	// overflow-x:auto — lines wider than a narrow viewport scroll inside the terminal (real
+	// terminal behavior) instead of being clipped by the frame's overflow:hidden.
 	rules := []any{Pad(Spacing5), Flex, FlexCol, Gap(Spacing2), FontSize(Rem(0.95)), LineHeight(Num(1.6)),
+		css.Raw("overflow-x", "auto"),
 		css.Raw("user-select", "text"), css.Raw("-webkit-user-select", "text")}
 	if expanded {
 		rules = append(rules, css.Raw("flex", "1"), css.Raw("overflow-y", "auto"))
@@ -207,6 +212,7 @@ func termBody(expanded bool, onFocus ui.Handler, prompt string, sb []ui.Node, in
 func inputLine(prompt, value string, onInput, onKey ui.Handler) ui.Node {
 	inputCls := css.New(css.Raw("background", "transparent"), css.Raw("border", "none"),
 		css.Raw("outline", "none"), css.Raw("color", "#f3e9e6"), css.Raw("flex", "1"),
+		css.Raw("min-width", "0"),
 		css.Raw("font", "inherit"), css.Raw("margin-left", "8px"), css.Raw("caret-color", "#e95420"))
 	return Div(Class(Flex, ItemsCenter),
 		promptSigil(prompt),

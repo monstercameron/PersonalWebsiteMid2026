@@ -42,6 +42,13 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project) (string, error)
 	head := `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
 		`<meta name="viewport" content="width=device-width,initial-scale=1">` +
 		`<title>Earl Cameron — AI-native systems engineer</title>` +
+		// Search snippet + link-preview cards (Slack/Teams/LinkedIn) — recruiters share links.
+		`<meta name="description" content="AI-native systems engineer — Go, WebAssembly, on-device ML. The portfolio is the proof: a live terminal on a Go→WASM framework and gRPC bridge I built.">` +
+		`<meta property="og:title" content="Earl Cameron — AI-native systems engineer">` +
+		`<meta property="og:description" content="Go, WebAssembly, on-device ML — with LLMs in the loop. The site itself is the proof of work.">` +
+		`<meta property="og:type" content="website">` +
+		`<meta property="og:url" content="https://www.earlcameron.com/">` +
+		`<meta name="twitter:card" content="summary">` +
 		// Minimal bootstrap glue (permitted): reset, base color, mono font-family, and the ambient
 		// glow background. Everything else is typed css/u.
 		`<style>*{box-sizing:border-box}html,body{margin:0}body{color:#f3e9e6;` +
@@ -66,8 +73,11 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project) (string, error)
 }
 
 // center wraps children in a max-width column, horizontally centered by a flex parent.
+// min-width:0 overrides the flex-item min-width:auto floor so a wide child (the terminal's
+// nowrap rows) can never inflate the column past the viewport on small screens.
 func center(children ...ui.Node) ui.Node {
-	args := []any{Class(WFull, MaxWidth(Px(1000)), PadX(Spacing6), Flex, FlexCol, Gap(Spacing5))}
+	args := []any{Class(WFull, MaxWidth(Px(1000)), PadX(Spacing6), Flex, FlexCol, Gap(Spacing5),
+		css.Raw("min-width", "0"))}
 	for _, c := range children {
 		args = append(args, c)
 	}
@@ -78,9 +88,9 @@ func center(children ...ui.Node) ui.Node {
 // font-family isn't in css/u, so use the typed css.Property escape hatch.
 var sansFont = css.Raw("font-family", `-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif`)
 
-// topNav renders the site navigation so the single home page indexes every page: the on-page
-// sections (work, anime, contact) plus the standalone pages (the résumé document and the admin
-// console). It's the "all links live on one page" index.
+// topNav renders the site navigation so the single home page indexes every visitor-facing page:
+// the on-page sections (work, anime, contact) plus the standalone pages (résumé, CashFlux).
+// The admin console is owner-only, so its entry lives in the footer, not here.
 func topNav() ui.Node {
 	link := func(href, text string) ui.Node {
 		return A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)), Props{Href: href}, text)
@@ -90,10 +100,9 @@ func topNav() ui.Node {
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
 			link("#work", "work"),
 			link("/resume", "résumé"),
-			link("/budget/", "budget"),
+			link("/budget/", "cashflux"),
 			link("#anime", "anime"),
 			link("#contact", "contact"),
-			link("/admin", "admin"),
 		),
 	)
 }
@@ -130,12 +139,19 @@ func hero() ui.Node {
 	)
 }
 
-// launchCTA renders the orange call-to-action + pitch that invites using the terminal below.
+// launchCTA renders the orange call-to-action + pitch that invites using the terminal below,
+// plus a quiet secondary button to the résumé — the action recruiters actually came for.
 func launchCTA() ui.Node {
 	return Div(Class(Flex, ItemsCenter, Gap(Spacing4), css.Raw("flex-wrap", "wrap")),
 		Div(Class(Bg(theme.Accent), Fg(Hex("#ffffff")), FontSemibold, Rounded(RadiusLg), PadX(Spacing5), PadY(Spacing3),
 			css.Raw("cursor", "pointer")),
 			"▶ Launch the live terminal"),
+		A(Class(Border(theme.Border), Fg(theme.Fg), FontSemibold, Rounded(RadiusLg), PadX(Spacing5), PadY(Spacing3),
+			Hover(Border(theme.Accent)), css.Raw("transition", "border-color .18s"),
+			// No sitewide <a> reset exists, so kill the default underline here — this link reads as a button.
+			css.Raw("text-decoration", "none")),
+			Props{Href: "/resume", Target: "_blank", Rel: "noopener"},
+			"Read the résumé"),
 		Div(Class(sansFont, Fg(theme.Dim), TextSize(TextSm), MaxWidth(Px(380))),
 			"Not a screenshot — a real shell wired to a Go backend over gRPC. Every command runs. ",
 			Span(Class(Fg(theme.Accent)), "▸ type below to start"),
@@ -278,6 +294,8 @@ func contact() ui.Node {
 			"Email me at ",
 			A(Class(Fg(theme.Accent)), Props{Href: "mailto:mr.e.cameron@gmail.com"}, "mr.e.cameron@gmail.com"),
 			". The terminal has a live contact form over gRPC."),
+		P(Class(sansFont, Fg(theme.Dim), TextSize(TextSm)),
+			"Best fit: senior systems or AI-tooling roles — Go, WebAssembly, on-device ML, agent infrastructure."),
 	)
 }
 

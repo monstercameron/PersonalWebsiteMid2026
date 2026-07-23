@@ -4,6 +4,21 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Fixed
+- **Mobile horizontal overflow on the home page.** The wasm terminal's nowrap rows and text input
+  set a flex `min-width:auto` floor that widened the page column past narrow viewports, clipping the
+  hero and cards. `min-width:0` on the centered column, terminal frame, and input; `overflow-x:auto`
+  on the terminal body so long lines scroll inside the terminal. Verified at a real 390px viewport
+  (`document.scrollWidth == 390`).
+- Stale GoGRPCBridge status on its project card: `v0.0.19` → `v1.0.0`.
+
+### Changed
+- **Recruiter-readability pass on the home page:** meta description + Open Graph/twitter tags in the
+  SSR head (link previews + search snippet); top nav drops the owner-only `/admin` link (footer entry
+  stays) and renames "budget" → "cashflux"; a secondary outlined **Read the résumé** CTA next to the
+  terminal button; a one-line role-fit sentence in the contact section; the GoWebComponents card
+  states its React benchmark result.
+
 ### Added
 - **Scheduled daily Slack posting.** The "scheduled posting" toggle now drives a real server-side
   scheduler: when enabled, the server auto-generates the anime discussion post from the saved prompt,

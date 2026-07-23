@@ -2,6 +2,37 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-23 — recruiter-readability pass on the home page
+
+Cam asked for a review of how the home page reads to recruiters/hiring managers, then "refine it".
+The review's findings, applied: (1) **mobile horizontal overflow** — the real bug. Flex items
+default to `min-width:auto`, so the terminal's nowrap rows (prompt line, boot lines) plus the text
+input's intrinsic width set a min-content floor that inflated the centered column past a 390px
+viewport, clipping the hero/h1/cards. Fix: `min-width:0` on the `center()` column and the terminal
+frame, `overflow-x:auto` on the terminal body (wide lines scroll inside the terminal — real
+terminal behavior), `min-width:0` on the input. (2) SSR head now carries a meta description +
+OG/twitter tags so recruiter-shared links get preview cards and Google gets a real snippet.
+(3) Top nav: dropped `/admin` (owner-only; the discreet footer entry stays), renamed the opaque
+"budget" label to "cashflux". (4) A quiet outlined "Read the résumé" secondary CTA next to the
+terminal button — recruiters' primary action was buried as a text link. (5) One role-fit line at
+the end of contact. (6) Content: GoGRPCBridge status was stale (`v0.0.19` → `v1.0.0`), GWC blurb
+gains its quantified claim ("Benchmarked head-to-head with React — faster on overall geomean").
+
+Adversarial review caught two real problems in the first cut: the new `<a>` button rendered with
+the browser-default underline (there is NO sitewide link reset — `css.Preflight()` is never called,
+and the mockup's `a{text-decoration:none}` was never ported; fixed locally on the button, the
+sitewide gap is still open), and the blurb originally said "faster overall", which overstates the
+mixed per-benchmark record — softened to the geomean claim the bench data actually supports.
+Also flagged but deferred: no `og:image` (needs an asset), no `prefers-reduced-motion` gating
+anywhere in SSR output (pre-existing, DESIGN.md promises it).
+
+What broke along the way: headless-Chrome `--window-size=390` screenshots kept showing the clip
+even after the fix — a stale cached `app.wasm` in the reused profile. Playwright with a real 390px
+viewport is the trustworthy check: `document.scrollWidth == 390`, zero elements past the viewport
+after wasm boot, clean full-page screenshots at 390/1440. Left alone (flagged for Cam): the orange
+"Launch the live terminal" CTA is a no-op div in the SSR page (nothing wires it), and the anime
+section's placement between elsewhere and contact is a taste call.
+
 ## 2026-07-22 — scheduled daily Slack posting (the toggle was dead)
 
 Follow-up: the "scheduled posting" toggle stored `SettingSlackEnabled` but nothing acted on it — the
