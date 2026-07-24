@@ -5,6 +5,9 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Copy-to-clipboard for the minted CashFlux invite code.** The freshly-minted code callout in the
+  admin "cashflux" tab now has a one-click copy button (`Copy code` → `Copied ✓`), backed by a new
+  `copyToClipboard` helper in `client/grpc.go` (async Clipboard API, best-effort/fire-and-forget).
 - **Admin console: CashFlux client management tab.** New "cashflux" tab in `/admin` lists enrolled
   phone/SMS clients and mints fresh, single-use, 15-minute invite codes on demand — no more editing
   `CASHFLUX_SERVER_SETUP_CODE` and restarting the server to add one person. Three new owner-only

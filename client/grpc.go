@@ -82,6 +82,22 @@ func currentAdminView() string {
 	}
 }
 
+// copyToClipboard writes text to the system clipboard via the async Clipboard API. Best-effort and
+// fire-and-forget (the Promise result is ignored) — the common failure mode (an insecure context or
+// a browser without the API) isn't worth surfacing as an error for a convenience action; the code is
+// still fully visible and selectable on-screen either way.
+func copyToClipboard(text string) {
+	nav := js.Global().Get("navigator")
+	if !nav.Truthy() {
+		return
+	}
+	clipboard := nav.Get("clipboard")
+	if !clipboard.Truthy() || !clipboard.Get("writeText").Truthy() {
+		return
+	}
+	clipboard.Call("writeText", text)
+}
+
 // pushAdminPath updates the browser URL to the sub-route for view without reloading (history API).
 func pushAdminPath(view string) {
 	js.Global().Get("history").Call("pushState", nil, "", "/admin/"+view)

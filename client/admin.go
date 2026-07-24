@@ -53,6 +53,7 @@ func AdminApp() ui.Node {
 	cashfluxCodes := ui.UseState[[]*sitepb.CashFluxInviteCodeMeta](nil)
 	cashfluxMinting := ui.UseState(false)
 	cashfluxJustMinted := ui.UseState[*sitepb.CashFluxInviteCode](nil) // the code from the last mint, shown once until the tab reloads
+	cashfluxCopied := ui.UseState(false)                               // flips true after a successful copy; reset on the next mint
 
 	// Auth flow: first-run setup + password reset (the owner has no session in these cases).
 	needsSetup := ui.UseState(false)
@@ -694,6 +695,7 @@ func AdminApp() ui.Node {
 	onMintInviteCode := ui.UseEvent(func() {
 		flash.Set("")
 		cashfluxMinting.Set(true)
+		cashfluxCopied.Set(false)
 		go func() {
 			c, err := adminClient()
 			if err != nil {
@@ -719,6 +721,12 @@ func AdminApp() ui.Node {
 			}
 		}()
 	})
+	onCopyInviteCode := ui.WrapHandler(func() {
+		if code := cashfluxJustMinted.Get(); code != nil {
+			copyToClipboard(code.GetCode())
+			cashfluxCopied.Set(true)
+		}
+	})
 
 	var content ui.Node
 	switch view.Get() {
@@ -729,7 +737,7 @@ func AdminApp() ui.Node {
 	case "rss":
 		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), slackHour, onToggleSlack, onSaveSlack, onPostNow)
 	case "cashflux":
-		content = cashfluxView(cashfluxConfigured.Get(), cashfluxMinting.Get(), cashfluxJustMinted.Get(), cashfluxCodes.Get(), cashfluxClients.Get(), onMintInviteCode)
+		content = cashfluxView(cashfluxConfigured.Get(), cashfluxMinting.Get(), cashfluxJustMinted.Get(), cashfluxCopied.Get(), cashfluxCodes.Get(), cashfluxClients.Get(), onMintInviteCode, onCopyInviteCode)
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}

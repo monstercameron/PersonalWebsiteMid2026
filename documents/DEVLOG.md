@@ -2,6 +2,31 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-23 — Copy-to-clipboard, and rebuild/restart discipline for a live dev server
+
+Small follow-up: a one-click copy button for the freshly-minted invite code in the admin console.
+New `copyToClipboard` in `client/grpc.go` — the async Clipboard API, fire-and-forget (no error
+surfaced on failure; the code stays fully visible and selectable on-screen regardless, so the
+button is pure convenience, not a dependency). Button label flips `Copy code` → `Copied ✓` on
+click, reset back whenever a new code is minted — no timer, no toast, just state.
+
+Verified for real: an isolated scratch instance, `context.grantPermissions` for clipboard access in
+Playwright, mint a code, click copy, then actually read the clipboard back
+(`navigator.clipboard.readText()`) rather than trusting the UI label alone — confirmed the real code
+landed in the real clipboard, not just that the button changed text.
+
+This session also surfaced something about *this* repo's dev-server discipline worth writing down:
+the running `bin/server.exe` isn't hot-reloaded — every source change needs an explicit rebuild +
+restart of the actual process to become visible, unlike CashFlux's `gwc dev`. When Cam asked why
+nothing had changed after a full feature landed, the answer was simply that I'd built and verified
+everything in isolated scratch copies (correctly, to avoid touching his real data/credentials) but
+never redeployed to the real process. Restarting it blind once actually dropped a real config value
+(`LISTEN_ADDR=127.0.0.1:8096`) that had only ever lived in whatever shell originally launched it,
+not in any tracked config — the site briefly came up on the wrong port until caught and fixed. No
+`.env` file or launcher script exists in this repo to persist that kind of override; it's worth
+Cam knowing that restarting `bin/server.exe` from a fresh shell means re-supplying any non-default
+env vars by hand.
+
 ## 2026-07-23 — Building the admin UI the last change actually needed
 
 Shipped the per-person CashFlux embedding, went looking for it in the admin console, found nothing.

@@ -543,7 +543,7 @@ func resumeDocument(r *sitepb.Resume) ui.Node {
 // just-minted code shown large and copyable (nil once none has been minted this session), the
 // outstanding/recent invite codes, and the registered clients list. configured is false when
 // CashFlux embedding isn't set up on this deployment, in which case everything else is skipped.
-func cashfluxView(configured, minting bool, justMinted *sitepb.CashFluxInviteCode, codes []*sitepb.CashFluxInviteCodeMeta, clients []*sitepb.CashFluxClientMeta, onMint ui.Handler) ui.Node {
+func cashfluxView(configured, minting bool, justMinted *sitepb.CashFluxInviteCode, copied bool, codes []*sitepb.CashFluxInviteCodeMeta, clients []*sitepb.CashFluxClientMeta, onMint, onCopy ui.Handler) ui.Node {
 	if !configured {
 		return Div(Class(Flex, FlexCol, Gap(Spacing2)),
 			sectionLabel("cashflux clients"),
@@ -564,7 +564,7 @@ func cashfluxView(configured, minting bool, justMinted *sitepb.CashFluxInviteCod
 		),
 	}
 	if justMinted != nil {
-		sections = append(sections, mintedCodeCallout(justMinted))
+		sections = append(sections, mintedCodeCallout(justMinted, copied, onCopy))
 	}
 	sections = append(sections,
 		Div(Class(Flex, FlexCol, Gap(Spacing3)),
@@ -579,14 +579,22 @@ func cashfluxView(configured, minting bool, justMinted *sitepb.CashFluxInviteCod
 	return Div(sections...)
 }
 
-// mintedCodeCallout highlights a freshly minted invite code — large, monospace, with its expiry —
-// mirroring phraseView's "shown once, save it" treatment for the recovery phrase.
-func mintedCodeCallout(c *sitepb.CashFluxInviteCode) ui.Node {
+// mintedCodeCallout highlights a freshly minted invite code — large, monospace, with its expiry and
+// a one-click copy button — mirroring phraseView's "shown once, save it" treatment for the recovery
+// phrase. copyLabel switches to a confirmation once copied, rather than a separate toast/timer.
+func mintedCodeCallout(c *sitepb.CashFluxInviteCode, copied bool, onCopy ui.Handler) ui.Node {
 	expires := time.Unix(c.GetExpiresAt(), 0).Format("3:04:05 pm")
-	return Div(Class(Bg(theme.Bg), Border(theme.Accent), Rounded(RadiusLg), Pad(Spacing4), Flex, FlexCol, Gap(Spacing2), MaxWidth(Px(360))),
+	copyLabel := "Copy code"
+	if copied {
+		copyLabel = "Copied ✓"
+	}
+	return Div(Class(Bg(theme.Bg), Border(theme.Accent), Rounded(RadiusLg), Pad(Spacing4), Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(360))),
 		Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em")), "GIVE THIS TO YOUR INVITEE"),
-		Div(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), FontSize(Rem(1.6)),
-			css.Raw("letter-spacing", "0.08em"), FontSemibold, Fg(theme.Fg)), c.GetCode()),
+		Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3)),
+			Div(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), FontSize(Rem(1.6)),
+				css.Raw("letter-spacing", "0.08em"), FontSemibold, Fg(theme.Fg)), c.GetCode()),
+			ghostButton(copyLabel, onCopy),
+		),
 		Span(Class(TextSize(TextSm), Fg(theme.Dim)), "expires at "+expires),
 	)
 }
