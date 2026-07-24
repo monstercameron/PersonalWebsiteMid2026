@@ -19,25 +19,31 @@ import (
 // fakeCashFluxAdmin is a CashFluxAdmin test double — no real embedded CashFlux store is needed to
 // test Service's RPC mapping and error handling.
 type fakeCashFluxAdmin struct {
-	clients     []cashfluxembed.PhoneClient
-	clientsErr  error
-	mintCode    string
-	mintExpires time.Time
-	mintErr     error
-	codes       []cashfluxembed.InviteCode
-	codesErr    error
+	devices    []cashfluxembed.PendingDevice
+	devicesErr error
+
+	approveApproved bool
+	approveCode     string
+	approveErr      error
+	approveDeviceID string // records the deviceID the last ApprovePairing call was made with
+
+	rejectRejected bool
+	rejectErr      error
+	rejectDeviceID string // records the deviceID the last RejectPairing call was made with
 }
 
-func (f *fakeCashFluxAdmin) ListClients() ([]cashfluxembed.PhoneClient, error) {
-	return f.clients, f.clientsErr
+func (f *fakeCashFluxAdmin) ListPendingDevices() ([]cashfluxembed.PendingDevice, error) {
+	return f.devices, f.devicesErr
 }
 
-func (f *fakeCashFluxAdmin) MintInviteCode() (string, time.Time, error) {
-	return f.mintCode, f.mintExpires, f.mintErr
+func (f *fakeCashFluxAdmin) ApprovePairing(deviceID string) (bool, string, error) {
+	f.approveDeviceID = deviceID
+	return f.approveApproved, f.approveCode, f.approveErr
 }
 
-func (f *fakeCashFluxAdmin) ListInviteCodes() ([]cashfluxembed.InviteCode, error) {
-	return f.codes, f.codesErr
+func (f *fakeCashFluxAdmin) RejectPairing(deviceID string) (bool, error) {
+	f.rejectDeviceID = deviceID
+	return f.rejectRejected, f.rejectErr
 }
 
 func newCashFluxTestService(t *testing.T, cf CashFluxAdmin) *Service {
@@ -55,91 +61,136 @@ func TestCashFluxRPCsFailPreconditionWhenNotConfigured(t *testing.T) {
 	svc := newCashFluxTestService(t, nil)
 	ctx := context.Background()
 
-	if _, err := svc.ListCashFluxClients(ctx, &sitepb.Empty{}); status.Code(err) != codes.FailedPrecondition {
-		t.Fatalf("ListCashFluxClients: err = %v, want FailedPrecondition", err)
+	if _, err := svc.ListCashFluxPendingDevices(ctx, &sitepb.Empty{}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("ListCashFluxPendingDevices: err = %v, want FailedPrecondition", err)
 	}
-	if _, err := svc.MintCashFluxInviteCode(ctx, &sitepb.Empty{}); status.Code(err) != codes.FailedPrecondition {
-		t.Fatalf("MintCashFluxInviteCode: err = %v, want FailedPrecondition", err)
+	if _, err := svc.ApproveCashFluxPairing(ctx, &sitepb.CashFluxApprovePairingRequest{DeviceId: "d1"}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("ApproveCashFluxPairing: err = %v, want FailedPrecondition", err)
 	}
-	if _, err := svc.ListCashFluxInviteCodes(ctx, &sitepb.Empty{}); status.Code(err) != codes.FailedPrecondition {
-		t.Fatalf("ListCashFluxInviteCodes: err = %v, want FailedPrecondition", err)
+	if _, err := svc.RejectCashFluxPairing(ctx, &sitepb.CashFluxRejectPairingRequest{DeviceId: "d1"}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("RejectCashFluxPairing: err = %v, want FailedPrecondition", err)
 	}
 }
 
-func TestListCashFluxClientsMapsFields(t *testing.T) {
-	created := time.Date(2026, time.July, 20, 10, 0, 0, 0, time.UTC)
-	verified := time.Date(2026, time.July, 20, 10, 5, 0, 0, time.UTC)
-	fake := &fakeCashFluxAdmin{clients: []cashfluxembed.PhoneClient{
-		{ID: "u1", PhoneNumber: "+15551234567", CreatedAt: created, PhoneVerifiedAt: verified},
+func TestListCashFluxPendingDevicesMapsFields(t *testing.T) {
+	requested := time.Date(2026, time.July, 20, 10, 0, 0, 0, time.UTC)
+	expires := requested.Add(15 * time.Minute)
+	fake := &fakeCashFluxAdmin{devices: []cashfluxembed.PendingDevice{
+		{DeviceID: "dev-1", Label: "kitchen-tablet", RequestedAt: requested, ExpiresAt: expires},
 	}}
 	svc := newCashFluxTestService(t, fake)
 
-	resp, err := svc.ListCashFluxClients(context.Background(), &sitepb.Empty{})
+	resp, err := svc.ListCashFluxPendingDevices(context.Background(), &sitepb.Empty{})
 	if err != nil {
-		t.Fatalf("ListCashFluxClients: %v", err)
+		t.Fatalf("ListCashFluxPendingDevices: %v", err)
 	}
 	if len(resp.GetItems()) != 1 {
 		t.Fatalf("items = %d, want 1", len(resp.GetItems()))
 	}
 	item := resp.GetItems()[0]
-	if item.GetPhoneNumber() != "+15551234567" {
-		t.Fatalf("PhoneNumber = %q, want +15551234567", item.GetPhoneNumber())
+	if item.GetDeviceId() != "dev-1" {
+		t.Fatalf("DeviceId = %q, want dev-1", item.GetDeviceId())
 	}
-	if item.GetCreatedAt() != created.Unix() {
-		t.Fatalf("CreatedAt = %d, want %d", item.GetCreatedAt(), created.Unix())
+	if item.GetLabel() != "kitchen-tablet" {
+		t.Fatalf("Label = %q, want kitchen-tablet", item.GetLabel())
 	}
-	if item.GetPhoneVerifiedAt() != verified.Unix() {
-		t.Fatalf("PhoneVerifiedAt = %d, want %d", item.GetPhoneVerifiedAt(), verified.Unix())
+	if item.GetRequestedAt() != requested.Unix() {
+		t.Fatalf("RequestedAt = %d, want %d", item.GetRequestedAt(), requested.Unix())
+	}
+	if item.GetExpiresAt() != expires.Unix() {
+		t.Fatalf("ExpiresAt = %d, want %d", item.GetExpiresAt(), expires.Unix())
 	}
 }
 
-func TestListCashFluxClientsPropagatesStoreError(t *testing.T) {
-	fake := &fakeCashFluxAdmin{clientsErr: errors.New("db exploded")}
+func TestListCashFluxPendingDevicesPropagatesStoreError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{devicesErr: errors.New("db exploded")}
 	svc := newCashFluxTestService(t, fake)
-	if _, err := svc.ListCashFluxClients(context.Background(), &sitepb.Empty{}); status.Code(err) != codes.Internal {
+	if _, err := svc.ListCashFluxPendingDevices(context.Background(), &sitepb.Empty{}); status.Code(err) != codes.Internal {
 		t.Fatalf("err = %v, want Internal", err)
 	}
 }
 
-func TestMintCashFluxInviteCodeMapsFields(t *testing.T) {
-	expires := time.Date(2026, time.July, 20, 10, 15, 0, 0, time.UTC)
-	fake := &fakeCashFluxAdmin{mintCode: "482913", mintExpires: expires}
+func TestApproveCashFluxPairingMapsFieldsAndPassesDeviceID(t *testing.T) {
+	fake := &fakeCashFluxAdmin{approveApproved: true, approveCode: "482913"}
 	svc := newCashFluxTestService(t, fake)
 
-	resp, err := svc.MintCashFluxInviteCode(context.Background(), &sitepb.Empty{})
+	resp, err := svc.ApproveCashFluxPairing(context.Background(), &sitepb.CashFluxApprovePairingRequest{DeviceId: "dev-1"})
 	if err != nil {
-		t.Fatalf("MintCashFluxInviteCode: %v", err)
+		t.Fatalf("ApproveCashFluxPairing: %v", err)
 	}
-	if resp.GetCode() != "482913" {
-		t.Fatalf("Code = %q, want 482913", resp.GetCode())
+	if !resp.GetApproved() {
+		t.Fatal("Approved = false, want true")
 	}
-	if resp.GetExpiresAt() != expires.Unix() {
-		t.Fatalf("ExpiresAt = %d, want %d", resp.GetExpiresAt(), expires.Unix())
+	if resp.GetPairingCode() != "482913" {
+		t.Fatalf("PairingCode = %q, want 482913", resp.GetPairingCode())
+	}
+	if fake.approveDeviceID != "dev-1" {
+		t.Fatalf("ApprovePairing called with deviceID = %q, want dev-1", fake.approveDeviceID)
 	}
 }
 
-func TestListCashFluxInviteCodesReportsOutstandingVsConsumed(t *testing.T) {
-	created := time.Date(2026, time.July, 20, 10, 0, 0, 0, time.UTC)
-	expires := created.Add(15 * time.Minute)
-	consumed := created.Add(5 * time.Minute)
-	fake := &fakeCashFluxAdmin{codes: []cashfluxembed.InviteCode{
-		{Code: "111111", CreatedAt: created, ExpiresAt: expires},                       // outstanding
-		{Code: "222222", CreatedAt: created, ExpiresAt: expires, ConsumedAt: consumed}, // consumed
-	}}
+// TestApproveCashFluxPairingAlreadyResolvedIsNotAnError proves the "already resolved" case
+// (approved=false, no error, per pkg/embed.Admin.ApprovePairing's contract) is surfaced as a normal
+// response — not turned into a gRPC error — so the client can distinguish it from a real failure.
+func TestApproveCashFluxPairingAlreadyResolvedIsNotAnError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{approveApproved: false, approveCode: ""}
 	svc := newCashFluxTestService(t, fake)
 
-	resp, err := svc.ListCashFluxInviteCodes(context.Background(), &sitepb.Empty{})
+	resp, err := svc.ApproveCashFluxPairing(context.Background(), &sitepb.CashFluxApprovePairingRequest{DeviceId: "dev-1"})
 	if err != nil {
-		t.Fatalf("ListCashFluxInviteCodes: %v", err)
+		t.Fatalf("ApproveCashFluxPairing: %v", err)
 	}
-	items := resp.GetItems()
-	if len(items) != 2 {
-		t.Fatalf("items = %d, want 2", len(items))
+	if resp.GetApproved() {
+		t.Fatal("Approved = true, want false")
 	}
-	if items[0].GetConsumedAt() != 0 {
-		t.Fatalf("outstanding code ConsumedAt = %d, want 0", items[0].GetConsumedAt())
+	if resp.GetPairingCode() != "" {
+		t.Fatalf("PairingCode = %q, want empty", resp.GetPairingCode())
 	}
-	if items[1].GetConsumedAt() != consumed.Unix() {
-		t.Fatalf("consumed code ConsumedAt = %d, want %d", items[1].GetConsumedAt(), consumed.Unix())
+}
+
+func TestApproveCashFluxPairingPropagatesError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{approveErr: errors.New("store exploded")}
+	svc := newCashFluxTestService(t, fake)
+	if _, err := svc.ApproveCashFluxPairing(context.Background(), &sitepb.CashFluxApprovePairingRequest{DeviceId: "dev-1"}); status.Code(err) != codes.Internal {
+		t.Fatalf("err = %v, want Internal", err)
+	}
+}
+
+func TestRejectCashFluxPairingMapsFieldsAndPassesDeviceID(t *testing.T) {
+	fake := &fakeCashFluxAdmin{rejectRejected: true}
+	svc := newCashFluxTestService(t, fake)
+
+	resp, err := svc.RejectCashFluxPairing(context.Background(), &sitepb.CashFluxRejectPairingRequest{DeviceId: "dev-1"})
+	if err != nil {
+		t.Fatalf("RejectCashFluxPairing: %v", err)
+	}
+	if !resp.GetRejected() {
+		t.Fatal("Rejected = false, want true")
+	}
+	if fake.rejectDeviceID != "dev-1" {
+		t.Fatalf("RejectPairing called with deviceID = %q, want dev-1", fake.rejectDeviceID)
+	}
+}
+
+// TestRejectCashFluxPairingAlreadyResolvedIsNotAnError mirrors the approve case: an already-resolved
+// request reports rejected=false with no error.
+func TestRejectCashFluxPairingAlreadyResolvedIsNotAnError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{rejectRejected: false}
+	svc := newCashFluxTestService(t, fake)
+
+	resp, err := svc.RejectCashFluxPairing(context.Background(), &sitepb.CashFluxRejectPairingRequest{DeviceId: "dev-1"})
+	if err != nil {
+		t.Fatalf("RejectCashFluxPairing: %v", err)
+	}
+	if resp.GetRejected() {
+		t.Fatal("Rejected = true, want false")
+	}
+}
+
+func TestRejectCashFluxPairingPropagatesError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{rejectErr: errors.New("store exploded")}
+	svc := newCashFluxTestService(t, fake)
+	if _, err := svc.RejectCashFluxPairing(context.Background(), &sitepb.CashFluxRejectPairingRequest{DeviceId: "dev-1"}); status.Code(err) != codes.Internal {
+		t.Fatalf("err = %v, want Internal", err)
 	}
 }

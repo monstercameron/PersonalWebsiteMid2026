@@ -2,6 +2,51 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-24 — CashFlux dropped phone/SMS; the admin tab follows: pending-device pairing
+
+CashFlux's own repo (separate, concurrent work — see its own DEVLOG) ripped phone/SMS sign-in out
+entirely: Twilio cost real money and never signed up a real user, so "one time setup code, KISS"
+gave way to something that needed no SMS vendor at all — an admin-approved device-pairing bootstrap.
+An unauthenticated device asks to pair; the request sits pending until the owner approves (minting a
+brand-new account + a pairing code the human reads out for a MITM/mismatch check) or rejects it.
+`pkg/embed.Admin.ListClients`/`MintInviteCode`/`ListInviteCodes` — the exact three methods the
+"cashflux" admin tab shipped against two days ago — no longer exist. This repo failed to build the
+moment that CashFlux commit landed upstream (`undefined: cashfluxembed.PhoneClient` and
+`cashfluxembed.InviteCode` in `internal/admin/service.go`); fixing that was non-negotiable, but the
+real job was following the redesign, not just making it compile again.
+
+Mechanically this mirrors the shape of the tab it replaces almost exactly, because the *pattern*
+(list + per-row action + a "just did something, here's the proof" callout) was already right, only
+the domain changed: `CashFluxAdmin` in `internal/admin` now mirrors `pkg/embed.Admin`'s new method
+set (`ListPendingDevices`/`ApprovePairing`/`RejectPairing`) exactly, so the real
+`*cashfluxembed.Admin` handle satisfies it with no adapter — same trick as before. Three RPCs
+(`ListCashFluxPendingDevices`/`ApproveCashFluxPairing`/`RejectCashFluxPairing`) replace the old
+three. The UI swaps "mint an invite code, show it once" for "approve a specific pending request, show
+its pairing code" — same large-monospace-plus-copy-button treatment, but now scoped per-row instead
+of to a single global mint action, because there can be several devices waiting at once and the admin
+needs to know *which* pairing code goes with *which* device.
+
+Verified in an isolated scratch copy again (never the real `bin/server.exe` — see the 07-23 entry on
+why that discipline matters): built + ran on a spare port with a throwaway data dir, then seeded
+pending-device rows directly into the scratch SQLite file (same schema `ListPendingDevices` reads)
+since there was no quick way to drive CashFlux's own `RequestDevicePairing` RPC from outside a
+browser. Logged in for real over the gRPC tunnel, clicked real Pair/Reject buttons, watched the
+pairing-code callout and the list update. Screenshotted desktop and mobile widths against
+`documents/DESIGN.md` — Aubergine palette, mono section labels, the row treatment matching every
+other admin list (anime/tailoring/etc.) unchanged.
+
+The mandatory adversarial review (sequential, one Sonnet agent) caught two real bugs before this
+shipped: **(1)** the busy-state flag disabling a row's Pair/Reject buttons while its request was in
+flight was a single string, not a set — clicking Pair on device A, then Pair on device B before A's
+response landed, silently re-enabled device A's buttons mid-request (deterministic, not just a race:
+GWC's `State.Set` flushes synchronously, so the second click's state change lands before A's RPC
+returns). Fixed by making it a `map[string]bool` of in-flight device ids. **(2)** the pairing-code
+callout never cleared on navigating away and back to the tab, so a stale code for an already-resolved
+device could reappear looking like a live cross-check prompt — fixed by resetting it whenever the
+cashflux tab is (re-)entered. The review also flagged that this very file and `CHANGELOG.md` still
+described the removed `ListCashFluxClients`/`MintCashFluxInviteCode`/`ListCashFluxInviteCodes` trio
+as current — this entry, and a rewritten `CHANGELOG.md` Unreleased bullet, are that fix.
+
 ## 2026-07-23 — Copy-to-clipboard, and rebuild/restart discipline for a live dev server
 
 Small follow-up: a one-click copy button for the freshly-minted invite code in the admin console.

@@ -19,35 +19,35 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminService_Login_FullMethodName                   = "/site.v1.AdminService/Login"
-	AdminService_AuthState_FullMethodName               = "/site.v1.AdminService/AuthState"
-	AdminService_Setup_FullMethodName                   = "/site.v1.AdminService/Setup"
-	AdminService_ResetPassword_FullMethodName           = "/site.v1.AdminService/ResetPassword"
-	AdminService_SearchAnime_FullMethodName             = "/site.v1.AdminService/SearchAnime"
-	AdminService_ListTracked_FullMethodName             = "/site.v1.AdminService/ListTracked"
-	AdminService_TrackAnime_FullMethodName              = "/site.v1.AdminService/TrackAnime"
-	AdminService_UntrackAnime_FullMethodName            = "/site.v1.AdminService/UntrackAnime"
-	AdminService_RunReleaseCheck_FullMethodName         = "/site.v1.AdminService/RunReleaseCheck"
-	AdminService_GetResume_FullMethodName               = "/site.v1.AdminService/GetResume"
-	AdminService_ApplyResume_FullMethodName             = "/site.v1.AdminService/ApplyResume"
-	AdminService_TailorResume_FullMethodName            = "/site.v1.AdminService/TailorResume"
-	AdminService_GetSettings_FullMethodName             = "/site.v1.AdminService/GetSettings"
-	AdminService_SaveSettings_FullMethodName            = "/site.v1.AdminService/SaveSettings"
-	AdminService_ListModels_FullMethodName              = "/site.v1.AdminService/ListModels"
-	AdminService_GetLastTailoring_FullMethodName        = "/site.v1.AdminService/GetLastTailoring"
-	AdminService_GetBaseResume_FullMethodName           = "/site.v1.AdminService/GetBaseResume"
-	AdminService_ListTailorings_FullMethodName          = "/site.v1.AdminService/ListTailorings"
-	AdminService_GetTailoring_FullMethodName            = "/site.v1.AdminService/GetTailoring"
-	AdminService_DeleteTailoring_FullMethodName         = "/site.v1.AdminService/DeleteTailoring"
-	AdminService_GetPrompt_FullMethodName               = "/site.v1.AdminService/GetPrompt"
-	AdminService_SavePrompt_FullMethodName              = "/site.v1.AdminService/SavePrompt"
-	AdminService_DryRunPrompt_FullMethodName            = "/site.v1.AdminService/DryRunPrompt"
-	AdminService_GetSlackConfig_FullMethodName          = "/site.v1.AdminService/GetSlackConfig"
-	AdminService_SaveSlackConfig_FullMethodName         = "/site.v1.AdminService/SaveSlackConfig"
-	AdminService_PostToSlackNow_FullMethodName          = "/site.v1.AdminService/PostToSlackNow"
-	AdminService_ListCashFluxClients_FullMethodName     = "/site.v1.AdminService/ListCashFluxClients"
-	AdminService_MintCashFluxInviteCode_FullMethodName  = "/site.v1.AdminService/MintCashFluxInviteCode"
-	AdminService_ListCashFluxInviteCodes_FullMethodName = "/site.v1.AdminService/ListCashFluxInviteCodes"
+	AdminService_Login_FullMethodName                      = "/site.v1.AdminService/Login"
+	AdminService_AuthState_FullMethodName                  = "/site.v1.AdminService/AuthState"
+	AdminService_Setup_FullMethodName                      = "/site.v1.AdminService/Setup"
+	AdminService_ResetPassword_FullMethodName              = "/site.v1.AdminService/ResetPassword"
+	AdminService_SearchAnime_FullMethodName                = "/site.v1.AdminService/SearchAnime"
+	AdminService_ListTracked_FullMethodName                = "/site.v1.AdminService/ListTracked"
+	AdminService_TrackAnime_FullMethodName                 = "/site.v1.AdminService/TrackAnime"
+	AdminService_UntrackAnime_FullMethodName               = "/site.v1.AdminService/UntrackAnime"
+	AdminService_RunReleaseCheck_FullMethodName            = "/site.v1.AdminService/RunReleaseCheck"
+	AdminService_GetResume_FullMethodName                  = "/site.v1.AdminService/GetResume"
+	AdminService_ApplyResume_FullMethodName                = "/site.v1.AdminService/ApplyResume"
+	AdminService_TailorResume_FullMethodName               = "/site.v1.AdminService/TailorResume"
+	AdminService_GetSettings_FullMethodName                = "/site.v1.AdminService/GetSettings"
+	AdminService_SaveSettings_FullMethodName               = "/site.v1.AdminService/SaveSettings"
+	AdminService_ListModels_FullMethodName                 = "/site.v1.AdminService/ListModels"
+	AdminService_GetLastTailoring_FullMethodName           = "/site.v1.AdminService/GetLastTailoring"
+	AdminService_GetBaseResume_FullMethodName              = "/site.v1.AdminService/GetBaseResume"
+	AdminService_ListTailorings_FullMethodName             = "/site.v1.AdminService/ListTailorings"
+	AdminService_GetTailoring_FullMethodName               = "/site.v1.AdminService/GetTailoring"
+	AdminService_DeleteTailoring_FullMethodName            = "/site.v1.AdminService/DeleteTailoring"
+	AdminService_GetPrompt_FullMethodName                  = "/site.v1.AdminService/GetPrompt"
+	AdminService_SavePrompt_FullMethodName                 = "/site.v1.AdminService/SavePrompt"
+	AdminService_DryRunPrompt_FullMethodName               = "/site.v1.AdminService/DryRunPrompt"
+	AdminService_GetSlackConfig_FullMethodName             = "/site.v1.AdminService/GetSlackConfig"
+	AdminService_SaveSlackConfig_FullMethodName            = "/site.v1.AdminService/SaveSlackConfig"
+	AdminService_PostToSlackNow_FullMethodName             = "/site.v1.AdminService/PostToSlackNow"
+	AdminService_ListCashFluxPendingDevices_FullMethodName = "/site.v1.AdminService/ListCashFluxPendingDevices"
+	AdminService_ApproveCashFluxPairing_FullMethodName     = "/site.v1.AdminService/ApproveCashFluxPairing"
+	AdminService_RejectCashFluxPairing_FullMethodName      = "/site.v1.AdminService/RejectCashFluxPairing"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -121,14 +121,18 @@ type AdminServiceClient interface {
 	// PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
 	// QOTD RSS feed.
 	PostToSlackNow(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Ack, error)
-	// --- CashFlux client management (embedded per-person sync/auth) ---
-	// ListCashFluxClients returns enrolled phone/SMS accounts, newest first. Fails FailedPrecondition
-	// when CashFlux embedding isn't configured on this deployment.
-	ListCashFluxClients(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxClientList, error)
-	// MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
-	MintCashFluxInviteCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCode, error)
-	// ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
-	ListCashFluxInviteCodes(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCodeList, error)
+	// --- CashFlux device pairing (embedded admin-approved bootstrap) ---
+	// ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first. Fails
+	// FailedPrecondition when CashFlux embedding isn't configured on this deployment.
+	ListCashFluxPendingDevices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxPendingDeviceList, error)
+	// ApproveCashFluxPairing approves a pending device request, creating a brand-new CashFlux account
+	// for it and returning the pairing code so the admin can read it to (or cross-check it against) the
+	// person on the device. approved is false (with no pairing_code) when the request was already
+	// resolved or expired — that is not an error.
+	ApproveCashFluxPairing(ctx context.Context, in *CashFluxApprovePairingRequest, opts ...grpc.CallOption) (*CashFluxApprovePairingResponse, error)
+	// RejectCashFluxPairing declines a pending device request. rejected is false when the request was
+	// already resolved or expired — that is not an error.
+	RejectCashFluxPairing(ctx context.Context, in *CashFluxRejectPairingRequest, opts ...grpc.CallOption) (*CashFluxRejectPairingResponse, error)
 }
 
 type adminServiceClient struct {
@@ -399,30 +403,30 @@ func (c *adminServiceClient) PostToSlackNow(ctx context.Context, in *Empty, opts
 	return out, nil
 }
 
-func (c *adminServiceClient) ListCashFluxClients(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxClientList, error) {
+func (c *adminServiceClient) ListCashFluxPendingDevices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxPendingDeviceList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CashFluxClientList)
-	err := c.cc.Invoke(ctx, AdminService_ListCashFluxClients_FullMethodName, in, out, cOpts...)
+	out := new(CashFluxPendingDeviceList)
+	err := c.cc.Invoke(ctx, AdminService_ListCashFluxPendingDevices_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) MintCashFluxInviteCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCode, error) {
+func (c *adminServiceClient) ApproveCashFluxPairing(ctx context.Context, in *CashFluxApprovePairingRequest, opts ...grpc.CallOption) (*CashFluxApprovePairingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CashFluxInviteCode)
-	err := c.cc.Invoke(ctx, AdminService_MintCashFluxInviteCode_FullMethodName, in, out, cOpts...)
+	out := new(CashFluxApprovePairingResponse)
+	err := c.cc.Invoke(ctx, AdminService_ApproveCashFluxPairing_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) ListCashFluxInviteCodes(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxInviteCodeList, error) {
+func (c *adminServiceClient) RejectCashFluxPairing(ctx context.Context, in *CashFluxRejectPairingRequest, opts ...grpc.CallOption) (*CashFluxRejectPairingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CashFluxInviteCodeList)
-	err := c.cc.Invoke(ctx, AdminService_ListCashFluxInviteCodes_FullMethodName, in, out, cOpts...)
+	out := new(CashFluxRejectPairingResponse)
+	err := c.cc.Invoke(ctx, AdminService_RejectCashFluxPairing_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -500,14 +504,18 @@ type AdminServiceServer interface {
 	// PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
 	// QOTD RSS feed.
 	PostToSlackNow(context.Context, *Empty) (*Ack, error)
-	// --- CashFlux client management (embedded per-person sync/auth) ---
-	// ListCashFluxClients returns enrolled phone/SMS accounts, newest first. Fails FailedPrecondition
-	// when CashFlux embedding isn't configured on this deployment.
-	ListCashFluxClients(context.Context, *Empty) (*CashFluxClientList, error)
-	// MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
-	MintCashFluxInviteCode(context.Context, *Empty) (*CashFluxInviteCode, error)
-	// ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
-	ListCashFluxInviteCodes(context.Context, *Empty) (*CashFluxInviteCodeList, error)
+	// --- CashFlux device pairing (embedded admin-approved bootstrap) ---
+	// ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first. Fails
+	// FailedPrecondition when CashFlux embedding isn't configured on this deployment.
+	ListCashFluxPendingDevices(context.Context, *Empty) (*CashFluxPendingDeviceList, error)
+	// ApproveCashFluxPairing approves a pending device request, creating a brand-new CashFlux account
+	// for it and returning the pairing code so the admin can read it to (or cross-check it against) the
+	// person on the device. approved is false (with no pairing_code) when the request was already
+	// resolved or expired — that is not an error.
+	ApproveCashFluxPairing(context.Context, *CashFluxApprovePairingRequest) (*CashFluxApprovePairingResponse, error)
+	// RejectCashFluxPairing declines a pending device request. rejected is false when the request was
+	// already resolved or expired — that is not an error.
+	RejectCashFluxPairing(context.Context, *CashFluxRejectPairingRequest) (*CashFluxRejectPairingResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -596,14 +604,14 @@ func (UnimplementedAdminServiceServer) SaveSlackConfig(context.Context, *SlackCo
 func (UnimplementedAdminServiceServer) PostToSlackNow(context.Context, *Empty) (*Ack, error) {
 	return nil, status.Error(codes.Unimplemented, "method PostToSlackNow not implemented")
 }
-func (UnimplementedAdminServiceServer) ListCashFluxClients(context.Context, *Empty) (*CashFluxClientList, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListCashFluxClients not implemented")
+func (UnimplementedAdminServiceServer) ListCashFluxPendingDevices(context.Context, *Empty) (*CashFluxPendingDeviceList, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCashFluxPendingDevices not implemented")
 }
-func (UnimplementedAdminServiceServer) MintCashFluxInviteCode(context.Context, *Empty) (*CashFluxInviteCode, error) {
-	return nil, status.Error(codes.Unimplemented, "method MintCashFluxInviteCode not implemented")
+func (UnimplementedAdminServiceServer) ApproveCashFluxPairing(context.Context, *CashFluxApprovePairingRequest) (*CashFluxApprovePairingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApproveCashFluxPairing not implemented")
 }
-func (UnimplementedAdminServiceServer) ListCashFluxInviteCodes(context.Context, *Empty) (*CashFluxInviteCodeList, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListCashFluxInviteCodes not implemented")
+func (UnimplementedAdminServiceServer) RejectCashFluxPairing(context.Context, *CashFluxRejectPairingRequest) (*CashFluxRejectPairingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RejectCashFluxPairing not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -1094,56 +1102,56 @@ func _AdminService_PostToSlackNow_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ListCashFluxClients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AdminService_ListCashFluxPendingDevices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ListCashFluxClients(ctx, in)
+		return srv.(AdminServiceServer).ListCashFluxPendingDevices(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_ListCashFluxClients_FullMethodName,
+		FullMethod: AdminService_ListCashFluxPendingDevices_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListCashFluxClients(ctx, req.(*Empty))
+		return srv.(AdminServiceServer).ListCashFluxPendingDevices(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_MintCashFluxInviteCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+func _AdminService_ApproveCashFluxPairing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxApprovePairingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).MintCashFluxInviteCode(ctx, in)
+		return srv.(AdminServiceServer).ApproveCashFluxPairing(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_MintCashFluxInviteCode_FullMethodName,
+		FullMethod: AdminService_ApproveCashFluxPairing_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).MintCashFluxInviteCode(ctx, req.(*Empty))
+		return srv.(AdminServiceServer).ApproveCashFluxPairing(ctx, req.(*CashFluxApprovePairingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ListCashFluxInviteCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+func _AdminService_RejectCashFluxPairing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxRejectPairingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ListCashFluxInviteCodes(ctx, in)
+		return srv.(AdminServiceServer).RejectCashFluxPairing(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_ListCashFluxInviteCodes_FullMethodName,
+		FullMethod: AdminService_RejectCashFluxPairing_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListCashFluxInviteCodes(ctx, req.(*Empty))
+		return srv.(AdminServiceServer).RejectCashFluxPairing(ctx, req.(*CashFluxRejectPairingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1260,16 +1268,16 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_PostToSlackNow_Handler,
 		},
 		{
-			MethodName: "ListCashFluxClients",
-			Handler:    _AdminService_ListCashFluxClients_Handler,
+			MethodName: "ListCashFluxPendingDevices",
+			Handler:    _AdminService_ListCashFluxPendingDevices_Handler,
 		},
 		{
-			MethodName: "MintCashFluxInviteCode",
-			Handler:    _AdminService_MintCashFluxInviteCode_Handler,
+			MethodName: "ApproveCashFluxPairing",
+			Handler:    _AdminService_ApproveCashFluxPairing_Handler,
 		},
 		{
-			MethodName: "ListCashFluxInviteCodes",
-			Handler:    _AdminService_ListCashFluxInviteCodes_Handler,
+			MethodName: "RejectCashFluxPairing",
+			Handler:    _AdminService_RejectCashFluxPairing_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

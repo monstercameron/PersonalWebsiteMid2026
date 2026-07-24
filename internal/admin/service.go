@@ -25,13 +25,14 @@ import (
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
 
-// CashFluxAdmin is the subset of *cashfluxembed.Admin the CashFlux client-management RPCs need —
-// an interface (not the concrete type) so Service stays unit-testable with a fake, and so this
-// package doesn't have to construct a real embedded CashFlux store just to test error paths.
+// CashFluxAdmin is the subset of *cashfluxembed.Admin the CashFlux pairing RPCs need — an interface
+// (not the concrete type) so Service stays unit-testable with a fake, and so this package doesn't
+// have to construct a real embedded CashFlux store just to test error paths. Its method set mirrors
+// cashfluxembed.Admin's exactly, so the real *cashfluxembed.Admin value satisfies it with no adapter.
 type CashFluxAdmin interface {
-	ListClients() ([]cashfluxembed.PhoneClient, error)
-	MintInviteCode() (code string, expiresAt time.Time, err error)
-	ListInviteCodes() ([]cashfluxembed.InviteCode, error)
+	ListPendingDevices() ([]cashfluxembed.PendingDevice, error)
+	ApprovePairing(deviceID string) (approved bool, pairingCode string, err error)
+	RejectPairing(deviceID string) (rejected bool, err error)
 }
 
 // Service implements sitepb.AdminServiceServer — the anime tracker and résumé tailoring data plane.
@@ -534,62 +535,55 @@ func (s *Service) PostScheduledIfDue(ctx context.Context, now time.Time) (string
 	return msg, true, nil
 }
 
-// --- CashFlux client management ---
+// --- CashFlux device pairing ---
 
 // errCashFluxNotConfigured is returned by every CashFlux RPC when this deployment has no embedded
 // CashFlux instance (cfg.CashFluxDataDir == "").
 var errCashFluxNotConfigured = status.Error(codes.FailedPrecondition, "CashFlux sync is not configured on this deployment")
 
-// ListCashFluxClients returns enrolled phone/SMS accounts, newest first.
-func (s *Service) ListCashFluxClients(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxClientList, error) {
+// ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first.
+func (s *Service) ListCashFluxPendingDevices(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxPendingDeviceList, error) {
 	if s.cashflux == nil {
 		return nil, errCashFluxNotConfigured
 	}
-	clients, err := s.cashflux.ListClients()
+	devices, err := s.cashflux.ListPendingDevices()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "list clients failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "list pending devices failed: %v", err)
 	}
-	out := &sitepb.CashFluxClientList{}
-	for _, c := range clients {
-		out.Items = append(out.Items, &sitepb.CashFluxClientMeta{
-			PhoneNumber: c.PhoneNumber, CreatedAt: c.CreatedAt.Unix(), PhoneVerifiedAt: c.PhoneVerifiedAt.Unix(),
+	out := &sitepb.CashFluxPendingDeviceList{}
+	for _, d := range devices {
+		out.Items = append(out.Items, &sitepb.CashFluxPendingDevice{
+			DeviceId: d.DeviceID, Label: d.Label, RequestedAt: d.RequestedAt.Unix(), ExpiresAt: d.ExpiresAt.Unix(),
 		})
 	}
 	return out, nil
 }
 
-// MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
-func (s *Service) MintCashFluxInviteCode(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxInviteCode, error) {
+// ApproveCashFluxPairing approves a pending device request, minting a brand-new CashFlux account and
+// pairing code for it. approved is false (with an empty pairing_code) when the request was already
+// resolved or expired — that is reported as a normal response, not a gRPC error.
+func (s *Service) ApproveCashFluxPairing(_ context.Context, req *sitepb.CashFluxApprovePairingRequest) (*sitepb.CashFluxApprovePairingResponse, error) {
 	if s.cashflux == nil {
 		return nil, errCashFluxNotConfigured
 	}
-	code, expiresAt, err := s.cashflux.MintInviteCode()
+	approved, code, err := s.cashflux.ApprovePairing(req.GetDeviceId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "mint invite code failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "approve pairing failed: %v", err)
 	}
-	return &sitepb.CashFluxInviteCode{Code: code, ExpiresAt: expiresAt.Unix()}, nil
+	return &sitepb.CashFluxApprovePairingResponse{Approved: approved, PairingCode: code}, nil
 }
 
-// ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
-func (s *Service) ListCashFluxInviteCodes(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxInviteCodeList, error) {
+// RejectCashFluxPairing declines a pending device request. rejected is false when the request was
+// already resolved or expired — that is reported as a normal response, not a gRPC error.
+func (s *Service) RejectCashFluxPairing(_ context.Context, req *sitepb.CashFluxRejectPairingRequest) (*sitepb.CashFluxRejectPairingResponse, error) {
 	if s.cashflux == nil {
 		return nil, errCashFluxNotConfigured
 	}
-	invites, err := s.cashflux.ListInviteCodes()
+	rejected, err := s.cashflux.RejectPairing(req.GetDeviceId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "list invite codes failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "reject pairing failed: %v", err)
 	}
-	out := &sitepb.CashFluxInviteCodeList{}
-	for _, c := range invites {
-		var consumedAt int64
-		if !c.ConsumedAt.IsZero() {
-			consumedAt = c.ConsumedAt.Unix()
-		}
-		out.Items = append(out.Items, &sitepb.CashFluxInviteCodeMeta{
-			Code: c.Code, CreatedAt: c.CreatedAt.Unix(), ExpiresAt: c.ExpiresAt.Unix(), ConsumedAt: consumedAt,
-		})
-	}
-	return out, nil
+	return &sitepb.CashFluxRejectPairingResponse{Rejected: rejected}, nil
 }
 
 // unmarshalResult decodes a stored TailorResult (protojson), returning an empty result on error.

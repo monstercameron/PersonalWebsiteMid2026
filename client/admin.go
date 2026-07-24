@@ -47,13 +47,13 @@ func AdminApp() ui.Node {
 	models := ui.UseState[[]string](nil)
 	apiKey := ui.UseState("")
 
-	// CashFlux client management
+	// CashFlux device pairing
 	cashfluxConfigured := ui.UseState(true) // flips false only on a FailedPrecondition from the server
-	cashfluxClients := ui.UseState[[]*sitepb.CashFluxClientMeta](nil)
-	cashfluxCodes := ui.UseState[[]*sitepb.CashFluxInviteCodeMeta](nil)
-	cashfluxMinting := ui.UseState(false)
-	cashfluxJustMinted := ui.UseState[*sitepb.CashFluxInviteCode](nil) // the code from the last mint, shown once until the tab reloads
-	cashfluxCopied := ui.UseState(false)                               // flips true after a successful copy; reset on the next mint
+	cashfluxPending := ui.UseState[[]*sitepb.CashFluxPendingDevice](nil)
+	cashfluxBusy := ui.UseState[map[string]bool](nil)                     // device_ids currently being approved/rejected — a set, so one row's in-flight request doesn't re-enable another row's buttons
+	cashfluxJustPaired := ui.UseState[*sitepb.CashFluxPendingDevice](nil) // the device that was just approved
+	cashfluxPairingCode := ui.UseState("")                                // the pairing code from that approval, shown once until the tab reloads
+	cashfluxCopied := ui.UseState(false)                                  // flips true after a successful copy; reset on the next approval
 
 	// Auth flow: first-run setup + password reset (the owner has no session in these cases).
 	needsSetup := ui.UseState(false)
@@ -169,6 +169,12 @@ func AdminApp() ui.Node {
 				}
 			}()
 		case "cashflux":
+			// Clear any pairing-code callout left over from a previous visit to this tab — otherwise
+			// navigating away and back would show a stale "read this to <device>" prompt for a device
+			// that's no longer pending, which looks like a live cross-check but isn't.
+			cashfluxJustPaired.Set(nil)
+			cashfluxPairingCode.Set("")
+			cashfluxCopied.Set(false)
 			go func() {
 				c, err := adminClient()
 				if err != nil {
@@ -177,7 +183,7 @@ func AdminApp() ui.Node {
 				}
 				ctx, cancel := callCtx(token.Get())
 				defer cancel()
-				clients, err := c.ListCashFluxClients(ctx, &sitepb.Empty{})
+				pending, err := c.ListCashFluxPendingDevices(ctx, &sitepb.Empty{})
 				switch {
 				case onAuthErr(err):
 					return
@@ -185,21 +191,12 @@ func AdminApp() ui.Node {
 					cashfluxConfigured.Set(false)
 					return
 				case err != nil:
-					flash.Set("couldn't load CashFlux clients: " + err.Error())
+					flash.Set("couldn't load pending devices: " + err.Error())
 					return
 				default:
 					cashfluxConfigured.Set(true)
-					cashfluxClients.Set(clients.GetItems())
+					cashfluxPending.Set(pending.GetItems())
 				}
-				codesResp, err := c.ListCashFluxInviteCodes(ctx, &sitepb.Empty{})
-				if onAuthErr(err) {
-					return
-				}
-				if err != nil {
-					flash.Set("couldn't load invite codes: " + err.Error())
-					return
-				}
-				cashfluxCodes.Set(codesResp.GetItems())
 			}()
 		}
 		return nil
@@ -692,38 +689,105 @@ func AdminApp() ui.Node {
 			flash.Set(ack.GetMessage())
 		}()
 	})
-	onMintInviteCode := ui.UseEvent(func() {
+	// reloadPendingDevices re-fetches the pending-devices list — called after every approve/reject so
+	// the resolved request drops off the list.
+	reloadPendingDevices := func() {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if list, err := c.ListCashFluxPendingDevices(ctx, &sitepb.Empty{}); err == nil {
+				cashfluxPending.Set(list.GetItems())
+			}
+		}()
+	}
+	// setCashfluxBusy adds or removes deviceID from the in-flight set. It's a set (not a single
+	// scalar) so approving/rejecting one device doesn't re-enable another device's Pair/Reject
+	// buttons while that other request is still in flight — each row's busy state is independent.
+	// Always builds a fresh map rather than mutating cashfluxBusy.Get() in place, matching this
+	// file's convention of replacing state values wholesale (e.g. cashfluxPending.Set(...)).
+	setCashfluxBusy := func(deviceID string, busy bool) {
+		next := make(map[string]bool, len(cashfluxBusy.Get())+1)
+		for id := range cashfluxBusy.Get() {
+			next[id] = true
+		}
+		if busy {
+			next[deviceID] = true
+		} else {
+			delete(next, deviceID)
+		}
+		cashfluxBusy.Set(next)
+	}
+	// onApprovePairing approves one pending device (row-owned handler — see the CashFlux hooks
+	// gotcha: never call On* prop options inside a variable-length loop). On success it shows the
+	// pairing code for the human cross-check; an already-resolved request (approved=false, no error)
+	// just refreshes the list quietly.
+	onApprovePairing := func(deviceID string, device *sitepb.CashFluxPendingDevice) {
 		flash.Set("")
-		cashfluxMinting.Set(true)
+		setCashfluxBusy(deviceID, true)
 		cashfluxCopied.Set(false)
 		go func() {
 			c, err := adminClient()
 			if err != nil {
-				cashfluxMinting.Set(false)
+				setCashfluxBusy(deviceID, false)
 				flash.Set("connection error")
 				return
 			}
 			ctx, cancel := callCtx(token.Get())
 			defer cancel()
-			code, err := c.MintCashFluxInviteCode(ctx, &sitepb.Empty{})
-			cashfluxMinting.Set(false)
+			resp, err := c.ApproveCashFluxPairing(ctx, &sitepb.CashFluxApprovePairingRequest{DeviceId: deviceID})
+			setCashfluxBusy(deviceID, false)
 			if onAuthErr(err) {
 				return
 			}
 			if err != nil {
-				flash.Set("mint failed: " + err.Error())
+				flash.Set("approve failed: " + err.Error())
 				return
 			}
-			cashfluxJustMinted.Set(code)
-			// Re-fetch so the new code appears in the list immediately, at the top (newest first).
-			if codesResp, err := c.ListCashFluxInviteCodes(ctx, &sitepb.Empty{}); err == nil {
-				cashfluxCodes.Set(codesResp.GetItems())
+			if !resp.GetApproved() {
+				flash.Set("that request was already resolved")
+				reloadPendingDevices()
+				return
 			}
+			cashfluxJustPaired.Set(device)
+			cashfluxPairingCode.Set(resp.GetPairingCode())
+			reloadPendingDevices()
 		}()
-	})
-	onCopyInviteCode := ui.WrapHandler(func() {
-		if code := cashfluxJustMinted.Get(); code != nil {
-			copyToClipboard(code.GetCode())
+	}
+	// onRejectPairing declines one pending device.
+	onRejectPairing := func(deviceID string) {
+		flash.Set("")
+		setCashfluxBusy(deviceID, true)
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				setCashfluxBusy(deviceID, false)
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			resp, err := c.RejectCashFluxPairing(ctx, &sitepb.CashFluxRejectPairingRequest{DeviceId: deviceID})
+			setCashfluxBusy(deviceID, false)
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("reject failed: " + err.Error())
+				return
+			}
+			if !resp.GetRejected() {
+				flash.Set("that request was already resolved")
+			}
+			reloadPendingDevices()
+		}()
+	}
+	onCopyPairingCode := ui.WrapHandler(func() {
+		if code := cashfluxPairingCode.Get(); code != "" {
+			copyToClipboard(code)
 			cashfluxCopied.Set(true)
 		}
 	})
@@ -737,7 +801,7 @@ func AdminApp() ui.Node {
 	case "rss":
 		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), slackHour, onToggleSlack, onSaveSlack, onPostNow)
 	case "cashflux":
-		content = cashfluxView(cashfluxConfigured.Get(), cashfluxMinting.Get(), cashfluxJustMinted.Get(), cashfluxCopied.Get(), cashfluxCodes.Get(), cashfluxClients.Get(), onMintInviteCode, onCopyInviteCode)
+		content = cashfluxView(cashfluxConfigured.Get(), cashfluxPending.Get(), cashfluxBusy.Get(), cashfluxJustPaired.Get(), cashfluxPairingCode.Get(), cashfluxCopied.Get(), onApprovePairing, onRejectPairing, onCopyPairingCode)
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}

@@ -73,14 +73,18 @@ service AdminService {
   // PostToSlackNow generates a post from the saved prompt, posts it to Slack, and publishes it to the
   // QOTD RSS feed.
   rpc PostToSlackNow(Empty) returns (Ack);
-  // --- CashFlux client management (embedded per-person sync/auth) ---
-  // ListCashFluxClients returns enrolled phone/SMS accounts, newest first. Fails FailedPrecondition
-  // when CashFlux embedding isn't configured on this deployment.
-  rpc ListCashFluxClients(Empty) returns (CashFluxClientList);
-  // MintCashFluxInviteCode mints a fresh, single-use, short-lived invite code for one new client.
-  rpc MintCashFluxInviteCode(Empty) returns (CashFluxInviteCode);
-  // ListCashFluxInviteCodes returns minted invite codes, newest first (outstanding and consumed).
-  rpc ListCashFluxInviteCodes(Empty) returns (CashFluxInviteCodeList);
+  // --- CashFlux device pairing (embedded admin-approved bootstrap) ---
+  // ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first. Fails
+  // FailedPrecondition when CashFlux embedding isn't configured on this deployment.
+  rpc ListCashFluxPendingDevices(Empty) returns (CashFluxPendingDeviceList);
+  // ApproveCashFluxPairing approves a pending device request, creating a brand-new CashFlux account
+  // for it and returning the pairing code so the admin can read it to (or cross-check it against) the
+  // person on the device. approved is false (with no pairing_code) when the request was already
+  // resolved or expired — that is not an error.
+  rpc ApproveCashFluxPairing(CashFluxApprovePairingRequest) returns (CashFluxApprovePairingResponse);
+  // RejectCashFluxPairing declines a pending device request. rejected is false when the request was
+  // already resolved or expired — that is not an error.
+  rpc RejectCashFluxPairing(CashFluxRejectPairingRequest) returns (CashFluxRejectPairingResponse);
 }
 
 // PromptText carries the single QOTD generation instruction.
@@ -286,35 +290,39 @@ message Rationale {
   string reason = 2; // why, tied to a job signal
 }
 
-// --- CashFlux client management ---
+// --- CashFlux device pairing ---
 
-// CashFluxClientMeta is one enrolled phone/SMS account.
-message CashFluxClientMeta {
-  string phone_number = 1;
-  int64 created_at = 2;        // unix seconds
-  int64 phone_verified_at = 3; // unix seconds
+// CashFluxPendingDevice is one unresolved device-pairing request awaiting admin approval or rejection.
+message CashFluxPendingDevice {
+  string device_id = 1;
+  string label = 2;
+  int64 requested_at = 3; // unix seconds
+  int64 expires_at = 4;   // unix seconds
 }
 
-// CashFluxClientList is enrolled accounts, newest first.
-message CashFluxClientList {
-  repeated CashFluxClientMeta items = 1;
+// CashFluxPendingDeviceList is unresolved pairing requests, oldest first.
+message CashFluxPendingDeviceList {
+  repeated CashFluxPendingDevice items = 1;
 }
 
-// CashFluxInviteCode is a freshly minted invite code and its expiry.
-message CashFluxInviteCode {
-  string code = 1;
-  int64 expires_at = 2; // unix seconds
+// CashFluxApprovePairingRequest identifies the pending device to approve.
+message CashFluxApprovePairingRequest {
+  string device_id = 1;
 }
 
-// CashFluxInviteCodeMeta is one minted invite code's status, for the admin list.
-message CashFluxInviteCodeMeta {
-  string code = 1;
-  int64 created_at = 2;
-  int64 expires_at = 3;
-  int64 consumed_at = 4; // 0 if still outstanding
+// CashFluxApprovePairingResponse reports whether the approval landed. pairing_code is set only when
+// approved is true — the admin reads it to (or cross-checks it against) the person on the device.
+message CashFluxApprovePairingResponse {
+  bool approved = 1;
+  string pairing_code = 2;
 }
 
-// CashFluxInviteCodeList is minted invite codes, newest first.
-message CashFluxInviteCodeList {
-  repeated CashFluxInviteCodeMeta items = 1;
+// CashFluxRejectPairingRequest identifies the pending device to reject.
+message CashFluxRejectPairingRequest {
+  string device_id = 1;
+}
+
+// CashFluxRejectPairingResponse reports whether the rejection landed.
+message CashFluxRejectPairingResponse {
+  bool rejected = 1;
 }

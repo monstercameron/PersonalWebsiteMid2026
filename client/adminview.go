@@ -537,113 +537,96 @@ func resumeDocument(r *sitepb.Resume) ui.Node {
 	return Div(items...)
 }
 
-// --- cashflux client management ---
+// --- cashflux device pairing ---
 
-// cashfluxView renders the CashFlux client-management panel: a "mint invite code" button, the
-// just-minted code shown large and copyable (nil once none has been minted this session), the
-// outstanding/recent invite codes, and the registered clients list. configured is false when
-// CashFlux embedding isn't set up on this deployment, in which case everything else is skipped.
-func cashfluxView(configured, minting bool, justMinted *sitepb.CashFluxInviteCode, copied bool, codes []*sitepb.CashFluxInviteCodeMeta, clients []*sitepb.CashFluxClientMeta, onMint, onCopy ui.Handler) ui.Node {
+// cashfluxView renders the CashFlux device-pairing panel: the pending-devices list, each with
+// Pair/Reject actions, and — right after a successful Pair — a callout with the pairing code for the
+// human cross-check against the device's own display. configured is false when CashFlux embedding
+// isn't set up on this deployment, in which case everything else is skipped. busy is the set of
+// device ids currently mid-approve/reject (keyed by device_id, present+true = in flight) — a set
+// rather than a single id, so one row's in-flight request never re-enables another row's buttons.
+func cashfluxView(configured bool, pending []*sitepb.CashFluxPendingDevice, busy map[string]bool, justPaired *sitepb.CashFluxPendingDevice, pairingCode string, copied bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string), onCopy ui.Handler) ui.Node {
 	if !configured {
 		return Div(Class(Flex, FlexCol, Gap(Spacing2)),
-			sectionLabel("cashflux clients"),
+			sectionLabel("cashflux pending devices"),
 			P(Class(Fg(theme.Dim), TextSize(TextSm)), "CashFlux sync isn't configured on this deployment (no CASHFLUX_DATA_DIR set)."),
 		)
 	}
 
-	mintLabel := "Mint invite code"
-	if minting {
-		mintLabel = "Minting…"
-	}
 	sections := []any{Class(Flex, FlexCol, Gap(Spacing5)),
 		Div(Class(Flex, FlexCol, Gap(Spacing2), MaxWidth(Px(560))),
-			sectionLabel("invite a new client"),
+			sectionLabel("pending devices"),
 			P(Class(Fg(theme.Dim), TextSize(TextSm)),
-				"Mints a fresh, single-use code good for 15 minutes. Send it to the person you're inviting — they enter it as the “setup code” when signing in with their phone number."),
-			primaryButton(mintLabel, onMint),
+				"A device asking to sync shows up here. Pair it to create an account and mint a pairing code — read the code out (or have them compare it against their own screen) before they accept, so you're pairing the device you meant to."),
 		),
 	}
-	if justMinted != nil {
-		sections = append(sections, mintedCodeCallout(justMinted, copied, onCopy))
+	if justPaired != nil {
+		sections = append(sections, pairedCodeCallout(justPaired, pairingCode, copied, onCopy))
 	}
-	sections = append(sections,
-		Div(Class(Flex, FlexCol, Gap(Spacing3)),
-			sectionLabel("invite codes ("+strconv.Itoa(len(codes))+")"),
-			inviteCodeList(codes),
-		),
-		Div(Class(Flex, FlexCol, Gap(Spacing3)),
-			sectionLabel("registered clients ("+strconv.Itoa(len(clients))+")"),
-			cashfluxClientList(clients),
-		),
-	)
+	sections = append(sections, pendingDeviceList(pending, busy, onApprove, onReject))
 	return Div(sections...)
 }
 
-// mintedCodeCallout highlights a freshly minted invite code — large, monospace, with its expiry and
-// a one-click copy button — mirroring phraseView's "shown once, save it" treatment for the recovery
-// phrase. copyLabel switches to a confirmation once copied, rather than a separate toast/timer.
-func mintedCodeCallout(c *sitepb.CashFluxInviteCode, copied bool, onCopy ui.Handler) ui.Node {
-	expires := time.Unix(c.GetExpiresAt(), 0).Format("3:04:05 pm")
+// pairedCodeCallout highlights the pairing code from the most recent approval — large, monospace,
+// with a one-click copy button — mirroring phraseView's "shown once, save it" treatment for the
+// recovery phrase. copyLabel switches to a confirmation once copied, rather than a separate toast/timer.
+func pairedCodeCallout(device *sitepb.CashFluxPendingDevice, code string, copied bool, onCopy ui.Handler) ui.Node {
 	copyLabel := "Copy code"
 	if copied {
 		copyLabel = "Copied ✓"
 	}
 	return Div(Class(Bg(theme.Bg), Border(theme.Accent), Rounded(RadiusLg), Pad(Spacing4), Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(360))),
-		Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em")), "GIVE THIS TO YOUR INVITEE"),
+		Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em")), "READ THIS TO “"+strings.ToUpper(device.GetLabel())+"”"),
 		Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3)),
 			Div(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), FontSize(Rem(1.6)),
-				css.Raw("letter-spacing", "0.08em"), FontSemibold, Fg(theme.Fg)), c.GetCode()),
+				css.Raw("letter-spacing", "0.08em"), FontSemibold, Fg(theme.Fg)), code),
 			ghostButton(copyLabel, onCopy),
 		),
-		Span(Class(TextSize(TextSm), Fg(theme.Dim)), "expires at "+expires),
+		Span(Class(TextSize(TextSm), Fg(theme.Dim)), "confirm it matches what their device shows before they accept"),
 	)
 }
 
-// inviteCodeList renders minted invite codes as scannable rows (code, created, expiry/status).
-func inviteCodeList(codes []*sitepb.CashFluxInviteCodeMeta) ui.Node {
-	if len(codes) == 0 {
-		return P(Class(Fg(theme.Dim), TextSize(TextSm)), "No invite codes minted yet.")
+// pendingDeviceList renders unresolved pairing requests as scannable rows with Pair/Reject actions.
+func pendingDeviceList(devices []*sitepb.CashFluxPendingDevice, busy map[string]bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string)) ui.Node {
+	if len(devices) == 0 {
+		return P(Class(Fg(theme.Dim), TextSize(TextSm)), "No devices waiting to pair.")
 	}
 	nodes := []any{Class(Flex, FlexCol, Gap(Spacing2))}
-	for _, c := range codes {
-		nodes = append(nodes, inviteCodeRow(c))
+	for _, d := range devices {
+		nodes = append(nodes, pendingDeviceRow(d, busy[d.GetDeviceId()], onApprove, onReject))
 	}
 	return Div(nodes...)
 }
 
-// inviteCodeRow renders one invite code's status: consumed, expired, or outstanding with a countdown-
-// free "expires at" time (matching mintedCodeCallout's plain timestamp, no live ticking clock).
-func inviteCodeRow(c *sitepb.CashFluxInviteCodeMeta) ui.Node {
-	status := "expires " + time.Unix(c.GetExpiresAt(), 0).Format("Jan 2 · 3:04 pm")
-	statusColor := theme.Dim
-	if c.GetConsumedAt() != 0 {
-		status = "redeemed " + time.Unix(c.GetConsumedAt(), 0).Format("Jan 2 · 3:04 pm")
-		statusColor = theme.Accent2
-	}
-	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
-		Span(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), TextSize(TextSm)), c.GetCode()),
-		Span(Class(TextSize(TextSm), Fg(statusColor)), status),
-	)
-}
+// pendingDeviceRow renders one pending device request: label, requested/expiry time, and its own
+// Pair/Reject buttons. It's a standalone component (not inlined in a loop) per the CashFlux hooks
+// gotcha — On*/WrapHandler-backed controls in a variable-length list must live in their own component
+// so each row gets a stable render position.
+func pendingDeviceRow(d *sitepb.CashFluxPendingDevice, busy bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string)) ui.Node {
+	deviceID := d.GetDeviceId()
+	requested := time.Unix(d.GetRequestedAt(), 0).Format("Jan 2 · 3:04 pm")
+	expires := "expires " + time.Unix(d.GetExpiresAt(), 0).Format("Jan 2 · 3:04 pm")
 
-// cashfluxClientList renders registered phone/SMS accounts as scannable rows.
-func cashfluxClientList(clients []*sitepb.CashFluxClientMeta) ui.Node {
-	if len(clients) == 0 {
-		return P(Class(Fg(theme.Dim), TextSize(TextSm)), "No clients registered yet.")
+	pairLabel, rejectLabel := "Pair", "Reject"
+	if busy {
+		pairLabel, rejectLabel = "…", "…"
 	}
-	nodes := []any{Class(Flex, FlexCol, Gap(Spacing2))}
-	for _, c := range clients {
-		nodes = append(nodes, cashfluxClientRow(c))
-	}
-	return Div(nodes...)
-}
+	onPair := ui.WrapHandler(func() { onApprove(deviceID, d) })
+	onDecline := ui.WrapHandler(func() { onReject(deviceID) })
 
-// cashfluxClientRow renders one enrolled client: phone number, joined date, verified date.
-func cashfluxClientRow(c *sitepb.CashFluxClientMeta) ui.Node {
-	joined := time.Unix(c.GetCreatedAt(), 0).Format("Jan 2 · 3:04 pm")
 	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
-		Span(Class(FontSemibold, TextSize(TextSm)), c.GetPhoneNumber()),
-		Span(Class(TextSize(TextSm), Fg(theme.Dim)), "joined "+joined),
+		Div(Class(Flex, FlexCol, Gap(Spacing1)),
+			Span(Class(FontSemibold, TextSize(TextSm)), d.GetLabel()),
+			Span(Class(TextSize(TextSm), Fg(theme.Dim)), "requested "+requested+" · "+expires),
+		),
+		Div(Class(Flex, Gap(Spacing2)),
+			Button(Class(Bg(theme.Accent), Fg(Hex("#ffffff")), FontSemibold, Rounded(RadiusLg), PadX(Spacing4), PadY(Spacing3),
+				css.Raw("border", "0"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), DisabledIf(busy)),
+				Props{OnClick: onPair, Disabled: busy}, pairLabel),
+			Button(Class(Fg(theme.Fg), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing4), PadY(Spacing2),
+				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), DisabledIf(busy)),
+				Props{OnClick: onDecline, Disabled: busy}, rejectLabel),
+		),
 	)
 }
 

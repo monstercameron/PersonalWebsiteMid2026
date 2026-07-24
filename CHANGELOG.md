@@ -5,21 +5,28 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
-- **Copy-to-clipboard for the minted CashFlux invite code.** The freshly-minted code callout in the
-  admin "cashflux" tab now has a one-click copy button (`Copy code` → `Copied ✓`), backed by a new
-  `copyToClipboard` helper in `client/grpc.go` (async Clipboard API, best-effort/fire-and-forget).
-- **Admin console: CashFlux client management tab.** New "cashflux" tab in `/admin` lists enrolled
-  phone/SMS clients and mints fresh, single-use, 15-minute invite codes on demand — no more editing
-  `CASHFLUX_SERVER_SETUP_CODE` and restarting the server to add one person. Three new owner-only
-  `AdminService` RPCs (`ListCashFluxClients`/`MintCashFluxInviteCode`/`ListCashFluxInviteCodes`),
-  backed by a new `CashFluxAdmin` interface in `internal/admin` (fake-able in tests) wrapping
-  CashFlux's new `pkg/embed.Admin` handle. (CashFlux-side: admin-mintable invite codes work
-  alongside the existing static setup code — see CashFlux's own CHANGELOG.) Verified end-to-end in
-  an isolated scratch environment (fresh owner setup → login → mint → code appears in the list) and
-  by a mandatory adversarial review, which found and this shipped a fix for: the admin tab silently
-  showed "no clients"/"no codes" on a real backend error indistinguishable from a genuinely empty,
-  healthy deployment — now surfaces a flash message for any error that isn't the expected
-  "not configured" or "session expired."
+- **Admin console: CashFlux pending-devices tab.** CashFlux dropped phone/SMS sign-in entirely
+  (Twilio cost money, never signed up a real user) in favor of an admin-approved device-pairing
+  bootstrap: an unauthenticated device asks to pair, and the owner approves or rejects it from here.
+  The "cashflux" tab in `/admin` now lists unresolved pairing requests (label, requested/expiry
+  time) with per-row **Pair**/**Reject** actions. Pairing mints a brand-new CashFlux account and
+  shows the pairing code large and monospace with a one-click copy button (`Copy code` → `Copied ✓`,
+  the same `copyToClipboard` helper from `client/grpc.go`) — the owner reads it to (or cross-checks
+  it against) the person on the device before they accept, a human MITM/mismatch check. Three
+  owner-only `AdminService` RPCs (`ListCashFluxPendingDevices`/`ApproveCashFluxPairing`/
+  `RejectCashFluxPairing`), replacing the earlier `ListCashFluxClients`/`MintCashFluxInviteCode`/
+  `ListCashFluxInviteCodes` trio this same tab shipped with days ago (superseded before release —
+  see CashFlux's own CHANGELOG for the pairing-bootstrap mechanism). `CashFluxAdmin` in
+  `internal/admin` now mirrors `pkg/embed.Admin`'s new method set exactly, so the real
+  `*cashfluxembed.Admin` value satisfies it with no adapter. Verified end-to-end in an isolated
+  scratch environment (seeded pending-device rows via the real embedded SQLite store, real Pair/
+  Reject clicks over the real wire, desktop + mobile screenshots) and by a mandatory adversarial
+  review, which found and this shipped fixes for: (1) the in-flight "busy" flag guarding the
+  Pair/Reject buttons was a single scalar, so clicking one device's Pair button while another's was
+  still in flight re-enabled the first device's buttons mid-request — now a per-device-id set; (2)
+  the pairing-code callout didn't clear on navigating away and back, so a stale code for an
+  already-resolved device could reappear looking like a live cross-check prompt — now reset whenever
+  the tab is (re-)entered.
 
 ### Changed
 - **Embedded CashFlux: per-person accounts instead of one shared token.** Switched from
