@@ -5,6 +5,21 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Admin console: CashFlux stats that actually move.** Cam: "I don't see any updates on the
+  server side stats." He was right and the panel was at fault — neither figure it showed CAN
+  reflect sync. "Requests this month" counts metered AI calls (`AddUsage` is reached only from the
+  AI proxy; nothing in the sync path touches it), so it reads 0 forever for an account that syncs
+  constantly; and the database's own size barely moves, since a 17KB dataset landing in a 284KB
+  file is lost in the page-count rounding. A server syncing perfectly well therefore presented as a
+  dead panel. Now: the storage panel leads with **Synced data** (total dataset-snapshot bytes — the
+  one number that changes on every push), then artifact blobs, then the database file; and each
+  user row's right column shows **how much of their data this server holds** and **when they last
+  pushed** ("1.3 MB / synced just now", plus a workspace count when there's more than one) instead
+  of a request count that was structurally always zero. A never-synced account shows an em dash and
+  "never synced" rather than "0 B", which would read as the much more alarming "synced, and
+  empty". Backed by CashFlux's new `UserSyncSummary`/`SnapshotBytes`; three new proto fields on
+  `CashFluxUser` plus `snapshot_bytes` on `CashFluxStorageStats`. 3 new tests; verified against a
+  real synced account (1,363,769 bytes on the server → "1.3 MB" in the panel).
 - **Admin console: delete CashFlux users.** Each row in the users list gets a Delete action that
   permanently purges that account and everything it owns — workspaces, dataset snapshots, artifact
   blobs on disk, AI keys, and every refresh token, so it cannot be resurrected by a session that

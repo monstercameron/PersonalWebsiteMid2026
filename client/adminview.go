@@ -675,8 +675,14 @@ func storageStatsSection(stats *sitepb.CashFluxStorageStats) ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing2)),
 		sectionLabel("storage"),
 		Div(Class(Flex, Gap(Spacing3), css.Raw("flex-wrap", "wrap")),
-			storageStatTile("Database", formatBytes(stats.GetDbBytes())),
+			// Synced data leads: it is the only one of the three that moves every time
+			// someone pushes. The database's own size barely does — a 17KB dataset in a
+			// 284KB file is lost in the page-count rounding — and blobs stay at 0 for
+			// anyone with no attachments, which together made this panel read as
+			// "nothing is happening" on a server that was syncing fine.
+			storageStatTile("Synced data", formatBytes(stats.GetSnapshotBytes())),
 			storageStatTile("Artifact blobs", formatBytes(stats.GetBlobBytes())),
+			storageStatTile("Database file", formatBytes(stats.GetDbBytes())),
 		),
 	)
 }
@@ -762,15 +768,56 @@ func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(strin
 			Span(Class(TextSize(TextSm), Fg(theme.Dim)), meta),
 		),
 		Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
+			// What this account actually HOLDS, not how many AI requests it bought.
+			// requests_this_month is written only by the metered AI proxy — the sync
+			// path never touches it — so it read 0 forever for an account syncing
+			// constantly, and this column was the reason the panel looked dead.
 			Div(Class(Flex, FlexCol, Gap(Spacing1), css.Raw("text-align", "right")),
-				Span(Class(FontSemibold, TextSize(TextSm), Fg(theme.Accent2)), strconv.FormatInt(u.GetRequestsThisMonth(), 10)),
-				Span(Class(TextSize(TextXs), Fg(theme.Faint)), "requests this month"),
+				Span(Class(FontSemibold, TextSize(TextSm), Fg(theme.Accent2)), userDataLabel(u)),
+				Span(Class(TextSize(TextXs), Fg(theme.Faint)), userSyncedLabel(u)),
 			),
 			Button(Class(Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm),
 				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(theme.Red))),
 				Props{OnClick: onDelete}, "Delete"),
 		),
 	)
+}
+
+// userDataLabel is the headline figure for a user row: how much of their data this server is
+// actually holding. An account that has never pushed shows an em dash rather than "0 B", which
+// would read as "synced, and empty" — a different and much more alarming thing.
+func userDataLabel(u *sitepb.CashFluxUser) string {
+	if u.GetLastSyncedAt() == 0 && u.GetDatasetBytes() == 0 {
+		return "—"
+	}
+	return formatBytes(u.GetDatasetBytes())
+}
+
+// userSyncedLabel is the supporting line: when this account last pushed, and across how many
+// workspaces. Relative for anything recent (the question being asked is "is this alive?"),
+// absolute once it is old enough that a relative age stops being meaningful.
+func userSyncedLabel(u *sitepb.CashFluxUser) string {
+	ts := u.GetLastSyncedAt()
+	if ts == 0 {
+		return "never synced"
+	}
+	when := time.Unix(ts, 0)
+	d := time.Since(when)
+	var ago string
+	switch {
+	case d < time.Minute:
+		ago = "synced just now"
+	case d < time.Hour:
+		ago = "synced " + strconv.Itoa(int(d/time.Minute)) + "m ago"
+	case d < 24*time.Hour:
+		ago = "synced " + strconv.Itoa(int(d/time.Hour)) + "h ago"
+	default:
+		ago = "synced " + when.Format("Jan 2")
+	}
+	if n := u.GetWorkspaces(); n > 1 {
+		ago += " · " + strconv.Itoa(int(n)) + " workspaces"
+	}
+	return ago
 }
 
 // deleteConfirmRow is the are-you-sure state a user row swaps into. It names what is destroyed

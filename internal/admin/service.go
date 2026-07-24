@@ -36,7 +36,7 @@ type CashFluxAdmin interface {
 	RejectPairing(deviceID string) (rejected bool, err error)
 	ListUsers(limit, offset int) ([]cashfluxembed.User, error)
 	DeleteUser(userID string) (deleted bool, err error)
-	StorageStats() (dbBytes, blobBytes int64, err error)
+	StorageStats() (dbBytes, blobBytes, snapshotBytes int64, err error)
 }
 
 // Service implements sitepb.AdminServiceServer — the anime tracker and résumé tailoring data plane.
@@ -624,6 +624,11 @@ func (s *Service) ListCashFluxUsers(_ context.Context, req *sitepb.CashFluxListU
 			// Marked here rather than in the client so the console can never disagree with
 			// CashFlux about which account is the owner's — the id is CashFlux's constant.
 			IsOwner: u.ID == cashfluxembed.OwnerAccountID,
+			// Zero (never synced) is sent as 0 rather than a negative epoch second, so
+			// the client's "never synced" branch is a plain zero check.
+			Workspaces:   int32(u.Workspaces),
+			DatasetBytes: u.DatasetBytes,
+			LastSyncedAt: unixOrZero(u.LastSyncedAt),
 		})
 	}
 	return out, nil
@@ -651,11 +656,21 @@ func (s *Service) GetCashFluxStorageStats(_ context.Context, _ *sitepb.Empty) (*
 	if s.cashflux == nil {
 		return nil, errCashFluxNotConfigured
 	}
-	dbBytes, blobBytes, err := s.cashflux.StorageStats()
+	dbBytes, blobBytes, snapshotBytes, err := s.cashflux.StorageStats()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "storage stats failed: %v", err)
 	}
-	return &sitepb.CashFluxStorageStats{DbBytes: dbBytes, BlobBytes: blobBytes}, nil
+	return &sitepb.CashFluxStorageStats{DbBytes: dbBytes, BlobBytes: blobBytes, SnapshotBytes: snapshotBytes}, nil
+}
+
+// unixOrZero converts a timestamp to unix seconds, mapping the zero time to 0 rather than to
+// time.Time{}.Unix() (-62135596800) — the client tests for 0 to mean "never", and a large
+// negative number would render as a date in year 1.
+func unixOrZero(t time.Time) int64 {
+	if t.IsZero() {
+		return 0
+	}
+	return t.Unix()
 }
 
 // unmarshalResult decodes a stored TailorResult (protojson), returning an empty result on error.

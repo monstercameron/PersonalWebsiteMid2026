@@ -36,13 +36,14 @@ type fakeCashFluxAdmin struct {
 	rejectErr      error
 	rejectDeviceID string // records the deviceID the last RejectPairing call was made with
 
-	users     []cashfluxembed.User
-	usersErr  error
-	usersLim  int // records the limit the last ListUsers call was made with
-	usersOff  int // records the offset the last ListUsers call was made with
-	dbBytes   int64
-	blobBytes int64
-	statsErr  error
+	users         []cashfluxembed.User
+	usersErr      error
+	usersLim      int // records the limit the last ListUsers call was made with
+	usersOff      int // records the offset the last ListUsers call was made with
+	dbBytes       int64
+	blobBytes     int64
+	snapshotBytes int64
+	statsErr      error
 
 	deleteDeleted bool
 	deleteErr     error
@@ -78,8 +79,8 @@ func (f *fakeCashFluxAdmin) DeleteUser(userID string) (bool, error) {
 	return f.deleteDeleted, f.deleteErr
 }
 
-func (f *fakeCashFluxAdmin) StorageStats() (int64, int64, error) {
-	return f.dbBytes, f.blobBytes, f.statsErr
+func (f *fakeCashFluxAdmin) StorageStats() (int64, int64, int64, error) {
+	return f.dbBytes, f.blobBytes, f.snapshotBytes, f.statsErr
 }
 
 func newCashFluxTestService(t *testing.T, cf CashFluxAdmin) *Service {
@@ -429,5 +430,41 @@ func TestListCashFluxUsersMarksOwner(t *testing.T) {
 	}
 	if resp.GetItems()[1].GetIsOwner() {
 		t.Fatal("device:SOMEONEELSE: IsOwner = true, want false")
+	}
+}
+
+// TestListCashFluxUsersReportsSyncFacts proves the three sync fields reach the console, and that a
+// never-synced account sends 0 rather than time.Time{}.Unix() — which is a large NEGATIVE number
+// and would render as a date in year 1 instead of "never synced".
+func TestListCashFluxUsersReportsSyncFacts(t *testing.T) {
+	synced := time.Date(2026, 7, 24, 20, 19, 0, 0, time.UTC)
+	fake := &fakeCashFluxAdmin{users: []cashfluxembed.User{
+		{ID: "device:A", Workspaces: 2, DatasetBytes: 17064, LastSyncedAt: synced},
+		{ID: "device:B"}, // never synced
+	}}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.ListCashFluxUsers(context.Background(), &sitepb.CashFluxListUsersRequest{})
+	if err != nil {
+		t.Fatalf("ListCashFluxUsers: %v", err)
+	}
+	a, b := resp.GetItems()[0], resp.GetItems()[1]
+	if a.GetWorkspaces() != 2 || a.GetDatasetBytes() != 17064 || a.GetLastSyncedAt() != synced.Unix() {
+		t.Fatalf("device:A = %d/%d/%d, want 2/17064/%d",
+			a.GetWorkspaces(), a.GetDatasetBytes(), a.GetLastSyncedAt(), synced.Unix())
+	}
+	if b.GetLastSyncedAt() != 0 {
+		t.Fatalf("never-synced LastSyncedAt = %d, want 0", b.GetLastSyncedAt())
+	}
+}
+
+func TestGetCashFluxStorageStatsIncludesSnapshotBytes(t *testing.T) {
+	fake := &fakeCashFluxAdmin{dbBytes: 290816, blobBytes: 0, snapshotBytes: 17064}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.GetCashFluxStorageStats(context.Background(), &sitepb.Empty{})
+	if err != nil {
+		t.Fatalf("GetCashFluxStorageStats: %v", err)
+	}
+	if resp.GetSnapshotBytes() != 17064 {
+		t.Fatalf("SnapshotBytes = %d, want 17064", resp.GetSnapshotBytes())
 	}
 }

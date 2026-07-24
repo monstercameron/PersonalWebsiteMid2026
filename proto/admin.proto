@@ -378,6 +378,12 @@ message CashFluxUser {
   // Deleting it is legal but is not the same act as removing an invited person, and the
   // console must be able to say so before it happens.
   bool is_owner = 8;
+  // The three fields that answer "did this account's data actually arrive?".
+  // requests_this_month cannot: usage rows are written only by the metered AI proxy,
+  // never by the sync path, so it reads 0 for an account that syncs constantly.
+  int32 workspaces = 9;
+  int64 dataset_bytes = 10;
+  int64 last_synced_at = 11; // unix seconds; 0 = never synced
 }
 
 // CashFluxUserList is one page of enrolled accounts, newest first.
@@ -399,6 +405,11 @@ message CashFluxDeleteUserResponse {
 // CashFluxStorageStats reports on-disk storage usage: the SQLite database's own size and the total
 // size of every stored artifact blob, in bytes.
 message CashFluxStorageStats {
+  // snapshot_bytes is the figure that actually MOVES on a sync. db_bytes barely does
+  // (a 17KB dataset in a 284KB database is lost in the page-count rounding) and
+  // blob_bytes stays 0 for anyone with no attachments, so a panel showing only those
+  // two reads as "nothing is happening" on a server syncing perfectly well.
+  int64 snapshot_bytes = 3;
   int64 db_bytes = 1;
   int64 blob_bytes = 2;
 }

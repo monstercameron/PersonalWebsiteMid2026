@@ -479,3 +479,25 @@ struct rather than adding four more positional args to `cashfluxView` — same t
 
 Verified against a real synced account, not an empty one, and with Cancel exercised before
 the real delete.
+
+## 2026-07-24 — Stats that move
+
+Cam: "I dont see any updates on the server side stats." He was right, and the panel was the
+liar again — a pattern for the day. Neither figure it showed CAN reflect sync:
+
+- "requests this month" counts metered AI calls. `AddUsage` is reached from exactly two
+  places, the AI proxy and a dev-seed helper. Nothing in the sync path touches it. On this
+  deployment — no AI, sync only — it is structurally 0 forever.
+- the database's own page count barely moves. His real dataset is 17KB; the file is 284KB.
+
+So the console showed a billing metric and a rounding error, and he read the obvious
+conclusion: nothing is arriving. The data had been arriving the whole time.
+
+Fixed by reporting what an account actually HOLDS: snapshot bytes, workspace count, last
+push. Snapshot bytes is the only one of the three storage figures that changes on every
+push, so it leads the panel; the database file moved to last.
+
+Two small calls worth keeping. A never-synced account renders "—" and "never synced", not
+"0 B" — "0 B" reads as "synced, and empty", which is a much more alarming claim than "hasn't
+synced". And the zero time is sent as literal 0, because `time.Time{}.Unix()` is
+-62135596800 and would have rendered as a date in year 1.

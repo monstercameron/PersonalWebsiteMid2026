@@ -2180,7 +2180,13 @@ type CashFluxUser struct {
 	// is_owner marks the single account every activation code binds to — i.e. YOUR data.
 	// Deleting it is legal but is not the same act as removing an invited person, and the
 	// console must be able to say so before it happens.
-	IsOwner       bool `protobuf:"varint,8,opt,name=is_owner,json=isOwner,proto3" json:"is_owner,omitempty"`
+	IsOwner bool `protobuf:"varint,8,opt,name=is_owner,json=isOwner,proto3" json:"is_owner,omitempty"`
+	// The three fields that answer "did this account's data actually arrive?".
+	// requests_this_month cannot: usage rows are written only by the metered AI proxy,
+	// never by the sync path, so it reads 0 for an account that syncs constantly.
+	Workspaces    int32 `protobuf:"varint,9,opt,name=workspaces,proto3" json:"workspaces,omitempty"`
+	DatasetBytes  int64 `protobuf:"varint,10,opt,name=dataset_bytes,json=datasetBytes,proto3" json:"dataset_bytes,omitempty"`
+	LastSyncedAt  int64 `protobuf:"varint,11,opt,name=last_synced_at,json=lastSyncedAt,proto3" json:"last_synced_at,omitempty"` // unix seconds; 0 = never synced
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2269,6 +2275,27 @@ func (x *CashFluxUser) GetIsOwner() bool {
 		return x.IsOwner
 	}
 	return false
+}
+
+func (x *CashFluxUser) GetWorkspaces() int32 {
+	if x != nil {
+		return x.Workspaces
+	}
+	return 0
+}
+
+func (x *CashFluxUser) GetDatasetBytes() int64 {
+	if x != nil {
+		return x.DatasetBytes
+	}
+	return 0
+}
+
+func (x *CashFluxUser) GetLastSyncedAt() int64 {
+	if x != nil {
+		return x.LastSyncedAt
+	}
+	return 0
 }
 
 // CashFluxUserList is one page of enrolled accounts, newest first.
@@ -2410,9 +2437,14 @@ func (x *CashFluxDeleteUserResponse) GetDeleted() bool {
 // CashFluxStorageStats reports on-disk storage usage: the SQLite database's own size and the total
 // size of every stored artifact blob, in bytes.
 type CashFluxStorageStats struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	DbBytes       int64                  `protobuf:"varint,1,opt,name=db_bytes,json=dbBytes,proto3" json:"db_bytes,omitempty"`
-	BlobBytes     int64                  `protobuf:"varint,2,opt,name=blob_bytes,json=blobBytes,proto3" json:"blob_bytes,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// snapshot_bytes is the figure that actually MOVES on a sync. db_bytes barely does
+	// (a 17KB dataset in a 284KB database is lost in the page-count rounding) and
+	// blob_bytes stays 0 for anyone with no attachments, so a panel showing only those
+	// two reads as "nothing is happening" on a server syncing perfectly well.
+	SnapshotBytes int64 `protobuf:"varint,3,opt,name=snapshot_bytes,json=snapshotBytes,proto3" json:"snapshot_bytes,omitempty"`
+	DbBytes       int64 `protobuf:"varint,1,opt,name=db_bytes,json=dbBytes,proto3" json:"db_bytes,omitempty"`
+	BlobBytes     int64 `protobuf:"varint,2,opt,name=blob_bytes,json=blobBytes,proto3" json:"blob_bytes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2445,6 +2477,13 @@ func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
 // Deprecated: Use CashFluxStorageStats.ProtoReflect.Descriptor instead.
 func (*CashFluxStorageStats) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *CashFluxStorageStats) GetSnapshotBytes() int64 {
+	if x != nil {
+		return x.SnapshotBytes
+	}
+	return 0
 }
 
 func (x *CashFluxStorageStats) GetDbBytes() int64 {
@@ -2618,7 +2657,7 @@ const file_admin_proto_rawDesc = "" +
 	"\brejected\x18\x01 \x01(\bR\brejected\"H\n" +
 	"\x18CashFluxListUsersRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x05R\x06offset\"\x98\x02\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\"\x83\x03\n" +
 	"\fCashFluxUser\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x14\n" +
@@ -2628,14 +2667,21 @@ const file_admin_proto_rawDesc = "" +
 	"\x11subscription_plan\x18\x05 \x01(\tR\x10subscriptionPlan\x12/\n" +
 	"\x13subscription_status\x18\x06 \x01(\tR\x12subscriptionStatus\x12.\n" +
 	"\x13requests_this_month\x18\a \x01(\x03R\x11requestsThisMonth\x12\x19\n" +
-	"\bis_owner\x18\b \x01(\bR\aisOwner\"?\n" +
+	"\bis_owner\x18\b \x01(\bR\aisOwner\x12\x1e\n" +
+	"\n" +
+	"workspaces\x18\t \x01(\x05R\n" +
+	"workspaces\x12#\n" +
+	"\rdataset_bytes\x18\n" +
+	" \x01(\x03R\fdatasetBytes\x12$\n" +
+	"\x0elast_synced_at\x18\v \x01(\x03R\flastSyncedAt\"?\n" +
 	"\x10CashFluxUserList\x12+\n" +
 	"\x05items\x18\x01 \x03(\v2\x15.site.v1.CashFluxUserR\x05items\"4\n" +
 	"\x19CashFluxDeleteUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"6\n" +
 	"\x1aCashFluxDeleteUserResponse\x12\x18\n" +
-	"\adeleted\x18\x01 \x01(\bR\adeleted\"P\n" +
-	"\x14CashFluxStorageStats\x12\x19\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\"w\n" +
+	"\x14CashFluxStorageStats\x12%\n" +
+	"\x0esnapshot_bytes\x18\x03 \x01(\x03R\rsnapshotBytes\x12\x19\n" +
 	"\bdb_bytes\x18\x01 \x01(\x03R\adbBytes\x12\x1d\n" +
 	"\n" +
 	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\xe7\x0f\n" +
