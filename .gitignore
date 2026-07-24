@@ -7,6 +7,10 @@
 /web/static/wasm_exec.js
 
 # data & secrets — NEVER commit
+# The whole runtime data dir, not just the databases: web/data/cashflux/blobs/
+# holds users' attached FILES (receipts, statements) as loose content-addressed
+# blobs, which no *.db pattern covers.
+/web/data/
 *.db
 *.db-shm
 *.db-wal
