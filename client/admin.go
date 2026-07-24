@@ -866,6 +866,19 @@ func AdminApp() ui.Node {
 			}
 			cashfluxActivationCode.Set(resp.GetCode())
 			cashfluxActivationExpires.Set(resp.GetExpiresAt())
+			// The first mint CREATES the owner account, so a users list loaded before
+			// it still reads "users (0)" — an empty roster sitting directly under a
+			// freshly minted code looks like the mint didn't take. Re-read it (and the
+			// storage figures, which the new row also moves) rather than leaving the
+			// panel to contradict itself until the next visit. Best-effort: a failed
+			// refresh must not report the mint, which succeeded, as a failure.
+			if users, err := c.ListCashFluxUsers(ctx, &sitepb.CashFluxListUsersRequest{Limit: cashfluxUsersPageSize}); err == nil {
+				cashfluxUsers.Set(users.GetItems())
+				cashfluxUsersMore.Set(len(users.GetItems()) == cashfluxUsersPageSize)
+			}
+			if stats, err := c.GetCashFluxStorageStats(ctx, &sitepb.Empty{}); err == nil {
+				cashfluxStorage.Set(stats)
+			}
 		}()
 	})
 	onCopyActivationCode := ui.WrapHandler(func() {
