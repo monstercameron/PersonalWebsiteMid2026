@@ -453,3 +453,29 @@ verified here end to end on a throwaway port + data dir rather than against Cam'
 (`LISTEN_ADDR`, `BASE_URL`, `CASHFLUX_SERVER_TOKEN=cam-sync-token`, `ADMIN_*`) — the `BASE_URL`
 and token pins from yesterday's incident still matter and were preserved. Logs now go to
 `server_restart3.log`.
+
+## 2026-07-24 — Deleting CashFlux users from the console
+
+Cam: "I need to be able to delete users from the portfolio site." One RPC over CashFlux's
+new `pkg/embed.Admin.DeleteUser`, plus the row-level UI.
+
+**Two-step, no modal.** The row swaps into its own are-you-sure state. The confirmation
+names what is destroyed ("erases their workspaces, transactions, and attachments, and signs
+out every device they activated") rather than asking a generic "are you sure?" — a
+confirmation you can't read tells you nothing you didn't already know.
+
+**The owner row is called out twice.** `device:owner` is the account every activation code
+opens, so deleting it erases Cam's own CashFlux data and signs out every device he
+activated. It carries a "your account" badge in the list, before anyone reaches for the
+button, and its confirmation says so explicitly. The flag is computed server-side against
+`cashfluxembed.OwnerAccountID` — the client is never asked to guess which id is special.
+
+Deliberately still possible, not blocked: he asked for delete, and a console that refuses
+the one row you most need to clear when starting over is worse than one that warns properly.
+
+`usersSection`/`userRow` grew handlers, so the users params moved into a `usersPanelState`
+struct rather than adding four more positional args to `cashfluxView` — same treatment
+`activationCodeState` got.
+
+Verified against a real synced account, not an empty one, and with Cancel exercised before
+the real delete.

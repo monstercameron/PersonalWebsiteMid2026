@@ -2177,8 +2177,12 @@ type CashFluxUser struct {
 	SubscriptionPlan   string                 `protobuf:"bytes,5,opt,name=subscription_plan,json=subscriptionPlan,proto3" json:"subscription_plan,omitempty"`
 	SubscriptionStatus string                 `protobuf:"bytes,6,opt,name=subscription_status,json=subscriptionStatus,proto3" json:"subscription_status,omitempty"`
 	RequestsThisMonth  int64                  `protobuf:"varint,7,opt,name=requests_this_month,json=requestsThisMonth,proto3" json:"requests_this_month,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// is_owner marks the single account every activation code binds to — i.e. YOUR data.
+	// Deleting it is legal but is not the same act as removing an invited person, and the
+	// console must be able to say so before it happens.
+	IsOwner       bool `protobuf:"varint,8,opt,name=is_owner,json=isOwner,proto3" json:"is_owner,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CashFluxUser) Reset() {
@@ -2260,6 +2264,13 @@ func (x *CashFluxUser) GetRequestsThisMonth() int64 {
 	return 0
 }
 
+func (x *CashFluxUser) GetIsOwner() bool {
+	if x != nil {
+		return x.IsOwner
+	}
+	return false
+}
+
 // CashFluxUserList is one page of enrolled accounts, newest first.
 type CashFluxUserList struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2305,6 +2316,97 @@ func (x *CashFluxUserList) GetItems() []*CashFluxUser {
 	return nil
 }
 
+// CashFluxDeleteUserRequest identifies the account to purge.
+type CashFluxDeleteUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxDeleteUserRequest) Reset() {
+	*x = CashFluxDeleteUserRequest{}
+	mi := &file_admin_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxDeleteUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxDeleteUserRequest) ProtoMessage() {}
+
+func (x *CashFluxDeleteUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxDeleteUserRequest.ProtoReflect.Descriptor instead.
+func (*CashFluxDeleteUserRequest) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *CashFluxDeleteUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+// CashFluxDeleteUserResponse reports whether an account was actually removed. false means there was
+// no such account — already gone, not a failure.
+type CashFluxDeleteUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Deleted       bool                   `protobuf:"varint,1,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxDeleteUserResponse) Reset() {
+	*x = CashFluxDeleteUserResponse{}
+	mi := &file_admin_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxDeleteUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxDeleteUserResponse) ProtoMessage() {}
+
+func (x *CashFluxDeleteUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxDeleteUserResponse.ProtoReflect.Descriptor instead.
+func (*CashFluxDeleteUserResponse) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *CashFluxDeleteUserResponse) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
+}
+
 // CashFluxStorageStats reports on-disk storage usage: the SQLite database's own size and the total
 // size of every stored artifact blob, in bytes.
 type CashFluxStorageStats struct {
@@ -2317,7 +2419,7 @@ type CashFluxStorageStats struct {
 
 func (x *CashFluxStorageStats) Reset() {
 	*x = CashFluxStorageStats{}
-	mi := &file_admin_proto_msgTypes[39]
+	mi := &file_admin_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2329,7 +2431,7 @@ func (x *CashFluxStorageStats) String() string {
 func (*CashFluxStorageStats) ProtoMessage() {}
 
 func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[39]
+	mi := &file_admin_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2342,7 +2444,7 @@ func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxStorageStats.ProtoReflect.Descriptor instead.
 func (*CashFluxStorageStats) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{39}
+	return file_admin_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *CashFluxStorageStats) GetDbBytes() int64 {
@@ -2516,7 +2618,7 @@ const file_admin_proto_rawDesc = "" +
 	"\brejected\x18\x01 \x01(\bR\brejected\"H\n" +
 	"\x18CashFluxListUsersRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x05R\x06offset\"\xfd\x01\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\"\x98\x02\n" +
 	"\fCashFluxUser\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x14\n" +
@@ -2525,13 +2627,18 @@ const file_admin_proto_rawDesc = "" +
 	"created_at\x18\x04 \x01(\x03R\tcreatedAt\x12+\n" +
 	"\x11subscription_plan\x18\x05 \x01(\tR\x10subscriptionPlan\x12/\n" +
 	"\x13subscription_status\x18\x06 \x01(\tR\x12subscriptionStatus\x12.\n" +
-	"\x13requests_this_month\x18\a \x01(\x03R\x11requestsThisMonth\"?\n" +
+	"\x13requests_this_month\x18\a \x01(\x03R\x11requestsThisMonth\x12\x19\n" +
+	"\bis_owner\x18\b \x01(\bR\aisOwner\"?\n" +
 	"\x10CashFluxUserList\x12+\n" +
-	"\x05items\x18\x01 \x03(\v2\x15.site.v1.CashFluxUserR\x05items\"P\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.site.v1.CashFluxUserR\x05items\"4\n" +
+	"\x19CashFluxDeleteUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"6\n" +
+	"\x1aCashFluxDeleteUserResponse\x12\x18\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\"P\n" +
 	"\x14CashFluxStorageStats\x12\x19\n" +
 	"\bdb_bytes\x18\x01 \x01(\x03R\adbBytes\x12\x1d\n" +
 	"\n" +
-	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\x88\x0f\n" +
+	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\xe7\x0f\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x124\n" +
 	"\tAuthState\x12\x0e.site.v1.Empty\x1a\x17.site.v1.AuthStateReply\x123\n" +
@@ -2567,7 +2674,8 @@ const file_admin_proto_rawDesc = "" +
 	"\x16ApproveCashFluxPairing\x12&.site.v1.CashFluxApprovePairingRequest\x1a'.site.v1.CashFluxApprovePairingResponse\x12f\n" +
 	"\x15RejectCashFluxPairing\x12%.site.v1.CashFluxRejectPairingRequest\x1a&.site.v1.CashFluxRejectPairingResponse\x12Q\n" +
 	"\x11ListCashFluxUsers\x12!.site.v1.CashFluxListUsersRequest\x1a\x19.site.v1.CashFluxUserList\x12H\n" +
-	"\x17GetCashFluxStorageStats\x12\x0e.site.v1.Empty\x1a\x1d.site.v1.CashFluxStorageStatsB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
+	"\x17GetCashFluxStorageStats\x12\x0e.site.v1.Empty\x1a\x1d.site.v1.CashFluxStorageStats\x12]\n" +
+	"\x12DeleteCashFluxUser\x12\".site.v1.CashFluxDeleteUserRequest\x1a#.site.v1.CashFluxDeleteUserResponseB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -2581,7 +2689,7 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_admin_proto_goTypes = []any{
 	(*PromptText)(nil),                     // 0: site.v1.PromptText
 	(*PostPreview)(nil),                    // 1: site.v1.PostPreview
@@ -2622,8 +2730,10 @@ var file_admin_proto_goTypes = []any{
 	(*CashFluxListUsersRequest)(nil),       // 36: site.v1.CashFluxListUsersRequest
 	(*CashFluxUser)(nil),                   // 37: site.v1.CashFluxUser
 	(*CashFluxUserList)(nil),               // 38: site.v1.CashFluxUserList
-	(*CashFluxStorageStats)(nil),           // 39: site.v1.CashFluxStorageStats
-	(*Ack)(nil),                            // 40: site.v1.Ack
+	(*CashFluxDeleteUserRequest)(nil),      // 39: site.v1.CashFluxDeleteUserRequest
+	(*CashFluxDeleteUserResponse)(nil),     // 40: site.v1.CashFluxDeleteUserResponse
+	(*CashFluxStorageStats)(nil),           // 41: site.v1.CashFluxStorageStats
+	(*Ack)(nil),                            // 42: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
 	4,  // 0: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
@@ -2668,40 +2778,42 @@ var file_admin_proto_depIdxs = []int32{
 	34, // 39: site.v1.AdminService.RejectCashFluxPairing:input_type -> site.v1.CashFluxRejectPairingRequest
 	36, // 40: site.v1.AdminService.ListCashFluxUsers:input_type -> site.v1.CashFluxListUsersRequest
 	8,  // 41: site.v1.AdminService.GetCashFluxStorageStats:input_type -> site.v1.Empty
-	10, // 42: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	11, // 43: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
-	13, // 44: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
-	15, // 45: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
-	20, // 46: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	20, // 47: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	40, // 48: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	40, // 49: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	18, // 50: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	21, // 51: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	40, // 52: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	26, // 53: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	6,  // 54: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	40, // 55: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	7,  // 56: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	26, // 57: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	21, // 58: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
-	5,  // 59: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
-	26, // 60: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
-	40, // 61: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
-	0,  // 62: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
-	40, // 63: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
-	1,  // 64: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
-	2,  // 65: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
-	40, // 66: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
-	40, // 67: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
-	31, // 68: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
-	30, // 69: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
-	33, // 70: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
-	35, // 71: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
-	38, // 72: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
-	39, // 73: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
-	42, // [42:74] is the sub-list for method output_type
-	10, // [10:42] is the sub-list for method input_type
+	39, // 42: site.v1.AdminService.DeleteCashFluxUser:input_type -> site.v1.CashFluxDeleteUserRequest
+	10, // 43: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	11, // 44: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
+	13, // 45: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
+	15, // 46: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
+	20, // 47: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	20, // 48: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	42, // 49: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	42, // 50: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	18, // 51: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	21, // 52: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	42, // 53: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	26, // 54: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	6,  // 55: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	42, // 56: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	7,  // 57: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	26, // 58: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	21, // 59: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	5,  // 60: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	26, // 61: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	42, // 62: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	0,  // 63: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
+	42, // 64: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
+	1,  // 65: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
+	2,  // 66: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
+	42, // 67: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
+	42, // 68: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
+	31, // 69: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
+	30, // 70: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
+	33, // 71: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
+	35, // 72: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
+	38, // 73: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
+	41, // 74: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
+	40, // 75: site.v1.AdminService.DeleteCashFluxUser:output_type -> site.v1.CashFluxDeleteUserResponse
+	43, // [43:76] is the sub-list for method output_type
+	10, // [10:43] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -2719,7 +2831,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   40,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -551,7 +551,7 @@ func resumeDocument(r *sitepb.Resume) ui.Node {
 // usersLoading/onLoadMoreUsers drive the users list's single page + "load more" action; storage is
 // nil until the storage-stats call returns (storageStatsSection renders nothing until then).
 func cashfluxView(configured bool, activation activationCodeState, pending []*sitepb.CashFluxPendingDevice, busy map[string]bool, justPaired *sitepb.CashFluxPendingDevice, pairingCode string, copied bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string), onCopy ui.Handler,
-	users []*sitepb.CashFluxUser, usersMore bool, usersLoading bool, onLoadMoreUsers ui.Handler, storage *sitepb.CashFluxStorageStats) ui.Node {
+	users usersPanelState, storage *sitepb.CashFluxStorageStats) ui.Node {
 	if !configured {
 		return Div(Class(Flex, FlexCol, Gap(Spacing2)),
 			sectionLabel("cashflux pending devices"),
@@ -572,7 +572,7 @@ func cashfluxView(configured bool, activation activationCodeState, pending []*si
 	}
 	sections = append(sections, pendingDeviceList(pending, busy, onApprove, onReject))
 	sections = append(sections, storageStatsSection(storage))
-	sections = append(sections, usersSection(users, usersMore, usersLoading, onLoadMoreUsers))
+	sections = append(sections, usersSection(users))
 	return Div(sections...)
 }
 
@@ -589,6 +589,26 @@ type activationCodeState struct {
 	Copied bool
 	OnMint ui.Handler
 	OnCopy ui.Handler
+}
+
+// usersPanelState is the enrolled-users panel's whole state, grouped so cashfluxView keeps a
+// readable signature as the panel grows.
+type usersPanelState struct {
+	Users []*sitepb.CashFluxUser
+	// More is true when the last page came back full, so a "Load more" action is offered.
+	More    bool
+	Loading bool
+	// ConfirmDeleteID is the one row currently showing its are-you-sure state, "" for none.
+	// A single id rather than a set: two half-confirmed deletions on screen at once is a
+	// misclick waiting to happen.
+	ConfirmDeleteID string
+	// Deleting is the set of ids with a purge in flight, keyed by user id — a set, like the
+	// pending-device busy map, so one row's request never re-enables another's buttons.
+	Deleting        map[string]bool
+	OnLoadMore      ui.Handler
+	OnAskDelete     func(string)
+	OnCancelDelete  func()
+	OnConfirmDelete func(string)
 }
 
 // activationCodeSection renders the activation-code panel — the primary way a device gets into
@@ -672,35 +692,46 @@ func storageStatTile(label, value string) ui.Node {
 // usersSection renders the enrolled-users list: signup date, provider, email (or id when no email is
 // on file), subscription plan/status, and this calendar month's request volume — plus a "load more"
 // action when the last page came back full.
-func usersSection(users []*sitepb.CashFluxUser, more bool, loading bool, onLoadMore ui.Handler) ui.Node {
+func usersSection(u usersPanelState) ui.Node {
 	rows := []any{Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(760))),
-		sectionLabel("users (" + strconv.Itoa(len(users)) + ")"),
+		sectionLabel("users (" + strconv.Itoa(len(u.Users)) + ")"),
 	}
-	if len(users) == 0 {
+	if len(u.Users) == 0 {
 		rows = append(rows, P(Class(Fg(theme.Dim), TextSize(TextSm)), "No one has signed up yet."))
 		return Div(rows...)
 	}
 	list := []any{Class(Flex, FlexCol, Gap(Spacing2))}
-	for _, u := range users {
-		list = append(list, userRow(u))
+	for _, user := range u.Users {
+		list = append(list, userRow(user, u.ConfirmDeleteID == user.GetId(), u.Deleting[user.GetId()], u.OnAskDelete, u.OnCancelDelete, u.OnConfirmDelete))
 	}
 	rows = append(rows, Div(list...))
-	if more {
+	if u.More {
 		label := "Load more"
-		if loading {
+		if u.Loading {
 			label = "Loading…"
 		}
-		rows = append(rows, ghostButton(label, onLoadMore))
+		rows = append(rows, ghostButton(label, u.OnLoadMore))
 	}
 	return Div(rows...)
 }
 
 // userRow renders one enrolled account as a scannable row: who (email, falling back to id, plus
-// provider), when they signed up, their subscription (when set), and this month's request volume.
-func userRow(u *sitepb.CashFluxUser) ui.Node {
+// provider), when they signed up, their subscription (when set), this month's request volume, and
+// a Delete action. Standalone component (not inlined in usersSection's loop) per the same hooks
+// rule pendingDeviceRow follows: WrapHandler-backed controls in a variable-length list need their
+// own stable render position.
+//
+// Delete is two-step and the row itself is the confirmation — no modal, and no way to erase an
+// account with a single click. confirming swaps the row for its own are-you-sure state; deleting
+// disables both buttons while the purge is in flight.
+func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(string), onCancel func(), onConfirm func(string)) ui.Node {
+	id := u.GetId()
 	who := u.GetEmail()
 	if who == "" {
-		who = u.GetId()
+		who = id
+	}
+	if confirming {
+		return deleteConfirmRow(u, who, deleting, onCancel, onConfirm)
 	}
 	signedUp := "unknown signup date"
 	if t := u.GetCreatedAt(); t > 0 {
@@ -716,14 +747,57 @@ func userRow(u *sitepb.CashFluxUser) ui.Node {
 			meta += " (" + s + ")"
 		}
 	}
+	onDelete := ui.WrapHandler(func() { onAsk(id) })
+	// The owner row is the one whose deletion costs YOU data, so it carries a badge before
+	// anyone reaches for the button — not only inside the confirmation.
+	name := []any{Class(Flex, ItemsCenter, Gap(Spacing2)),
+		Span(Class(FontSemibold, TextSize(TextSm)), who),
+	}
+	if u.GetIsOwner() {
+		name = append(name, Span(Class(TextSize(TextXs), Fg(theme.Accent2), Border(theme.Border), Rounded(RadiusSm), PadX(Spacing2)), "your account"))
+	}
 	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
 		Div(Class(Flex, FlexCol, Gap(Spacing1)),
-			Span(Class(FontSemibold, TextSize(TextSm)), who),
+			Div(name...),
 			Span(Class(TextSize(TextSm), Fg(theme.Dim)), meta),
 		),
-		Div(Class(Flex, FlexCol, Gap(Spacing1), css.Raw("text-align", "right")),
-			Span(Class(FontSemibold, TextSize(TextSm), Fg(theme.Accent2)), strconv.FormatInt(u.GetRequestsThisMonth(), 10)),
-			Span(Class(TextSize(TextXs), Fg(theme.Faint)), "requests this month"),
+		Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
+			Div(Class(Flex, FlexCol, Gap(Spacing1), css.Raw("text-align", "right")),
+				Span(Class(FontSemibold, TextSize(TextSm), Fg(theme.Accent2)), strconv.FormatInt(u.GetRequestsThisMonth(), 10)),
+				Span(Class(TextSize(TextXs), Fg(theme.Faint)), "requests this month"),
+			),
+			Button(Class(Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm),
+				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(theme.Red))),
+				Props{OnClick: onDelete}, "Delete"),
+		),
+	)
+}
+
+// deleteConfirmRow is the are-you-sure state a user row swaps into. It names what is destroyed
+// rather than asking a generic "are you sure?", and says plainly when the target is the owner's own
+// account — deleting that erases your CashFlux data on this server and signs out every device you
+// activated, which is a different act from removing someone you invited.
+func deleteConfirmRow(u *sitepb.CashFluxUser, who string, deleting bool, onCancel func(), onConfirm func(string)) ui.Node {
+	detail := "Erases their workspaces, transactions, and attachments, and signs out every device they activated."
+	if u.GetIsOwner() {
+		detail = "This is YOUR account — the one every activation code opens. Erases your CashFlux data on this server and signs out every device you activated."
+	}
+	confirmLabel := "Delete permanently"
+	if deleting {
+		confirmLabel = "Deleting…"
+	}
+	onYes := ui.WrapHandler(func() { onConfirm(u.GetId()) })
+	onNo := ui.WrapHandler(func() { onCancel() })
+	return Div(Class(Flex, FlexCol, Gap(Spacing2), Bg(theme.Bg), Border(theme.Red), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing3)),
+		Span(Class(FontSemibold, TextSize(TextSm)), "Delete "+who+"?"),
+		Span(Class(TextSize(TextSm), Fg(theme.Dim)), detail+" This can't be undone."),
+		Div(Class(Flex, Gap(Spacing2)),
+			Button(Class(Bg(theme.Red), Fg(Hex("#ffffff")), FontSemibold, Rounded(RadiusLg), PadX(Spacing4), PadY(Spacing3), TextSize(TextSm),
+				css.Raw("border", "0"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), DisabledIf(deleting)),
+				Props{OnClick: onYes, Disabled: deleting}, confirmLabel),
+			Button(Class(Fg(theme.Fg), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing4), PadY(Spacing2), TextSize(TextSm),
+				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), DisabledIf(deleting)),
+				Props{OnClick: onNo, Disabled: deleting}, "Cancel"),
 		),
 	)
 }

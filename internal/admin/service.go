@@ -35,6 +35,7 @@ type CashFluxAdmin interface {
 	ApprovePairing(deviceID string) (approved bool, pairingCode string, err error)
 	RejectPairing(deviceID string) (rejected bool, err error)
 	ListUsers(limit, offset int) ([]cashfluxembed.User, error)
+	DeleteUser(userID string) (deleted bool, err error)
 	StorageStats() (dbBytes, blobBytes int64, err error)
 }
 
@@ -620,9 +621,28 @@ func (s *Service) ListCashFluxUsers(_ context.Context, req *sitepb.CashFluxListU
 			Id: u.ID, Provider: u.Provider, Email: u.Email, CreatedAt: u.CreatedAt.Unix(),
 			SubscriptionPlan: u.SubscriptionPlan, SubscriptionStatus: u.SubscriptionStatus,
 			RequestsThisMonth: u.RequestsThisMonth,
+			// Marked here rather than in the client so the console can never disagree with
+			// CashFlux about which account is the owner's — the id is CashFlux's constant.
+			IsOwner: u.ID == cashfluxembed.OwnerAccountID,
 		})
 	}
 	return out, nil
+}
+
+// DeleteCashFluxUser permanently purges an enrolled CashFlux account and every row and blob it
+// owns. deleted is false (with no error) when there was no such account — a double-submit, or a
+// console listing something another session already removed — which is reported as a normal
+// response so the client can say "already gone" instead of showing a failure for work that is
+// done. There is no undo and no tombstone.
+func (s *Service) DeleteCashFluxUser(_ context.Context, req *sitepb.CashFluxDeleteUserRequest) (*sitepb.CashFluxDeleteUserResponse, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	deleted, err := s.cashflux.DeleteUser(req.GetUserId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "delete user failed: %v", err)
+	}
+	return &sitepb.CashFluxDeleteUserResponse{Deleted: deleted}, nil
 }
 
 // GetCashFluxStorageStats reports the embedded CashFlux database's on-disk size and the total size of

@@ -100,6 +100,13 @@ service AdminService {
   // of every stored artifact blob. Fails FailedPrecondition when CashFlux embedding isn't configured
   // on this deployment.
   rpc GetCashFluxStorageStats(Empty) returns (CashFluxStorageStats);
+  // DeleteCashFluxUser permanently purges an enrolled account and everything it owns —
+  // workspaces, dataset snapshots, artifact blobs, AI keys, and every refresh token, so the
+  // account cannot be resurrected by a session that outlived it. deleted is false (with no
+  // error) when no such account exists, which is what a double-submit or a stale listing
+  // looks like. Not reversible. Fails FailedPrecondition when CashFlux embedding isn't
+  // configured on this deployment.
+  rpc DeleteCashFluxUser(CashFluxDeleteUserRequest) returns (CashFluxDeleteUserResponse);
 }
 
 // PromptText carries the single QOTD generation instruction.
@@ -367,11 +374,26 @@ message CashFluxUser {
   string subscription_plan = 5;
   string subscription_status = 6;
   int64 requests_this_month = 7;
+  // is_owner marks the single account every activation code binds to — i.e. YOUR data.
+  // Deleting it is legal but is not the same act as removing an invited person, and the
+  // console must be able to say so before it happens.
+  bool is_owner = 8;
 }
 
 // CashFluxUserList is one page of enrolled accounts, newest first.
 message CashFluxUserList {
   repeated CashFluxUser items = 1;
+}
+
+// CashFluxDeleteUserRequest identifies the account to purge.
+message CashFluxDeleteUserRequest {
+  string user_id = 1;
+}
+
+// CashFluxDeleteUserResponse reports whether an account was actually removed. false means there was
+// no such account — already gone, not a failure.
+message CashFluxDeleteUserResponse {
+  bool deleted = 1;
 }
 
 // CashFluxStorageStats reports on-disk storage usage: the SQLite database's own size and the total

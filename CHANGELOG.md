@@ -5,6 +5,21 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Admin console: delete CashFlux users.** Each row in the users list gets a Delete action that
+  permanently purges that account and everything it owns — workspaces, dataset snapshots, artifact
+  blobs on disk, AI keys, and every refresh token, so it cannot be resurrected by a session that
+  outlived it. Two-step and the row itself is the confirmation (no modal, no single-click erasure):
+  the row swaps for an are-you-sure state that names what is destroyed rather than asking a generic
+  "are you sure?", with Cancel as the escape hatch and both buttons disabled while the purge is in
+  flight. The owner's own account — the one every activation code opens — carries a "your account"
+  badge in the list and gets its own confirmation wording, because deleting your CashFlux data is a
+  different act from removing an invited person; `CashFluxUser.is_owner` is set server-side against
+  CashFlux's own constant so the console can never disagree about which row that is. New owner-only
+  `DeleteCashFluxUser` RPC over `pkg/embed.Admin.DeleteUser`; `deleted=false` (already gone) comes
+  back as a normal response, not an error. The users list and storage figures re-read on success.
+  9 new tests. Verified end to end on an isolated instance against a REAL synced account — 1.5 MB
+  database, 7 blobs, workspace, snapshot, refresh token — all zero afterwards including the files on
+  disk, with the audit row retained.
 - **Admin console: "Activate a device" — generate a CashFlux activation code.** The "cashflux" tab
   now leads with a Generate-code button; the minted 6-digit code appears in an accent-bordered
   callout with its expiry and a copy button (the same treatment the pairing-code callout already

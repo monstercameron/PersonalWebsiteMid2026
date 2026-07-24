@@ -43,6 +43,10 @@ type fakeCashFluxAdmin struct {
 	dbBytes   int64
 	blobBytes int64
 	statsErr  error
+
+	deleteDeleted bool
+	deleteErr     error
+	deleteUserID  string // records the id the last DeleteUser call was made with
 }
 
 func (f *fakeCashFluxAdmin) MintActivationCode() (string, time.Time, error) {
@@ -67,6 +71,11 @@ func (f *fakeCashFluxAdmin) RejectPairing(deviceID string) (bool, error) {
 func (f *fakeCashFluxAdmin) ListUsers(limit, offset int) ([]cashfluxembed.User, error) {
 	f.usersLim, f.usersOff = limit, offset
 	return f.users, f.usersErr
+}
+
+func (f *fakeCashFluxAdmin) DeleteUser(userID string) (bool, error) {
+	f.deleteUserID = userID
+	return f.deleteDeleted, f.deleteErr
 }
 
 func (f *fakeCashFluxAdmin) StorageStats() (int64, int64, error) {
@@ -352,5 +361,73 @@ func TestMintCashFluxActivationCodeUnconfigured(t *testing.T) {
 	svc := newCashFluxTestService(t, nil)
 	if _, err := svc.MintCashFluxActivationCode(context.Background(), &sitepb.Empty{}); status.Code(err) != codes.FailedPrecondition {
 		t.Fatalf("err = %v, want FailedPrecondition", err)
+	}
+}
+
+func TestDeleteCashFluxUserPassesIDAndReportsDeleted(t *testing.T) {
+	fake := &fakeCashFluxAdmin{deleteDeleted: true}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.DeleteCashFluxUser(context.Background(), &sitepb.CashFluxDeleteUserRequest{UserId: "device:ABC"})
+	if err != nil {
+		t.Fatalf("DeleteCashFluxUser: %v", err)
+	}
+	if !resp.GetDeleted() {
+		t.Fatal("Deleted = false, want true")
+	}
+	if fake.deleteUserID != "device:ABC" {
+		t.Fatalf("DeleteUser called with %q, want device:ABC", fake.deleteUserID)
+	}
+}
+
+// TestDeleteCashFluxUserAlreadyGoneIsNotAnError proves the "no such account" case
+// (deleted=false, no error) reaches the client as a normal response rather than a gRPC error —
+// a double-submit or a stale listing is work already done, not a failure to report.
+func TestDeleteCashFluxUserAlreadyGoneIsNotAnError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{deleteDeleted: false}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.DeleteCashFluxUser(context.Background(), &sitepb.CashFluxDeleteUserRequest{UserId: "device:gone"})
+	if err != nil {
+		t.Fatalf("DeleteCashFluxUser: %v", err)
+	}
+	if resp.GetDeleted() {
+		t.Fatal("Deleted = true, want false")
+	}
+}
+
+func TestDeleteCashFluxUserPropagatesError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{deleteErr: errors.New("store exploded")}
+	svc := newCashFluxTestService(t, fake)
+	if _, err := svc.DeleteCashFluxUser(context.Background(), &sitepb.CashFluxDeleteUserRequest{UserId: "device:ABC"}); status.Code(err) != codes.Internal {
+		t.Fatalf("err = %v, want Internal", err)
+	}
+}
+
+func TestDeleteCashFluxUserUnconfigured(t *testing.T) {
+	svc := newCashFluxTestService(t, nil)
+	if _, err := svc.DeleteCashFluxUser(context.Background(), &sitepb.CashFluxDeleteUserRequest{UserId: "device:ABC"}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("err = %v, want FailedPrecondition", err)
+	}
+}
+
+// TestListCashFluxUsersMarksOwner proves the console is told which row is the owner's own
+// account, so a delete of YOUR data can be worded differently from removing an invited person.
+func TestListCashFluxUsersMarksOwner(t *testing.T) {
+	fake := &fakeCashFluxAdmin{users: []cashfluxembed.User{
+		{ID: cashfluxembed.OwnerAccountID, Provider: "device"},
+		{ID: "device:SOMEONEELSE", Provider: "device"},
+	}}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.ListCashFluxUsers(context.Background(), &sitepb.CashFluxListUsersRequest{})
+	if err != nil {
+		t.Fatalf("ListCashFluxUsers: %v", err)
+	}
+	if len(resp.GetItems()) != 2 {
+		t.Fatalf("items = %d, want 2", len(resp.GetItems()))
+	}
+	if !resp.GetItems()[0].GetIsOwner() {
+		t.Fatalf("%s: IsOwner = false, want true", cashfluxembed.OwnerAccountID)
+	}
+	if resp.GetItems()[1].GetIsOwner() {
+		t.Fatal("device:SOMEONEELSE: IsOwner = true, want false")
 	}
 }

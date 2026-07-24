@@ -73,6 +73,12 @@ func AdminApp() ui.Node {
 	cashfluxUsersMore := ui.UseState(false) // true when the last page came back full — more may exist
 	cashfluxUsersLoading := ui.UseState(false)
 	cashfluxStorage := ui.UseState[*sitepb.CashFluxStorageStats](nil)
+	// Deleting an account is irreversible, so it is two-step: a row moves into
+	// cashfluxDeleteConfirm first and only a second, explicit click purges it. One id
+	// rather than a set — two half-confirmed deletions on screen at once is a misclick
+	// waiting to happen.
+	cashfluxDeleteConfirm := ui.UseState("")
+	cashfluxDeleting := ui.UseState[map[string]bool](nil) // ids with a purge in flight
 
 	// Auth flow: first-run setup + password reset (the owner has no session in these cases).
 	needsSetup := ui.UseState(false)
@@ -199,6 +205,8 @@ func AdminApp() ui.Node {
 			cashfluxActivationCode.Set("")
 			cashfluxActivationExpires.Set("")
 			cashfluxActivationCopied.Set(false)
+			// Never return to this tab with a row already armed to delete.
+			cashfluxDeleteConfirm.Set("")
 			go func() {
 				c, err := adminClient()
 				if err != nil {
@@ -887,6 +895,68 @@ func AdminApp() ui.Node {
 			cashfluxActivationCopied.Set(true)
 		}
 	})
+	// setCashfluxDeleting mirrors setCashfluxBusy: always builds a fresh map rather than
+	// mutating in place, matching this file's replace-state-wholesale convention.
+	setCashfluxDeleting := func(userID string, on bool) {
+		next := make(map[string]bool, len(cashfluxDeleting.Get())+1)
+		for id := range cashfluxDeleting.Get() {
+			next[id] = true
+		}
+		if on {
+			next[userID] = true
+		} else {
+			delete(next, userID)
+		}
+		cashfluxDeleting.Set(next)
+	}
+	onAskDeleteUser := func(userID string) {
+		flash.Set("")
+		cashfluxDeleteConfirm.Set(userID)
+	}
+	onCancelDeleteUser := func() { cashfluxDeleteConfirm.Set("") }
+	// onConfirmDeleteUser purges one account. deleted=false is not an error — it means the
+	// account was already gone (a double-submit, or another session removed it), so the row
+	// just disappears on the refresh like it would have anyway.
+	onConfirmDeleteUser := func(userID string) {
+		if cashfluxDeleting.Get()[userID] {
+			return
+		}
+		flash.Set("")
+		setCashfluxDeleting(userID, true)
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				setCashfluxDeleting(userID, false)
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			resp, err := c.DeleteCashFluxUser(ctx, &sitepb.CashFluxDeleteUserRequest{UserId: userID})
+			setCashfluxDeleting(userID, false)
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("delete failed: " + err.Error())
+				return
+			}
+			if !resp.GetDeleted() {
+				flash.Set("that account was already gone")
+			}
+			cashfluxDeleteConfirm.Set("")
+			// The roster and the storage figures both moved; re-read them rather than
+			// leaving a deleted account on screen. Best-effort: a failed refresh must not
+			// report a deletion that succeeded as a failure.
+			if users, err := c.ListCashFluxUsers(ctx, &sitepb.CashFluxListUsersRequest{Limit: cashfluxUsersPageSize}); err == nil {
+				cashfluxUsers.Set(users.GetItems())
+				cashfluxUsersMore.Set(len(users.GetItems()) == cashfluxUsersPageSize)
+			}
+			if stats, err := c.GetCashFluxStorageStats(ctx, &sitepb.Empty{}); err == nil {
+				cashfluxStorage.Set(stats)
+			}
+		}()
+	}
 	// onLoadMoreUsers fetches the next page of CashFlux users (offset = however many are already
 	// shown) and appends it to the list — a single "load more" action rather than full pagination
 	// controls, matching this deployment's expected scale (an admin-invited handful of accounts).
@@ -934,7 +1004,17 @@ func AdminApp() ui.Node {
 			OnMint:    onMintActivationCode,
 			OnCopy:    onCopyActivationCode,
 		}, cashfluxPending.Get(), cashfluxBusy.Get(), cashfluxJustPaired.Get(), cashfluxPairingCode.Get(), cashfluxCopied.Get(), onApprovePairing, onRejectPairing, onCopyPairingCode,
-			cashfluxUsers.Get(), cashfluxUsersMore.Get(), cashfluxUsersLoading.Get(), onLoadMoreUsers, cashfluxStorage.Get())
+			usersPanelState{
+				Users:           cashfluxUsers.Get(),
+				More:            cashfluxUsersMore.Get(),
+				Loading:         cashfluxUsersLoading.Get(),
+				ConfirmDeleteID: cashfluxDeleteConfirm.Get(),
+				Deleting:        cashfluxDeleting.Get(),
+				OnLoadMore:      onLoadMoreUsers,
+				OnAskDelete:     onAskDeleteUser,
+				OnCancelDelete:  onCancelDeleteUser,
+				OnConfirmDelete: onConfirmDeleteUser,
+			}, cashfluxStorage.Get())
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}

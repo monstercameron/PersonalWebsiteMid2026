@@ -51,6 +51,7 @@ const (
 	AdminService_RejectCashFluxPairing_FullMethodName      = "/site.v1.AdminService/RejectCashFluxPairing"
 	AdminService_ListCashFluxUsers_FullMethodName          = "/site.v1.AdminService/ListCashFluxUsers"
 	AdminService_GetCashFluxStorageStats_FullMethodName    = "/site.v1.AdminService/GetCashFluxStorageStats"
+	AdminService_DeleteCashFluxUser_FullMethodName         = "/site.v1.AdminService/DeleteCashFluxUser"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -151,6 +152,13 @@ type AdminServiceClient interface {
 	// of every stored artifact blob. Fails FailedPrecondition when CashFlux embedding isn't configured
 	// on this deployment.
 	GetCashFluxStorageStats(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxStorageStats, error)
+	// DeleteCashFluxUser permanently purges an enrolled account and everything it owns —
+	// workspaces, dataset snapshots, artifact blobs, AI keys, and every refresh token, so the
+	// account cannot be resurrected by a session that outlived it. deleted is false (with no
+	// error) when no such account exists, which is what a double-submit or a stale listing
+	// looks like. Not reversible. Fails FailedPrecondition when CashFlux embedding isn't
+	// configured on this deployment.
+	DeleteCashFluxUser(ctx context.Context, in *CashFluxDeleteUserRequest, opts ...grpc.CallOption) (*CashFluxDeleteUserResponse, error)
 }
 
 type adminServiceClient struct {
@@ -481,6 +489,16 @@ func (c *adminServiceClient) GetCashFluxStorageStats(ctx context.Context, in *Em
 	return out, nil
 }
 
+func (c *adminServiceClient) DeleteCashFluxUser(ctx context.Context, in *CashFluxDeleteUserRequest, opts ...grpc.CallOption) (*CashFluxDeleteUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxDeleteUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteCashFluxUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -579,6 +597,13 @@ type AdminServiceServer interface {
 	// of every stored artifact blob. Fails FailedPrecondition when CashFlux embedding isn't configured
 	// on this deployment.
 	GetCashFluxStorageStats(context.Context, *Empty) (*CashFluxStorageStats, error)
+	// DeleteCashFluxUser permanently purges an enrolled account and everything it owns —
+	// workspaces, dataset snapshots, artifact blobs, AI keys, and every refresh token, so the
+	// account cannot be resurrected by a session that outlived it. deleted is false (with no
+	// error) when no such account exists, which is what a double-submit or a stale listing
+	// looks like. Not reversible. Fails FailedPrecondition when CashFlux embedding isn't
+	// configured on this deployment.
+	DeleteCashFluxUser(context.Context, *CashFluxDeleteUserRequest) (*CashFluxDeleteUserResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -684,6 +709,9 @@ func (UnimplementedAdminServiceServer) ListCashFluxUsers(context.Context, *CashF
 }
 func (UnimplementedAdminServiceServer) GetCashFluxStorageStats(context.Context, *Empty) (*CashFluxStorageStats, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCashFluxStorageStats not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteCashFluxUser(context.Context, *CashFluxDeleteUserRequest) (*CashFluxDeleteUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteCashFluxUser not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -1282,6 +1310,24 @@ func _AdminService_GetCashFluxStorageStats_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_DeleteCashFluxUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxDeleteUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteCashFluxUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteCashFluxUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteCashFluxUser(ctx, req.(*CashFluxDeleteUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1416,6 +1462,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCashFluxStorageStats",
 			Handler:    _AdminService_GetCashFluxStorageStats_Handler,
+		},
+		{
+			MethodName: "DeleteCashFluxUser",
+			Handler:    _AdminService_DeleteCashFluxUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
