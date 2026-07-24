@@ -3,6 +3,7 @@
 package main
 
 import (
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -539,13 +540,18 @@ func resumeDocument(r *sitepb.Resume) ui.Node {
 
 // --- cashflux device pairing ---
 
-// cashfluxView renders the CashFlux device-pairing panel: the pending-devices list, each with
-// Pair/Reject actions, and — right after a successful Pair — a callout with the pairing code for the
-// human cross-check against the device's own display. configured is false when CashFlux embedding
-// isn't set up on this deployment, in which case everything else is skipped. busy is the set of
-// device ids currently mid-approve/reject (keyed by device_id, present+true = in flight) — a set
-// rather than a single id, so one row's in-flight request never re-enables another row's buttons.
-func cashfluxView(configured bool, pending []*sitepb.CashFluxPendingDevice, busy map[string]bool, justPaired *sitepb.CashFluxPendingDevice, pairingCode string, copied bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string), onCopy ui.Handler) ui.Node {
+// cashfluxView renders the CashFlux admin panel: the pending-devices list, each with Pair/Reject
+// actions, and — right after a successful Pair — a callout with the pairing code for the human
+// cross-check against the device's own display; below that, the storage stats (database +
+// artifact-blob sizes) and the enrolled-users list (signup date, provider, subscription, this
+// month's request volume, with a "load more" action). configured is false when CashFlux embedding
+// isn't set up on this deployment, in which case everything else is skipped. busy is the set of device ids
+// currently mid-approve/reject (keyed by device_id, present+true = in flight) — a set rather than a
+// single id, so one row's in-flight request never re-enables another row's buttons. users/usersMore/
+// usersLoading/onLoadMoreUsers drive the users list's single page + "load more" action; storage is
+// nil until the storage-stats call returns (storageStatsSection renders nothing until then).
+func cashfluxView(configured bool, pending []*sitepb.CashFluxPendingDevice, busy map[string]bool, justPaired *sitepb.CashFluxPendingDevice, pairingCode string, copied bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string), onCopy ui.Handler,
+	users []*sitepb.CashFluxUser, usersMore bool, usersLoading bool, onLoadMoreUsers ui.Handler, storage *sitepb.CashFluxStorageStats) ui.Node {
 	if !configured {
 		return Div(Class(Flex, FlexCol, Gap(Spacing2)),
 			sectionLabel("cashflux pending devices"),
@@ -564,7 +570,118 @@ func cashfluxView(configured bool, pending []*sitepb.CashFluxPendingDevice, busy
 		sections = append(sections, pairedCodeCallout(justPaired, pairingCode, copied, onCopy))
 	}
 	sections = append(sections, pendingDeviceList(pending, busy, onApprove, onReject))
+	sections = append(sections, storageStatsSection(storage))
+	sections = append(sections, usersSection(users, usersMore, usersLoading, onLoadMoreUsers))
 	return Div(sections...)
+}
+
+// storageStatsSection renders the two on-disk-size numbers (database + artifact blobs) as a small
+// stat row, human-readable rather than raw byte counts. nil (stats not loaded yet) renders nothing.
+func storageStatsSection(stats *sitepb.CashFluxStorageStats) ui.Node {
+	if stats == nil {
+		return Span()
+	}
+	return Div(Class(Flex, FlexCol, Gap(Spacing2)),
+		sectionLabel("storage"),
+		Div(Class(Flex, Gap(Spacing3), css.Raw("flex-wrap", "wrap")),
+			storageStatTile("Database", formatBytes(stats.GetDbBytes())),
+			storageStatTile("Artifact blobs", formatBytes(stats.GetBlobBytes())),
+		),
+	)
+}
+
+// storageStatTile renders one labeled size figure.
+func storageStatTile(label, value string) ui.Node {
+	return Div(Class(Flex, FlexCol, Gap(Spacing1), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing4), PadY(Spacing3), MinWidth(Px(160))),
+		Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em"), css.Raw("text-transform", "uppercase")), label),
+		Span(Class(FontSize(Rem(1.3)), FontSemibold, Fg(theme.Fg)), value),
+	)
+}
+
+// usersSection renders the enrolled-users list: signup date, provider, email (or id when no email is
+// on file), subscription plan/status, and this calendar month's request volume — plus a "load more"
+// action when the last page came back full.
+func usersSection(users []*sitepb.CashFluxUser, more bool, loading bool, onLoadMore ui.Handler) ui.Node {
+	rows := []any{Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(760))),
+		sectionLabel("users (" + strconv.Itoa(len(users)) + ")"),
+	}
+	if len(users) == 0 {
+		rows = append(rows, P(Class(Fg(theme.Dim), TextSize(TextSm)), "No one has signed up yet."))
+		return Div(rows...)
+	}
+	list := []any{Class(Flex, FlexCol, Gap(Spacing2))}
+	for _, u := range users {
+		list = append(list, userRow(u))
+	}
+	rows = append(rows, Div(list...))
+	if more {
+		label := "Load more"
+		if loading {
+			label = "Loading…"
+		}
+		rows = append(rows, ghostButton(label, onLoadMore))
+	}
+	return Div(rows...)
+}
+
+// userRow renders one enrolled account as a scannable row: who (email, falling back to id, plus
+// provider), when they signed up, their subscription (when set), and this month's request volume.
+func userRow(u *sitepb.CashFluxUser) ui.Node {
+	who := u.GetEmail()
+	if who == "" {
+		who = u.GetId()
+	}
+	signedUp := "unknown signup date"
+	if t := u.GetCreatedAt(); t > 0 {
+		signedUp = "joined " + time.Unix(t, 0).Format("Jan 2, 2006")
+	}
+	meta := signedUp
+	if p := u.GetProvider(); p != "" {
+		meta += " · " + p
+	}
+	if plan := u.GetSubscriptionPlan(); plan != "" {
+		meta += " · " + plan
+		if s := u.GetSubscriptionStatus(); s != "" {
+			meta += " (" + s + ")"
+		}
+	}
+	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
+		Div(Class(Flex, FlexCol, Gap(Spacing1)),
+			Span(Class(FontSemibold, TextSize(TextSm)), who),
+			Span(Class(TextSize(TextSm), Fg(theme.Dim)), meta),
+		),
+		Div(Class(Flex, FlexCol, Gap(Spacing1), css.Raw("text-align", "right")),
+			Span(Class(FontSemibold, TextSize(TextSm), Fg(theme.Accent2)), strconv.FormatInt(u.GetRequestsThisMonth(), 10)),
+			Span(Class(TextSize(TextXs), Fg(theme.Faint)), "requests this month"),
+		),
+	)
+}
+
+// byteUnits are the binary-size unit suffixes used by formatBytes, indexed by power of 1024 above
+// bytes — KB..EB is enough to cover the full int64 range, so the index is always in bounds.
+var byteUnits = []string{"KB", "MB", "GB", "TB", "PB", "EB"}
+
+// formatBytes renders a byte count as a human-readable size (e.g. "42.3 MB"), not a raw number.
+func formatBytes(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return strconv.FormatInt(n, 10) + " B"
+	}
+	div, exp := int64(unit), 0
+	for v := n / unit; v >= unit; v /= unit {
+		div *= unit
+		exp++
+	}
+	v := float64(n) / float64(div)
+	// A value a whisker under a unit boundary (e.g. 1048575 bytes, one byte short of 1 MiB) can
+	// still round UP to the next unit at 1-decimal precision (1023.999... -> "1024.0"). Bump the
+	// unit in that case so it reads "1.0 MB" rather than the wrong "1024.0 KB".
+	if r := math.Round(v*10) / 10; r >= unit && exp < len(byteUnits)-1 {
+		exp++
+		div *= unit
+		v = float64(n) / float64(div)
+	}
+	return strconv.FormatFloat(v, 'f', 1, 64) + " " + byteUnits[exp]
 }
 
 // pairedCodeCallout highlights the pairing code from the most recent approval — large, monospace,

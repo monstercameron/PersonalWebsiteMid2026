@@ -85,6 +85,14 @@ service AdminService {
   // RejectCashFluxPairing declines a pending device request. rejected is false when the request was
   // already resolved or expired — that is not an error.
   rpc RejectCashFluxPairing(CashFluxRejectPairingRequest) returns (CashFluxRejectPairingResponse);
+  // ListCashFluxUsers returns a page of enrolled CashFlux accounts, newest first, each carrying its
+  // current calendar month's request volume. Fails FailedPrecondition when CashFlux embedding isn't
+  // configured on this deployment.
+  rpc ListCashFluxUsers(CashFluxListUsersRequest) returns (CashFluxUserList);
+  // GetCashFluxStorageStats reports the embedded CashFlux database's on-disk size and the total size
+  // of every stored artifact blob. Fails FailedPrecondition when CashFlux embedding isn't configured
+  // on this deployment.
+  rpc GetCashFluxStorageStats(Empty) returns (CashFluxStorageStats);
 }
 
 // PromptText carries the single QOTD generation instruction.
@@ -325,4 +333,36 @@ message CashFluxRejectPairingRequest {
 // CashFluxRejectPairingResponse reports whether the rejection landed.
 message CashFluxRejectPairingResponse {
   bool rejected = 1;
+}
+
+// --- CashFlux users + storage ---
+
+// CashFluxListUsersRequest pages through enrolled CashFlux accounts. limit <= 0 defaults server-side;
+// offset < 0 is treated as 0.
+message CashFluxListUsersRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+// CashFluxUser is one enrolled CashFlux account, with its current calendar month's request volume.
+message CashFluxUser {
+  string id = 1;
+  string provider = 2;
+  string email = 3;
+  int64 created_at = 4; // unix seconds
+  string subscription_plan = 5;
+  string subscription_status = 6;
+  int64 requests_this_month = 7;
+}
+
+// CashFluxUserList is one page of enrolled accounts, newest first.
+message CashFluxUserList {
+  repeated CashFluxUser items = 1;
+}
+
+// CashFluxStorageStats reports on-disk storage usage: the SQLite database's own size and the total
+// size of every stored artifact blob, in bytes.
+message CashFluxStorageStats {
+  int64 db_bytes = 1;
+  int64 blob_bytes = 2;
 }

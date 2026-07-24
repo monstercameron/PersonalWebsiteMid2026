@@ -30,6 +30,14 @@ type fakeCashFluxAdmin struct {
 	rejectRejected bool
 	rejectErr      error
 	rejectDeviceID string // records the deviceID the last RejectPairing call was made with
+
+	users     []cashfluxembed.User
+	usersErr  error
+	usersLim  int // records the limit the last ListUsers call was made with
+	usersOff  int // records the offset the last ListUsers call was made with
+	dbBytes   int64
+	blobBytes int64
+	statsErr  error
 }
 
 func (f *fakeCashFluxAdmin) ListPendingDevices() ([]cashfluxembed.PendingDevice, error) {
@@ -44,6 +52,15 @@ func (f *fakeCashFluxAdmin) ApprovePairing(deviceID string) (bool, string, error
 func (f *fakeCashFluxAdmin) RejectPairing(deviceID string) (bool, error) {
 	f.rejectDeviceID = deviceID
 	return f.rejectRejected, f.rejectErr
+}
+
+func (f *fakeCashFluxAdmin) ListUsers(limit, offset int) ([]cashfluxembed.User, error) {
+	f.usersLim, f.usersOff = limit, offset
+	return f.users, f.usersErr
+}
+
+func (f *fakeCashFluxAdmin) StorageStats() (int64, int64, error) {
+	return f.dbBytes, f.blobBytes, f.statsErr
 }
 
 func newCashFluxTestService(t *testing.T, cf CashFluxAdmin) *Service {
@@ -69,6 +86,12 @@ func TestCashFluxRPCsFailPreconditionWhenNotConfigured(t *testing.T) {
 	}
 	if _, err := svc.RejectCashFluxPairing(ctx, &sitepb.CashFluxRejectPairingRequest{DeviceId: "d1"}); status.Code(err) != codes.FailedPrecondition {
 		t.Fatalf("RejectCashFluxPairing: err = %v, want FailedPrecondition", err)
+	}
+	if _, err := svc.ListCashFluxUsers(ctx, &sitepb.CashFluxListUsersRequest{}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("ListCashFluxUsers: err = %v, want FailedPrecondition", err)
+	}
+	if _, err := svc.GetCashFluxStorageStats(ctx, &sitepb.Empty{}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("GetCashFluxStorageStats: err = %v, want FailedPrecondition", err)
 	}
 }
 
@@ -191,6 +214,82 @@ func TestRejectCashFluxPairingPropagatesError(t *testing.T) {
 	fake := &fakeCashFluxAdmin{rejectErr: errors.New("store exploded")}
 	svc := newCashFluxTestService(t, fake)
 	if _, err := svc.RejectCashFluxPairing(context.Background(), &sitepb.CashFluxRejectPairingRequest{DeviceId: "dev-1"}); status.Code(err) != codes.Internal {
+		t.Fatalf("err = %v, want Internal", err)
+	}
+}
+
+// TestListCashFluxUsersMapsFieldsAndPassesLimitOffset proves every field maps onto the wire DTO
+// (including the created_at → unix-seconds conversion) and that the request's limit/offset reach
+// CashFluxAdmin.ListUsers unchanged — the server does no paging logic of its own, it's a pure
+// pass-through to pkg/embed.Admin.ListUsers (which owns the clamping).
+func TestListCashFluxUsersMapsFieldsAndPassesLimitOffset(t *testing.T) {
+	createdAt := time.Date(2026, time.July, 1, 12, 0, 0, 0, time.UTC)
+	fake := &fakeCashFluxAdmin{users: []cashfluxembed.User{
+		{ID: "u1", Provider: "device", Email: "cam@example.com", CreatedAt: createdAt,
+			SubscriptionPlan: "free", SubscriptionStatus: "active", RequestsThisMonth: 42},
+	}}
+	svc := newCashFluxTestService(t, fake)
+
+	resp, err := svc.ListCashFluxUsers(context.Background(), &sitepb.CashFluxListUsersRequest{Limit: 25, Offset: 50})
+	if err != nil {
+		t.Fatalf("ListCashFluxUsers: %v", err)
+	}
+	if fake.usersLim != 25 || fake.usersOff != 50 {
+		t.Fatalf("ListUsers called with limit=%d offset=%d, want 25/50", fake.usersLim, fake.usersOff)
+	}
+	if len(resp.GetItems()) != 1 {
+		t.Fatalf("items = %d, want 1", len(resp.GetItems()))
+	}
+	item := resp.GetItems()[0]
+	if item.GetId() != "u1" || item.GetProvider() != "device" || item.GetEmail() != "cam@example.com" {
+		t.Fatalf("item = %+v, want id/provider/email u1/device/cam@example.com", item)
+	}
+	if item.GetCreatedAt() != createdAt.Unix() {
+		t.Fatalf("CreatedAt = %d, want %d", item.GetCreatedAt(), createdAt.Unix())
+	}
+	if item.GetSubscriptionPlan() != "free" || item.GetSubscriptionStatus() != "active" {
+		t.Fatalf("subscription = %s/%s, want free/active", item.GetSubscriptionPlan(), item.GetSubscriptionStatus())
+	}
+	if item.GetRequestsThisMonth() != 42 {
+		t.Fatalf("RequestsThisMonth = %d, want 42", item.GetRequestsThisMonth())
+	}
+}
+
+func TestListCashFluxUsersEmpty(t *testing.T) {
+	svc := newCashFluxTestService(t, &fakeCashFluxAdmin{})
+	resp, err := svc.ListCashFluxUsers(context.Background(), &sitepb.CashFluxListUsersRequest{})
+	if err != nil {
+		t.Fatalf("ListCashFluxUsers: %v", err)
+	}
+	if len(resp.GetItems()) != 0 {
+		t.Fatalf("items = %d, want 0", len(resp.GetItems()))
+	}
+}
+
+func TestListCashFluxUsersPropagatesError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{usersErr: errors.New("db exploded")}
+	svc := newCashFluxTestService(t, fake)
+	if _, err := svc.ListCashFluxUsers(context.Background(), &sitepb.CashFluxListUsersRequest{}); status.Code(err) != codes.Internal {
+		t.Fatalf("err = %v, want Internal", err)
+	}
+}
+
+func TestGetCashFluxStorageStatsMapsFields(t *testing.T) {
+	fake := &fakeCashFluxAdmin{dbBytes: 12345, blobBytes: 67890}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.GetCashFluxStorageStats(context.Background(), &sitepb.Empty{})
+	if err != nil {
+		t.Fatalf("GetCashFluxStorageStats: %v", err)
+	}
+	if resp.GetDbBytes() != 12345 || resp.GetBlobBytes() != 67890 {
+		t.Fatalf("stats = %d/%d, want 12345/67890", resp.GetDbBytes(), resp.GetBlobBytes())
+	}
+}
+
+func TestGetCashFluxStorageStatsPropagatesError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{statsErr: errors.New("disk error")}
+	svc := newCashFluxTestService(t, fake)
+	if _, err := svc.GetCashFluxStorageStats(context.Background(), &sitepb.Empty{}); status.Code(err) != codes.Internal {
 		t.Fatalf("err = %v, want Internal", err)
 	}
 }

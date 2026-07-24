@@ -5,6 +5,22 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Admin console: CashFlux users + storage stats.** The same "cashflux" tab now shows the
+  enrolled-users list (email/id, provider, signup date, subscription plan/status, and current
+  calendar-month request volume — via CashFlux's new `pkg/embed.Admin.ListUsers`) and a storage
+  panel (database size + total artifact-blob size, human-readable via a new `formatBytes` helper —
+  via `pkg/embed.Admin.StorageStats`), below the existing pending-devices panel. Two new
+  owner-only `AdminService` RPCs, `ListCashFluxUsers` (paged; a single "Load more" button appends
+  further pages — no page-number UI, matching this deployment's small admin-invited user-set
+  scale) and `GetCashFluxStorageStats`, both behind the same FailedPrecondition-when-not-configured
+  gate as the rest of the CashFlux RPCs. `CashFluxAdmin` in `internal/admin` gained `ListUsers`/
+  `StorageStats`, mirroring `pkg/embed.Admin`'s signatures exactly (no adapter needed). Verified in
+  an isolated scratch environment (separate port/data dir, seeded users directly into the scratch
+  SQLite store, desktop + mobile screenshots) and by two sequential mandatory adversarial reviews,
+  which found and this shipped fixes for: (1) the two new RPC calls skipped the file's `onAuthErr`
+  session-expiry pattern; (2) `formatBytes` mis-rounded values a hair under a power-of-1024 (e.g.
+  `1048575` → "1024.0 KB" instead of "1.0 MB"); (3) a stale/then-misordered doc comment on
+  `cashfluxView` after its parameter list grew.
 - **Admin console: CashFlux pending-devices tab.** CashFlux dropped phone/SMS sign-in entirely
   (Twilio cost money, never signed up a real user) in favor of an admin-approved device-pairing
   bootstrap: an unauthenticated device asks to pair, and the owner approves or rejects it from here.

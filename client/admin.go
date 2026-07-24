@@ -13,6 +13,11 @@ import (
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
 
+// cashfluxUsersPageSize is the page size for the CashFlux user list — small enough to be a quick
+// call, large enough that most deployments (an admin-invited handful of accounts) never need
+// "load more" at all.
+const cashfluxUsersPageSize = 50
+
 // AdminApp is the root admin component: a login gate, then the console (anime / résumé / settings).
 func AdminApp() ui.Node {
 	token := ui.UseState(loadToken())
@@ -54,6 +59,12 @@ func AdminApp() ui.Node {
 	cashfluxJustPaired := ui.UseState[*sitepb.CashFluxPendingDevice](nil) // the device that was just approved
 	cashfluxPairingCode := ui.UseState("")                                // the pairing code from that approval, shown once until the tab reloads
 	cashfluxCopied := ui.UseState(false)                                  // flips true after a successful copy; reset on the next approval
+
+	// CashFlux users + storage (same tab, alongside pending-device pairing above)
+	cashfluxUsers := ui.UseState[[]*sitepb.CashFluxUser](nil)
+	cashfluxUsersMore := ui.UseState(false) // true when the last page came back full — more may exist
+	cashfluxUsersLoading := ui.UseState(false)
+	cashfluxStorage := ui.UseState[*sitepb.CashFluxStorageStats](nil)
 
 	// Auth flow: first-run setup + password reset (the owner has no session in these cases).
 	needsSetup := ui.UseState(false)
@@ -196,6 +207,28 @@ func AdminApp() ui.Node {
 				default:
 					cashfluxConfigured.Set(true)
 					cashfluxPending.Set(pending.GetItems())
+				}
+				// Users + storage stats load alongside pending devices — same tab, same gate.
+				cashfluxUsersLoading.Set(true)
+				users, err := c.ListCashFluxUsers(ctx, &sitepb.CashFluxListUsersRequest{Limit: cashfluxUsersPageSize})
+				cashfluxUsersLoading.Set(false)
+				switch {
+				case onAuthErr(err):
+					return
+				case err != nil:
+					flash.Set("couldn't load users: " + err.Error())
+				default:
+					cashfluxUsers.Set(users.GetItems())
+					cashfluxUsersMore.Set(len(users.GetItems()) == cashfluxUsersPageSize)
+				}
+				stats, err := c.GetCashFluxStorageStats(ctx, &sitepb.Empty{})
+				switch {
+				case onAuthErr(err):
+					return
+				case err != nil:
+					flash.Set("couldn't load storage stats: " + err.Error())
+				default:
+					cashfluxStorage.Set(stats)
 				}
 			}()
 		}
@@ -791,6 +824,35 @@ func AdminApp() ui.Node {
 			cashfluxCopied.Set(true)
 		}
 	})
+	// onLoadMoreUsers fetches the next page of CashFlux users (offset = however many are already
+	// shown) and appends it to the list — a single "load more" action rather than full pagination
+	// controls, matching this deployment's expected scale (an admin-invited handful of accounts).
+	onLoadMoreUsers := ui.UseEvent(func() {
+		offset := len(cashfluxUsers.Get())
+		cashfluxUsersLoading.Set(true)
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				cashfluxUsersLoading.Set(false)
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			resp, err := c.ListCashFluxUsers(ctx, &sitepb.CashFluxListUsersRequest{Limit: cashfluxUsersPageSize, Offset: int32(offset)})
+			cashfluxUsersLoading.Set(false)
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("couldn't load more users: " + err.Error())
+				return
+			}
+			next := append(append([]*sitepb.CashFluxUser{}, cashfluxUsers.Get()...), resp.GetItems()...)
+			cashfluxUsers.Set(next)
+			cashfluxUsersMore.Set(len(resp.GetItems()) == cashfluxUsersPageSize)
+		}()
+	})
 
 	var content ui.Node
 	switch view.Get() {
@@ -801,7 +863,8 @@ func AdminApp() ui.Node {
 	case "rss":
 		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), slackHour, onToggleSlack, onSaveSlack, onPostNow)
 	case "cashflux":
-		content = cashfluxView(cashfluxConfigured.Get(), cashfluxPending.Get(), cashfluxBusy.Get(), cashfluxJustPaired.Get(), cashfluxPairingCode.Get(), cashfluxCopied.Get(), onApprovePairing, onRejectPairing, onCopyPairingCode)
+		content = cashfluxView(cashfluxConfigured.Get(), cashfluxPending.Get(), cashfluxBusy.Get(), cashfluxJustPaired.Get(), cashfluxPairingCode.Get(), cashfluxCopied.Get(), onApprovePairing, onRejectPairing, onCopyPairingCode,
+			cashfluxUsers.Get(), cashfluxUsersMore.Get(), cashfluxUsersLoading.Get(), onLoadMoreUsers, cashfluxStorage.Get())
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}

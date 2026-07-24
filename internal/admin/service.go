@@ -33,6 +33,8 @@ type CashFluxAdmin interface {
 	ListPendingDevices() ([]cashfluxembed.PendingDevice, error)
 	ApprovePairing(deviceID string) (approved bool, pairingCode string, err error)
 	RejectPairing(deviceID string) (rejected bool, err error)
+	ListUsers(limit, offset int) ([]cashfluxembed.User, error)
+	StorageStats() (dbBytes, blobBytes int64, err error)
 }
 
 // Service implements sitepb.AdminServiceServer — the anime tracker and résumé tailoring data plane.
@@ -584,6 +586,40 @@ func (s *Service) RejectCashFluxPairing(_ context.Context, req *sitepb.CashFluxR
 		return nil, status.Errorf(codes.Internal, "reject pairing failed: %v", err)
 	}
 	return &sitepb.CashFluxRejectPairingResponse{Rejected: rejected}, nil
+}
+
+// ListCashFluxUsers returns a page of enrolled CashFlux accounts, newest first, each carrying its
+// current calendar month's request volume — the admin console's user list.
+func (s *Service) ListCashFluxUsers(_ context.Context, req *sitepb.CashFluxListUsersRequest) (*sitepb.CashFluxUserList, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	users, err := s.cashflux.ListUsers(int(req.GetLimit()), int(req.GetOffset()))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list users failed: %v", err)
+	}
+	out := &sitepb.CashFluxUserList{}
+	for _, u := range users {
+		out.Items = append(out.Items, &sitepb.CashFluxUser{
+			Id: u.ID, Provider: u.Provider, Email: u.Email, CreatedAt: u.CreatedAt.Unix(),
+			SubscriptionPlan: u.SubscriptionPlan, SubscriptionStatus: u.SubscriptionStatus,
+			RequestsThisMonth: u.RequestsThisMonth,
+		})
+	}
+	return out, nil
+}
+
+// GetCashFluxStorageStats reports the embedded CashFlux database's on-disk size and the total size of
+// every stored artifact blob — the admin console's storage panel.
+func (s *Service) GetCashFluxStorageStats(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxStorageStats, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	dbBytes, blobBytes, err := s.cashflux.StorageStats()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "storage stats failed: %v", err)
+	}
+	return &sitepb.CashFluxStorageStats{DbBytes: dbBytes, BlobBytes: blobBytes}, nil
 }
 
 // unmarshalResult decodes a stored TailorResult (protojson), returning an empty result on error.

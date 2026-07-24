@@ -48,6 +48,8 @@ const (
 	AdminService_ListCashFluxPendingDevices_FullMethodName = "/site.v1.AdminService/ListCashFluxPendingDevices"
 	AdminService_ApproveCashFluxPairing_FullMethodName     = "/site.v1.AdminService/ApproveCashFluxPairing"
 	AdminService_RejectCashFluxPairing_FullMethodName      = "/site.v1.AdminService/RejectCashFluxPairing"
+	AdminService_ListCashFluxUsers_FullMethodName          = "/site.v1.AdminService/ListCashFluxUsers"
+	AdminService_GetCashFluxStorageStats_FullMethodName    = "/site.v1.AdminService/GetCashFluxStorageStats"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -133,6 +135,14 @@ type AdminServiceClient interface {
 	// RejectCashFluxPairing declines a pending device request. rejected is false when the request was
 	// already resolved or expired — that is not an error.
 	RejectCashFluxPairing(ctx context.Context, in *CashFluxRejectPairingRequest, opts ...grpc.CallOption) (*CashFluxRejectPairingResponse, error)
+	// ListCashFluxUsers returns a page of enrolled CashFlux accounts, newest first, each carrying its
+	// current calendar month's request volume. Fails FailedPrecondition when CashFlux embedding isn't
+	// configured on this deployment.
+	ListCashFluxUsers(ctx context.Context, in *CashFluxListUsersRequest, opts ...grpc.CallOption) (*CashFluxUserList, error)
+	// GetCashFluxStorageStats reports the embedded CashFlux database's on-disk size and the total size
+	// of every stored artifact blob. Fails FailedPrecondition when CashFlux embedding isn't configured
+	// on this deployment.
+	GetCashFluxStorageStats(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxStorageStats, error)
 }
 
 type adminServiceClient struct {
@@ -433,6 +443,26 @@ func (c *adminServiceClient) RejectCashFluxPairing(ctx context.Context, in *Cash
 	return out, nil
 }
 
+func (c *adminServiceClient) ListCashFluxUsers(ctx context.Context, in *CashFluxListUsersRequest, opts ...grpc.CallOption) (*CashFluxUserList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxUserList)
+	err := c.cc.Invoke(ctx, AdminService_ListCashFluxUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetCashFluxStorageStats(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxStorageStats, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxStorageStats)
+	err := c.cc.Invoke(ctx, AdminService_GetCashFluxStorageStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -516,6 +546,14 @@ type AdminServiceServer interface {
 	// RejectCashFluxPairing declines a pending device request. rejected is false when the request was
 	// already resolved or expired — that is not an error.
 	RejectCashFluxPairing(context.Context, *CashFluxRejectPairingRequest) (*CashFluxRejectPairingResponse, error)
+	// ListCashFluxUsers returns a page of enrolled CashFlux accounts, newest first, each carrying its
+	// current calendar month's request volume. Fails FailedPrecondition when CashFlux embedding isn't
+	// configured on this deployment.
+	ListCashFluxUsers(context.Context, *CashFluxListUsersRequest) (*CashFluxUserList, error)
+	// GetCashFluxStorageStats reports the embedded CashFlux database's on-disk size and the total size
+	// of every stored artifact blob. Fails FailedPrecondition when CashFlux embedding isn't configured
+	// on this deployment.
+	GetCashFluxStorageStats(context.Context, *Empty) (*CashFluxStorageStats, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -612,6 +650,12 @@ func (UnimplementedAdminServiceServer) ApproveCashFluxPairing(context.Context, *
 }
 func (UnimplementedAdminServiceServer) RejectCashFluxPairing(context.Context, *CashFluxRejectPairingRequest) (*CashFluxRejectPairingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RejectCashFluxPairing not implemented")
+}
+func (UnimplementedAdminServiceServer) ListCashFluxUsers(context.Context, *CashFluxListUsersRequest) (*CashFluxUserList, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCashFluxUsers not implemented")
+}
+func (UnimplementedAdminServiceServer) GetCashFluxStorageStats(context.Context, *Empty) (*CashFluxStorageStats, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCashFluxStorageStats not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -1156,6 +1200,42 @@ func _AdminService_RejectCashFluxPairing_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListCashFluxUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxListUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListCashFluxUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListCashFluxUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListCashFluxUsers(ctx, req.(*CashFluxListUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetCashFluxStorageStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetCashFluxStorageStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetCashFluxStorageStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetCashFluxStorageStats(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1278,6 +1358,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RejectCashFluxPairing",
 			Handler:    _AdminService_RejectCashFluxPairing_Handler,
+		},
+		{
+			MethodName: "ListCashFluxUsers",
+			Handler:    _AdminService_ListCashFluxUsers_Handler,
+		},
+		{
+			MethodName: "GetCashFluxStorageStats",
+			Handler:    _AdminService_GetCashFluxStorageStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

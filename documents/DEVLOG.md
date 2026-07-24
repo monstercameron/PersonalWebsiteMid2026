@@ -2,6 +2,52 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-24 — CashFlux admin tab: enrolled users + storage stats
+
+Cam asked for more on the same `/admin` "cashflux" tab, alongside the pending-device panel from
+earlier today: who's signed up, their request volume per month, and how big the database and blob
+storage have gotten. CashFlux's own `pkg/embed.Admin` already grew exactly this — `ListUsers(limit,
+offset int) ([]User, error)` (each row carrying `RequestsThisMonth`, summed server-side from the
+current calendar month's usage rows) and `StorageStats() (dbBytes, blobBytes int64, err error)` —
+already built, tested, and pushed on CashFlux's own `main`, so this was pure consumption: extend
+`CashFluxAdmin` in `internal/admin/service.go` with those two methods (mirroring `pkg/embed.Admin`'s
+signatures exactly, same trick as the pending-devices work — the real `*cashfluxembed.Admin` value
+satisfies the interface with no adapter), two new `AdminService` RPCs (`ListCashFluxUsers`,
+`GetCashFluxStorageStats`) behind the same `errCashFluxNotConfigured` FailedPrecondition-when-nil
+gate as the rest of the CashFlux RPCs, and a client-side users list + storage-stat tiles on the same
+tab, right below the pending-devices panel.
+
+Pagination got a deliberately small answer: this deployment's target scale is an admin-invited
+handful of accounts (per `pkg/embed.Admin`'s own doc comments), so the client fetches one page of 50
+on tab load and shows a single "Load more" button (appending, not replacing) only if the page came
+back full — no page-number controls, no cursor state, nothing this deployment will ever need.
+Storage sizes render through a small `formatBytes` helper (binary units, KB..EB) rather than raw byte
+counts — checked first and confirmed no such helper existed anywhere in the codebase yet.
+
+Verified in an isolated scratch copy (never `bin/server.exe` or `web/data/` — a separate scratch
+directory tree with its own `LISTEN_ADDR` (port 8099), `DB_PATH`, and `CASHFLUX_DATA_DIR`, built via
+plain `go build -o` to that tree). Seeded a few fake users/usage/subscription rows directly into the
+scratch `cashflux-server.db` (there's no way to drive real signups without a live device, same
+constraint the pending-devices work hit), logged in over the real gRPC tunnel, and screenshotted the
+cashflux tab at desktop and mobile widths — the storage tiles and user rows read exactly like the
+existing pending-device rows and stat-tile treatment elsewhere in the console: Aubergine palette, mono
+section labels, `theme.*` tokens throughout, no ad-hoc hex.
+
+The mandatory adversarial review (two sequential Sonnet passes) found three real, low-severity
+issues, all fixed: **(1)** the two new RPC calls in the tab's view-load effect skipped the file's
+`onAuthErr` pattern, so an expired session during that load would silently do nothing instead of
+bouncing to the login screen like every other call in the file — now routed through the same
+auth-error switch as the pending-devices call right above it. **(2)** `formatBytes` had a classic
+boundary-rounding bug: a byte count a hair under a power-of-1024 (e.g. `1048575`, one byte short of 1
+MiB) rounded to `"1024.0 KB"` at 1-decimal precision instead of `"1.0 MB"` — fixed by checking the
+rounded value against the unit boundary and bumping to the next unit when it trips it (verified by
+hand against several boundaries, including the max int64 case, in the second review pass).
+**(3)** `cashfluxView`'s doc comment wasn't updated for its five new parameters (fixed), and on a
+second pass, the fixed comment described the storage-stats and users-list sections in the wrong
+render order (fixed again). The second review pass also independently reasoned through the
+`formatBytes` fix's edge cases (a value one byte under 1 GiB, and whether a double-bump across two
+unit boundaries is possible) and found it sound.
+
 ## 2026-07-24 — CashFlux dropped phone/SMS; the admin tab follows: pending-device pairing
 
 CashFlux's own repo (separate, concurrent work — see its own DEVLOG) ripped phone/SMS sign-in out
