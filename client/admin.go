@@ -60,6 +60,14 @@ func AdminApp() ui.Node {
 	cashfluxPairingCode := ui.UseState("")                                // the pairing code from that approval, shown once until the tab reloads
 	cashfluxCopied := ui.UseState(false)                                  // flips true after a successful copy; reset on the next approval
 
+	// CashFlux activation codes — the primary way a device gets in. Held until the tab reloads or
+	// another code is minted; each one is single-use and short-lived, so a stale one on screen is
+	// harmless, not a secret worth clearing eagerly.
+	cashfluxActivationCode := ui.UseState("")
+	cashfluxActivationExpires := ui.UseState("") // RFC3339 from the server; "" when nothing is minted
+	cashfluxActivationMinting := ui.UseState(false)
+	cashfluxActivationCopied := ui.UseState(false)
+
 	// CashFlux users + storage (same tab, alongside pending-device pairing above)
 	cashfluxUsers := ui.UseState[[]*sitepb.CashFluxUser](nil)
 	cashfluxUsersMore := ui.UseState(false) // true when the last page came back full — more may exist
@@ -186,6 +194,11 @@ func AdminApp() ui.Node {
 			cashfluxJustPaired.Set(nil)
 			cashfluxPairingCode.Set("")
 			cashfluxCopied.Set(false)
+			// Same reasoning for the activation code: a code minted on a previous visit has almost
+			// certainly expired (5-minute TTL), so showing it again would invite typing a dead code.
+			cashfluxActivationCode.Set("")
+			cashfluxActivationExpires.Set("")
+			cashfluxActivationCopied.Set(false)
 			go func() {
 				c, err := adminClient()
 				if err != nil {
@@ -824,6 +837,43 @@ func AdminApp() ui.Node {
 			cashfluxCopied.Set(true)
 		}
 	})
+	// onMintActivationCode mints a fresh activation code for the owner account. Codes are single-use
+	// and expire, so re-minting is always safe — the previous one simply goes unused.
+	onMintActivationCode := ui.UseEvent(func() {
+		if cashfluxActivationMinting.Get() {
+			return
+		}
+		flash.Set("")
+		cashfluxActivationMinting.Set(true)
+		cashfluxActivationCopied.Set(false)
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				cashfluxActivationMinting.Set(false)
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			resp, err := c.MintCashFluxActivationCode(ctx, &sitepb.Empty{})
+			cashfluxActivationMinting.Set(false)
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("couldn't generate a code: " + err.Error())
+				return
+			}
+			cashfluxActivationCode.Set(resp.GetCode())
+			cashfluxActivationExpires.Set(resp.GetExpiresAt())
+		}()
+	})
+	onCopyActivationCode := ui.WrapHandler(func() {
+		if code := cashfluxActivationCode.Get(); code != "" {
+			copyToClipboard(code)
+			cashfluxActivationCopied.Set(true)
+		}
+	})
 	// onLoadMoreUsers fetches the next page of CashFlux users (offset = however many are already
 	// shown) and appends it to the list — a single "load more" action rather than full pagination
 	// controls, matching this deployment's expected scale (an admin-invited handful of accounts).
@@ -863,7 +913,14 @@ func AdminApp() ui.Node {
 	case "rss":
 		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), slackHour, onToggleSlack, onSaveSlack, onPostNow)
 	case "cashflux":
-		content = cashfluxView(cashfluxConfigured.Get(), cashfluxPending.Get(), cashfluxBusy.Get(), cashfluxJustPaired.Get(), cashfluxPairingCode.Get(), cashfluxCopied.Get(), onApprovePairing, onRejectPairing, onCopyPairingCode,
+		content = cashfluxView(cashfluxConfigured.Get(), activationCodeState{
+			Code:      cashfluxActivationCode.Get(),
+			ExpiresAt: cashfluxActivationExpires.Get(),
+			Minting:   cashfluxActivationMinting.Get(),
+			Copied:    cashfluxActivationCopied.Get(),
+			OnMint:    onMintActivationCode,
+			OnCopy:    onCopyActivationCode,
+		}, cashfluxPending.Get(), cashfluxBusy.Get(), cashfluxJustPaired.Get(), cashfluxPairingCode.Get(), cashfluxCopied.Get(), onApprovePairing, onRejectPairing, onCopyPairingCode,
 			cashfluxUsers.Get(), cashfluxUsersMore.Get(), cashfluxUsersLoading.Get(), onLoadMoreUsers, cashfluxStorage.Get())
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)

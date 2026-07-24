@@ -19,6 +19,11 @@ import (
 // fakeCashFluxAdmin is a CashFluxAdmin test double — no real embedded CashFlux store is needed to
 // test Service's RPC mapping and error handling.
 type fakeCashFluxAdmin struct {
+	activationCode      string
+	activationExpiresAt time.Time
+	activationErr       error
+	activationCalls     int // records how many times MintActivationCode was called
+
 	devices    []cashfluxembed.PendingDevice
 	devicesErr error
 
@@ -38,6 +43,11 @@ type fakeCashFluxAdmin struct {
 	dbBytes   int64
 	blobBytes int64
 	statsErr  error
+}
+
+func (f *fakeCashFluxAdmin) MintActivationCode() (string, time.Time, error) {
+	f.activationCalls++
+	return f.activationCode, f.activationExpiresAt, f.activationErr
 }
 
 func (f *fakeCashFluxAdmin) ListPendingDevices() ([]cashfluxembed.PendingDevice, error) {
@@ -291,5 +301,56 @@ func TestGetCashFluxStorageStatsPropagatesError(t *testing.T) {
 	svc := newCashFluxTestService(t, fake)
 	if _, err := svc.GetCashFluxStorageStats(context.Background(), &sitepb.Empty{}); status.Code(err) != codes.Internal {
 		t.Fatalf("err = %v, want Internal", err)
+	}
+}
+
+func TestMintCashFluxActivationCodeMapsFields(t *testing.T) {
+	expires := time.Date(2026, 7, 24, 19, 30, 0, 0, time.UTC)
+	fake := &fakeCashFluxAdmin{activationCode: "482915", activationExpiresAt: expires}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.MintCashFluxActivationCode(context.Background(), &sitepb.Empty{})
+	if err != nil {
+		t.Fatalf("MintCashFluxActivationCode: %v", err)
+	}
+	if resp.GetCode() != "482915" {
+		t.Fatalf("code = %q, want 482915", resp.GetCode())
+	}
+	if got, want := resp.GetExpiresAt(), expires.Format(time.RFC3339); got != want {
+		t.Fatalf("expiresAt = %q, want %q", got, want)
+	}
+	if fake.activationCalls != 1 {
+		t.Fatalf("MintActivationCode called %d times, want 1", fake.activationCalls)
+	}
+}
+
+// TestMintCashFluxActivationCodeNormalizesExpiryToUTC proves the wire value is always UTC, so the
+// admin console never renders an expiry in whatever zone the server process happens to run in.
+func TestMintCashFluxActivationCodeNormalizesExpiryToUTC(t *testing.T) {
+	expires := time.Date(2026, 7, 24, 19, 30, 0, 0, time.FixedZone("EDT", -4*60*60))
+	fake := &fakeCashFluxAdmin{activationCode: "111111", activationExpiresAt: expires}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.MintCashFluxActivationCode(context.Background(), &sitepb.Empty{})
+	if err != nil {
+		t.Fatalf("MintCashFluxActivationCode: %v", err)
+	}
+	if got, want := resp.GetExpiresAt(), "2026-07-24T23:30:00Z"; got != want {
+		t.Fatalf("expiresAt = %q, want %q", got, want)
+	}
+}
+
+func TestMintCashFluxActivationCodePropagatesError(t *testing.T) {
+	fake := &fakeCashFluxAdmin{activationErr: errors.New("store closed")}
+	svc := newCashFluxTestService(t, fake)
+	if _, err := svc.MintCashFluxActivationCode(context.Background(), &sitepb.Empty{}); status.Code(err) != codes.Internal {
+		t.Fatalf("err = %v, want Internal", err)
+	}
+}
+
+// TestMintCashFluxActivationCodeUnconfigured proves a deployment with no embedded CashFlux reports
+// FailedPrecondition, the same as every other CashFlux RPC, rather than panicking on a nil handle.
+func TestMintCashFluxActivationCodeUnconfigured(t *testing.T) {
+	svc := newCashFluxTestService(t, nil)
+	if _, err := svc.MintCashFluxActivationCode(context.Background(), &sitepb.Empty{}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("err = %v, want FailedPrecondition", err)
 	}
 }

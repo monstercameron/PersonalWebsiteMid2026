@@ -74,6 +74,13 @@ service AdminService {
   // QOTD RSS feed.
   rpc PostToSlackNow(Empty) returns (Ack);
   // --- CashFlux device pairing (embedded admin-approved bootstrap) ---
+  // MintCashFluxActivationCode mints a short-lived, single-use activation code bound to this
+  // deployment's single CashFlux owner account (created on the first call). Typed into any CashFlux
+  // client's Settings -> Cloud, it turns that device into a signed-in one — no pending request to
+  // approve first, and every code lands in the SAME account so all activated devices sync together.
+  // Being able to mint one is the whole access control: it requires an admin session on this site.
+  // Fails FailedPrecondition when CashFlux embedding isn't configured on this deployment.
+  rpc MintCashFluxActivationCode(Empty) returns (CashFluxActivationCode);
   // ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first. Fails
   // FailedPrecondition when CashFlux embedding isn't configured on this deployment.
   rpc ListCashFluxPendingDevices(Empty) returns (CashFluxPendingDeviceList);
@@ -311,6 +318,13 @@ message CashFluxPendingDevice {
 // CashFluxPendingDeviceList is unresolved pairing requests, oldest first.
 message CashFluxPendingDeviceList {
   repeated CashFluxPendingDevice items = 1;
+}
+
+// CashFluxActivationCode is a freshly minted, single-use activation code and the moment it stops
+// being redeemable (RFC3339, UTC).
+message CashFluxActivationCode {
+  string code = 1;
+  string expires_at = 2;
 }
 
 // CashFluxApprovePairingRequest identifies the pending device to approve.

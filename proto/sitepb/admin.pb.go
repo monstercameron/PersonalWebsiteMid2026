@@ -1870,6 +1870,60 @@ func (x *CashFluxPendingDeviceList) GetItems() []*CashFluxPendingDevice {
 	return nil
 }
 
+// CashFluxActivationCode is a freshly minted, single-use activation code and the moment it stops
+// being redeemable (RFC3339, UTC).
+type CashFluxActivationCode struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxActivationCode) Reset() {
+	*x = CashFluxActivationCode{}
+	mi := &file_admin_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxActivationCode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxActivationCode) ProtoMessage() {}
+
+func (x *CashFluxActivationCode) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxActivationCode.ProtoReflect.Descriptor instead.
+func (*CashFluxActivationCode) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *CashFluxActivationCode) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *CashFluxActivationCode) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
 // CashFluxApprovePairingRequest identifies the pending device to approve.
 type CashFluxApprovePairingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1880,7 +1934,7 @@ type CashFluxApprovePairingRequest struct {
 
 func (x *CashFluxApprovePairingRequest) Reset() {
 	*x = CashFluxApprovePairingRequest{}
-	mi := &file_admin_proto_msgTypes[31]
+	mi := &file_admin_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1892,7 +1946,7 @@ func (x *CashFluxApprovePairingRequest) String() string {
 func (*CashFluxApprovePairingRequest) ProtoMessage() {}
 
 func (x *CashFluxApprovePairingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[31]
+	mi := &file_admin_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1905,7 +1959,7 @@ func (x *CashFluxApprovePairingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxApprovePairingRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxApprovePairingRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{31}
+	return file_admin_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *CashFluxApprovePairingRequest) GetDeviceId() string {
@@ -1927,7 +1981,7 @@ type CashFluxApprovePairingResponse struct {
 
 func (x *CashFluxApprovePairingResponse) Reset() {
 	*x = CashFluxApprovePairingResponse{}
-	mi := &file_admin_proto_msgTypes[32]
+	mi := &file_admin_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1939,7 +1993,7 @@ func (x *CashFluxApprovePairingResponse) String() string {
 func (*CashFluxApprovePairingResponse) ProtoMessage() {}
 
 func (x *CashFluxApprovePairingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[32]
+	mi := &file_admin_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1952,7 +2006,7 @@ func (x *CashFluxApprovePairingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxApprovePairingResponse.ProtoReflect.Descriptor instead.
 func (*CashFluxApprovePairingResponse) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{32}
+	return file_admin_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *CashFluxApprovePairingResponse) GetApproved() bool {
@@ -1979,7 +2033,7 @@ type CashFluxRejectPairingRequest struct {
 
 func (x *CashFluxRejectPairingRequest) Reset() {
 	*x = CashFluxRejectPairingRequest{}
-	mi := &file_admin_proto_msgTypes[33]
+	mi := &file_admin_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1991,7 +2045,7 @@ func (x *CashFluxRejectPairingRequest) String() string {
 func (*CashFluxRejectPairingRequest) ProtoMessage() {}
 
 func (x *CashFluxRejectPairingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[33]
+	mi := &file_admin_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2004,7 +2058,7 @@ func (x *CashFluxRejectPairingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxRejectPairingRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxRejectPairingRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{33}
+	return file_admin_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *CashFluxRejectPairingRequest) GetDeviceId() string {
@@ -2024,7 +2078,7 @@ type CashFluxRejectPairingResponse struct {
 
 func (x *CashFluxRejectPairingResponse) Reset() {
 	*x = CashFluxRejectPairingResponse{}
-	mi := &file_admin_proto_msgTypes[34]
+	mi := &file_admin_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2036,7 +2090,7 @@ func (x *CashFluxRejectPairingResponse) String() string {
 func (*CashFluxRejectPairingResponse) ProtoMessage() {}
 
 func (x *CashFluxRejectPairingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[34]
+	mi := &file_admin_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2049,7 +2103,7 @@ func (x *CashFluxRejectPairingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxRejectPairingResponse.ProtoReflect.Descriptor instead.
 func (*CashFluxRejectPairingResponse) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{34}
+	return file_admin_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *CashFluxRejectPairingResponse) GetRejected() bool {
@@ -2071,7 +2125,7 @@ type CashFluxListUsersRequest struct {
 
 func (x *CashFluxListUsersRequest) Reset() {
 	*x = CashFluxListUsersRequest{}
-	mi := &file_admin_proto_msgTypes[35]
+	mi := &file_admin_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2083,7 +2137,7 @@ func (x *CashFluxListUsersRequest) String() string {
 func (*CashFluxListUsersRequest) ProtoMessage() {}
 
 func (x *CashFluxListUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[35]
+	mi := &file_admin_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2096,7 +2150,7 @@ func (x *CashFluxListUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxListUsersRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxListUsersRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{35}
+	return file_admin_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *CashFluxListUsersRequest) GetLimit() int32 {
@@ -2129,7 +2183,7 @@ type CashFluxUser struct {
 
 func (x *CashFluxUser) Reset() {
 	*x = CashFluxUser{}
-	mi := &file_admin_proto_msgTypes[36]
+	mi := &file_admin_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2141,7 +2195,7 @@ func (x *CashFluxUser) String() string {
 func (*CashFluxUser) ProtoMessage() {}
 
 func (x *CashFluxUser) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[36]
+	mi := &file_admin_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2154,7 +2208,7 @@ func (x *CashFluxUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxUser.ProtoReflect.Descriptor instead.
 func (*CashFluxUser) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{36}
+	return file_admin_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *CashFluxUser) GetId() string {
@@ -2216,7 +2270,7 @@ type CashFluxUserList struct {
 
 func (x *CashFluxUserList) Reset() {
 	*x = CashFluxUserList{}
-	mi := &file_admin_proto_msgTypes[37]
+	mi := &file_admin_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2228,7 +2282,7 @@ func (x *CashFluxUserList) String() string {
 func (*CashFluxUserList) ProtoMessage() {}
 
 func (x *CashFluxUserList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[37]
+	mi := &file_admin_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2241,7 +2295,7 @@ func (x *CashFluxUserList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxUserList.ProtoReflect.Descriptor instead.
 func (*CashFluxUserList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{37}
+	return file_admin_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *CashFluxUserList) GetItems() []*CashFluxUser {
@@ -2263,7 +2317,7 @@ type CashFluxStorageStats struct {
 
 func (x *CashFluxStorageStats) Reset() {
 	*x = CashFluxStorageStats{}
-	mi := &file_admin_proto_msgTypes[38]
+	mi := &file_admin_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2275,7 +2329,7 @@ func (x *CashFluxStorageStats) String() string {
 func (*CashFluxStorageStats) ProtoMessage() {}
 
 func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[38]
+	mi := &file_admin_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2288,7 +2342,7 @@ func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxStorageStats.ProtoReflect.Descriptor instead.
 func (*CashFluxStorageStats) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{38}
+	return file_admin_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *CashFluxStorageStats) GetDbBytes() int64 {
@@ -2446,7 +2500,11 @@ const file_admin_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\x03R\texpiresAt\"Q\n" +
 	"\x19CashFluxPendingDeviceList\x124\n" +
-	"\x05items\x18\x01 \x03(\v2\x1e.site.v1.CashFluxPendingDeviceR\x05items\"<\n" +
+	"\x05items\x18\x01 \x03(\v2\x1e.site.v1.CashFluxPendingDeviceR\x05items\"K\n" +
+	"\x16CashFluxActivationCode\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x02 \x01(\tR\texpiresAt\"<\n" +
 	"\x1dCashFluxApprovePairingRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"_\n" +
 	"\x1eCashFluxApprovePairingResponse\x12\x1a\n" +
@@ -2473,7 +2531,7 @@ const file_admin_proto_rawDesc = "" +
 	"\x14CashFluxStorageStats\x12\x19\n" +
 	"\bdb_bytes\x18\x01 \x01(\x03R\adbBytes\x12\x1d\n" +
 	"\n" +
-	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\xb9\x0e\n" +
+	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\x88\x0f\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x124\n" +
 	"\tAuthState\x12\x0e.site.v1.Empty\x1a\x17.site.v1.AuthStateReply\x123\n" +
@@ -2503,7 +2561,8 @@ const file_admin_proto_rawDesc = "" +
 	"\fDryRunPrompt\x12\x13.site.v1.PromptText\x1a\x14.site.v1.PostPreview\x126\n" +
 	"\x0eGetSlackConfig\x12\x0e.site.v1.Empty\x1a\x14.site.v1.SlackConfig\x125\n" +
 	"\x0fSaveSlackConfig\x12\x14.site.v1.SlackConfig\x1a\f.site.v1.Ack\x12.\n" +
-	"\x0ePostToSlackNow\x12\x0e.site.v1.Empty\x1a\f.site.v1.Ack\x12P\n" +
+	"\x0ePostToSlackNow\x12\x0e.site.v1.Empty\x1a\f.site.v1.Ack\x12M\n" +
+	"\x1aMintCashFluxActivationCode\x12\x0e.site.v1.Empty\x1a\x1f.site.v1.CashFluxActivationCode\x12P\n" +
 	"\x1aListCashFluxPendingDevices\x12\x0e.site.v1.Empty\x1a\".site.v1.CashFluxPendingDeviceList\x12i\n" +
 	"\x16ApproveCashFluxPairing\x12&.site.v1.CashFluxApprovePairingRequest\x1a'.site.v1.CashFluxApprovePairingResponse\x12f\n" +
 	"\x15RejectCashFluxPairing\x12%.site.v1.CashFluxRejectPairingRequest\x1a&.site.v1.CashFluxRejectPairingResponse\x12Q\n" +
@@ -2522,7 +2581,7 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
 var file_admin_proto_goTypes = []any{
 	(*PromptText)(nil),                     // 0: site.v1.PromptText
 	(*PostPreview)(nil),                    // 1: site.v1.PostPreview
@@ -2555,15 +2614,16 @@ var file_admin_proto_goTypes = []any{
 	(*Rationale)(nil),                      // 28: site.v1.Rationale
 	(*CashFluxPendingDevice)(nil),          // 29: site.v1.CashFluxPendingDevice
 	(*CashFluxPendingDeviceList)(nil),      // 30: site.v1.CashFluxPendingDeviceList
-	(*CashFluxApprovePairingRequest)(nil),  // 31: site.v1.CashFluxApprovePairingRequest
-	(*CashFluxApprovePairingResponse)(nil), // 32: site.v1.CashFluxApprovePairingResponse
-	(*CashFluxRejectPairingRequest)(nil),   // 33: site.v1.CashFluxRejectPairingRequest
-	(*CashFluxRejectPairingResponse)(nil),  // 34: site.v1.CashFluxRejectPairingResponse
-	(*CashFluxListUsersRequest)(nil),       // 35: site.v1.CashFluxListUsersRequest
-	(*CashFluxUser)(nil),                   // 36: site.v1.CashFluxUser
-	(*CashFluxUserList)(nil),               // 37: site.v1.CashFluxUserList
-	(*CashFluxStorageStats)(nil),           // 38: site.v1.CashFluxStorageStats
-	(*Ack)(nil),                            // 39: site.v1.Ack
+	(*CashFluxActivationCode)(nil),         // 31: site.v1.CashFluxActivationCode
+	(*CashFluxApprovePairingRequest)(nil),  // 32: site.v1.CashFluxApprovePairingRequest
+	(*CashFluxApprovePairingResponse)(nil), // 33: site.v1.CashFluxApprovePairingResponse
+	(*CashFluxRejectPairingRequest)(nil),   // 34: site.v1.CashFluxRejectPairingRequest
+	(*CashFluxRejectPairingResponse)(nil),  // 35: site.v1.CashFluxRejectPairingResponse
+	(*CashFluxListUsersRequest)(nil),       // 36: site.v1.CashFluxListUsersRequest
+	(*CashFluxUser)(nil),                   // 37: site.v1.CashFluxUser
+	(*CashFluxUserList)(nil),               // 38: site.v1.CashFluxUserList
+	(*CashFluxStorageStats)(nil),           // 39: site.v1.CashFluxStorageStats
+	(*Ack)(nil),                            // 40: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
 	4,  // 0: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
@@ -2575,7 +2635,7 @@ var file_admin_proto_depIdxs = []int32{
 	27, // 6: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
 	28, // 7: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
 	29, // 8: site.v1.CashFluxPendingDeviceList.items:type_name -> site.v1.CashFluxPendingDevice
-	36, // 9: site.v1.CashFluxUserList.items:type_name -> site.v1.CashFluxUser
+	37, // 9: site.v1.CashFluxUserList.items:type_name -> site.v1.CashFluxUser
 	9,  // 10: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
 	8,  // 11: site.v1.AdminService.AuthState:input_type -> site.v1.Empty
 	12, // 12: site.v1.AdminService.Setup:input_type -> site.v1.SetupRequest
@@ -2602,44 +2662,46 @@ var file_admin_proto_depIdxs = []int32{
 	8,  // 33: site.v1.AdminService.GetSlackConfig:input_type -> site.v1.Empty
 	2,  // 34: site.v1.AdminService.SaveSlackConfig:input_type -> site.v1.SlackConfig
 	8,  // 35: site.v1.AdminService.PostToSlackNow:input_type -> site.v1.Empty
-	8,  // 36: site.v1.AdminService.ListCashFluxPendingDevices:input_type -> site.v1.Empty
-	31, // 37: site.v1.AdminService.ApproveCashFluxPairing:input_type -> site.v1.CashFluxApprovePairingRequest
-	33, // 38: site.v1.AdminService.RejectCashFluxPairing:input_type -> site.v1.CashFluxRejectPairingRequest
-	35, // 39: site.v1.AdminService.ListCashFluxUsers:input_type -> site.v1.CashFluxListUsersRequest
-	8,  // 40: site.v1.AdminService.GetCashFluxStorageStats:input_type -> site.v1.Empty
-	10, // 41: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	11, // 42: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
-	13, // 43: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
-	15, // 44: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
-	20, // 45: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	20, // 46: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	39, // 47: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	39, // 48: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	18, // 49: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	21, // 50: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	39, // 51: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	26, // 52: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	6,  // 53: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	39, // 54: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	7,  // 55: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	26, // 56: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	21, // 57: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
-	5,  // 58: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
-	26, // 59: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
-	39, // 60: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
-	0,  // 61: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
-	39, // 62: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
-	1,  // 63: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
-	2,  // 64: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
-	39, // 65: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
-	39, // 66: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
-	30, // 67: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
-	32, // 68: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
-	34, // 69: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
-	37, // 70: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
-	38, // 71: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
-	41, // [41:72] is the sub-list for method output_type
-	10, // [10:41] is the sub-list for method input_type
+	8,  // 36: site.v1.AdminService.MintCashFluxActivationCode:input_type -> site.v1.Empty
+	8,  // 37: site.v1.AdminService.ListCashFluxPendingDevices:input_type -> site.v1.Empty
+	32, // 38: site.v1.AdminService.ApproveCashFluxPairing:input_type -> site.v1.CashFluxApprovePairingRequest
+	34, // 39: site.v1.AdminService.RejectCashFluxPairing:input_type -> site.v1.CashFluxRejectPairingRequest
+	36, // 40: site.v1.AdminService.ListCashFluxUsers:input_type -> site.v1.CashFluxListUsersRequest
+	8,  // 41: site.v1.AdminService.GetCashFluxStorageStats:input_type -> site.v1.Empty
+	10, // 42: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	11, // 43: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
+	13, // 44: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
+	15, // 45: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
+	20, // 46: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	20, // 47: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	40, // 48: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	40, // 49: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	18, // 50: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	21, // 51: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	40, // 52: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	26, // 53: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	6,  // 54: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	40, // 55: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	7,  // 56: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	26, // 57: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	21, // 58: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	5,  // 59: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	26, // 60: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	40, // 61: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	0,  // 62: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
+	40, // 63: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
+	1,  // 64: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
+	2,  // 65: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
+	40, // 66: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
+	40, // 67: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
+	31, // 68: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
+	30, // 69: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
+	33, // 70: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
+	35, // 71: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
+	38, // 72: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
+	39, // 73: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
+	42, // [42:74] is the sub-list for method output_type
+	10, // [10:42] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -2657,7 +2719,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   39,
+			NumMessages:   40,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

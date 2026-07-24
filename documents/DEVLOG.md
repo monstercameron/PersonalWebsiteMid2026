@@ -426,3 +426,30 @@ episode), a seed TOCTOU race (→ unique index + INSERT OR IGNORE), prompt lengt
 redirect-host restriction. CashFlux reviewer caught a path-containment gap (stdlib-side-effect
 reliance) → explicit `filepath.Rel` guard. Verified in-browser: RSS panel + 50 prompts + Slack
 config, CashFlux dashboard boots at `/budget/`, both feeds valid XML. Tests + vet green.
+
+## 2026-07-24 — Activation codes for the embedded CashFlux
+
+**Why.** Cam: "the server makes an activation code, the client uses the code and it takes the
+creds from the privacy lock. this locks the feature to me only as I am the only one with access
+to the portfolio site." The device-pairing flow shipped earlier today has the device ask and the
+admin approve; he wants it the other way round, and he wants to type no credentials at all. The
+security model is exactly "who can reach `/admin`" — which, for a site only he logs into, is him.
+
+**What.** One new RPC (`MintCashFluxActivationCode`) over CashFlux's new
+`pkg/embed.Admin.MintActivationCode`, and a panel that leads the cashflux tab: Generate code →
+6-digit code in the existing accent callout with expiry + copy. Every code binds to a single
+fixed owner account (`device:owner`), created on the first mint, so activating a phone and a
+laptop puts them in the same dataset instead of two islands. Pending-device pairing stays for
+the multi-person case; it just isn't the headline any more.
+
+**The part that mattered.** The RPC and the button were an hour; the reason nothing had ever
+synced was three bugs on CashFlux's first-sync path (see CashFlux's DEVLOG for the detail — an
+unseeded first upload, a `crypto.randomUUID` invoked detached which panics the whole wasm app,
+and a blob-before-workspace ordering deadlock). All three end with the sync chip reading
+"Synced", which is why the symptom read as "connected but nothing transfers". Fixed in CashFlux,
+verified here end to end on a throwaway port + data dir rather than against Cam's live instance.
+
+**Ops note.** The live dev server was restarted onto the new binary with dev.sh's env
+(`LISTEN_ADDR`, `BASE_URL`, `CASHFLUX_SERVER_TOKEN=cam-sync-token`, `ADMIN_*`) — the `BASE_URL`
+and token pins from yesterday's incident still matter and were preserved. Logs now go to
+`server_restart3.log`.

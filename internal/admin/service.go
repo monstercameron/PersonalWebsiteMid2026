@@ -30,6 +30,7 @@ import (
 // have to construct a real embedded CashFlux store just to test error paths. Its method set mirrors
 // cashfluxembed.Admin's exactly, so the real *cashfluxembed.Admin value satisfies it with no adapter.
 type CashFluxAdmin interface {
+	MintActivationCode() (code string, expiresAt time.Time, err error)
 	ListPendingDevices() ([]cashfluxembed.PendingDevice, error)
 	ApprovePairing(deviceID string) (approved bool, pairingCode string, err error)
 	RejectPairing(deviceID string) (rejected bool, err error)
@@ -542,6 +543,21 @@ func (s *Service) PostScheduledIfDue(ctx context.Context, now time.Time) (string
 // errCashFluxNotConfigured is returned by every CashFlux RPC when this deployment has no embedded
 // CashFlux instance (cfg.CashFluxDataDir == "").
 var errCashFluxNotConfigured = status.Error(codes.FailedPrecondition, "CashFlux sync is not configured on this deployment")
+
+// MintCashFluxActivationCode mints a short-lived, single-use activation code for this deployment's
+// single CashFlux owner account, creating that account on the first call. Holding an admin session
+// on this site is the entire access control: nobody else can mint a code, and without a code there
+// is no way for a new device to sign in (Register is disabled on the embedded bridge).
+func (s *Service) MintCashFluxActivationCode(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxActivationCode, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	code, expiresAt, err := s.cashflux.MintActivationCode()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "mint activation code failed: %v", err)
+	}
+	return &sitepb.CashFluxActivationCode{Code: code, ExpiresAt: expiresAt.UTC().Format(time.RFC3339)}, nil
+}
 
 // ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first.
 func (s *Service) ListCashFluxPendingDevices(_ context.Context, _ *sitepb.Empty) (*sitepb.CashFluxPendingDeviceList, error) {

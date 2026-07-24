@@ -5,6 +5,20 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Admin console: "Activate a device" — generate a CashFlux activation code.** The "cashflux" tab
+  now leads with a Generate-code button; the minted 6-digit code appears in an accent-bordered
+  callout with its expiry and a copy button (the same treatment the pairing-code callout already
+  uses, since it's the same kind of object). Typed into any CashFlux client's Settings → Cloud, it
+  signs that device in — no pending request to approve first, no username or password anywhere.
+  This is the whole access-control story for the embedded instance: minting a code requires an admin
+  session on this site, and CashFlux's embedded bridge disables self-signup, so nobody without that
+  session can get in. New owner-only `MintCashFluxActivationCode` RPC behind the same
+  FailedPrecondition-when-not-configured gate as the rest, backed by CashFlux's new
+  `pkg/embed.Admin.MintActivationCode`. Every code binds to one owner account, so a second activated
+  device shares the first one's data. The expiry is normalized to UTC on the wire and rendered in
+  local time. 4 new tests; verified end to end on an isolated scratch instance (separate port + data
+  dir, fresh owner setup, Playwright-driven: mint → activate → 1.36 MB dataset and 7 artifact blobs
+  land in the scratch server's SQLite store).
 - **Admin console: CashFlux users + storage stats.** The same "cashflux" tab now shows the
   enrolled-users list (email/id, provider, signup date, subscription plan/status, and current
   calendar-month request volume — via CashFlux's new `pkg/embed.Admin.ListUsers`) and a storage

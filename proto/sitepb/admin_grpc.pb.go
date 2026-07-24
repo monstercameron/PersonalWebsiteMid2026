@@ -45,6 +45,7 @@ const (
 	AdminService_GetSlackConfig_FullMethodName             = "/site.v1.AdminService/GetSlackConfig"
 	AdminService_SaveSlackConfig_FullMethodName            = "/site.v1.AdminService/SaveSlackConfig"
 	AdminService_PostToSlackNow_FullMethodName             = "/site.v1.AdminService/PostToSlackNow"
+	AdminService_MintCashFluxActivationCode_FullMethodName = "/site.v1.AdminService/MintCashFluxActivationCode"
 	AdminService_ListCashFluxPendingDevices_FullMethodName = "/site.v1.AdminService/ListCashFluxPendingDevices"
 	AdminService_ApproveCashFluxPairing_FullMethodName     = "/site.v1.AdminService/ApproveCashFluxPairing"
 	AdminService_RejectCashFluxPairing_FullMethodName      = "/site.v1.AdminService/RejectCashFluxPairing"
@@ -124,6 +125,13 @@ type AdminServiceClient interface {
 	// QOTD RSS feed.
 	PostToSlackNow(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Ack, error)
 	// --- CashFlux device pairing (embedded admin-approved bootstrap) ---
+	// MintCashFluxActivationCode mints a short-lived, single-use activation code bound to this
+	// deployment's single CashFlux owner account (created on the first call). Typed into any CashFlux
+	// client's Settings -> Cloud, it turns that device into a signed-in one — no pending request to
+	// approve first, and every code lands in the SAME account so all activated devices sync together.
+	// Being able to mint one is the whole access control: it requires an admin session on this site.
+	// Fails FailedPrecondition when CashFlux embedding isn't configured on this deployment.
+	MintCashFluxActivationCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxActivationCode, error)
 	// ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first. Fails
 	// FailedPrecondition when CashFlux embedding isn't configured on this deployment.
 	ListCashFluxPendingDevices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxPendingDeviceList, error)
@@ -413,6 +421,16 @@ func (c *adminServiceClient) PostToSlackNow(ctx context.Context, in *Empty, opts
 	return out, nil
 }
 
+func (c *adminServiceClient) MintCashFluxActivationCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxActivationCode, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxActivationCode)
+	err := c.cc.Invoke(ctx, AdminService_MintCashFluxActivationCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListCashFluxPendingDevices(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CashFluxPendingDeviceList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CashFluxPendingDeviceList)
@@ -535,6 +553,13 @@ type AdminServiceServer interface {
 	// QOTD RSS feed.
 	PostToSlackNow(context.Context, *Empty) (*Ack, error)
 	// --- CashFlux device pairing (embedded admin-approved bootstrap) ---
+	// MintCashFluxActivationCode mints a short-lived, single-use activation code bound to this
+	// deployment's single CashFlux owner account (created on the first call). Typed into any CashFlux
+	// client's Settings -> Cloud, it turns that device into a signed-in one — no pending request to
+	// approve first, and every code lands in the SAME account so all activated devices sync together.
+	// Being able to mint one is the whole access control: it requires an admin session on this site.
+	// Fails FailedPrecondition when CashFlux embedding isn't configured on this deployment.
+	MintCashFluxActivationCode(context.Context, *Empty) (*CashFluxActivationCode, error)
 	// ListCashFluxPendingDevices returns every unresolved device-pairing request, oldest first. Fails
 	// FailedPrecondition when CashFlux embedding isn't configured on this deployment.
 	ListCashFluxPendingDevices(context.Context, *Empty) (*CashFluxPendingDeviceList, error)
@@ -641,6 +666,9 @@ func (UnimplementedAdminServiceServer) SaveSlackConfig(context.Context, *SlackCo
 }
 func (UnimplementedAdminServiceServer) PostToSlackNow(context.Context, *Empty) (*Ack, error) {
 	return nil, status.Error(codes.Unimplemented, "method PostToSlackNow not implemented")
+}
+func (UnimplementedAdminServiceServer) MintCashFluxActivationCode(context.Context, *Empty) (*CashFluxActivationCode, error) {
+	return nil, status.Error(codes.Unimplemented, "method MintCashFluxActivationCode not implemented")
 }
 func (UnimplementedAdminServiceServer) ListCashFluxPendingDevices(context.Context, *Empty) (*CashFluxPendingDeviceList, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListCashFluxPendingDevices not implemented")
@@ -1146,6 +1174,24 @@ func _AdminService_PostToSlackNow_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_MintCashFluxActivationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).MintCashFluxActivationCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_MintCashFluxActivationCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).MintCashFluxActivationCode(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListCashFluxPendingDevices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
@@ -1346,6 +1392,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PostToSlackNow",
 			Handler:    _AdminService_PostToSlackNow_Handler,
+		},
+		{
+			MethodName: "MintCashFluxActivationCode",
+			Handler:    _AdminService_MintCashFluxActivationCode_Handler,
 		},
 		{
 			MethodName: "ListCashFluxPendingDevices",

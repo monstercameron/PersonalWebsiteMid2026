@@ -550,7 +550,7 @@ func resumeDocument(r *sitepb.Resume) ui.Node {
 // single id, so one row's in-flight request never re-enables another row's buttons. users/usersMore/
 // usersLoading/onLoadMoreUsers drive the users list's single page + "load more" action; storage is
 // nil until the storage-stats call returns (storageStatsSection renders nothing until then).
-func cashfluxView(configured bool, pending []*sitepb.CashFluxPendingDevice, busy map[string]bool, justPaired *sitepb.CashFluxPendingDevice, pairingCode string, copied bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string), onCopy ui.Handler,
+func cashfluxView(configured bool, activation activationCodeState, pending []*sitepb.CashFluxPendingDevice, busy map[string]bool, justPaired *sitepb.CashFluxPendingDevice, pairingCode string, copied bool, onApprove func(string, *sitepb.CashFluxPendingDevice), onReject func(string), onCopy ui.Handler,
 	users []*sitepb.CashFluxUser, usersMore bool, usersLoading bool, onLoadMoreUsers ui.Handler, storage *sitepb.CashFluxStorageStats) ui.Node {
 	if !configured {
 		return Div(Class(Flex, FlexCol, Gap(Spacing2)),
@@ -560,6 +560,7 @@ func cashfluxView(configured bool, pending []*sitepb.CashFluxPendingDevice, busy
 	}
 
 	sections := []any{Class(Flex, FlexCol, Gap(Spacing5)),
+		activationCodeSection(activation),
 		Div(Class(Flex, FlexCol, Gap(Spacing2), MaxWidth(Px(560))),
 			sectionLabel("pending devices"),
 			P(Class(Fg(theme.Dim), TextSize(TextSm)),
@@ -573,6 +574,76 @@ func cashfluxView(configured bool, pending []*sitepb.CashFluxPendingDevice, busy
 	sections = append(sections, storageStatsSection(storage))
 	sections = append(sections, usersSection(users, usersMore, usersLoading, onLoadMoreUsers))
 	return Div(sections...)
+}
+
+// activationCodeState is the activation-code panel's whole state, grouped into one value rather
+// than threaded through cashfluxView as six more positional parameters.
+type activationCodeState struct {
+	// Code is the code currently on screen, or "" when none has been minted this visit.
+	Code string
+	// ExpiresAt is when Code stops working, RFC3339 in UTC. Empty whenever Code is.
+	ExpiresAt string
+	// Minting is true while a mint request is in flight, so the button can't be double-fired.
+	Minting bool
+	// Copied is true once Code has been copied to the clipboard, until the next mint.
+	Copied bool
+	OnMint ui.Handler
+	OnCopy ui.Handler
+}
+
+// activationCodeSection renders the activation-code panel — the primary way a device gets into
+// CashFlux on this deployment. Minting a code is the entire access control: it takes an admin
+// session on this site, and without a code there is no way in at all (the embedded CashFlux bridge
+// disables self-signup). The minted code reuses pairedCodeCallout's large-monospace-plus-copy
+// treatment on purpose: it is the same kind of object, so it should be recognized at a glance
+// rather than learned twice.
+func activationCodeSection(a activationCodeState) ui.Node {
+	buttonLabel := "Generate code"
+	if a.Code != "" {
+		buttonLabel = "Generate another"
+	}
+	if a.Minting {
+		buttonLabel = "Generating…"
+	}
+
+	nodes := []any{Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(560))),
+		sectionLabel("activate a device"),
+		P(Class(Fg(theme.Dim), TextSize(TextSm)),
+			"Generate a code, then enter it in CashFlux under Settings → Cloud on the device you want to sync. Each code works once and expires in five minutes. Every code opens the same account, so every device you activate shares one set of data."),
+		Div(Class(Flex),
+			Button(Class(Bg(theme.Accent), Fg(Hex("#ffffff")), FontSemibold, Rounded(RadiusLg), PadX(Spacing4), PadY(Spacing3),
+				css.Raw("border", "0"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), DisabledIf(a.Minting)),
+				Props{OnClick: a.OnMint, Disabled: a.Minting}, buttonLabel),
+		),
+	}
+	if a.Code != "" {
+		nodes = append(nodes, activationCodeCallout(a))
+	}
+	return Div(nodes...)
+}
+
+// activationCodeCallout shows a freshly minted code with its own copy button and, when the server's
+// timestamp parses, the wall-clock time it dies. An unparseable timestamp drops the expiry line
+// rather than printing a raw RFC3339 string at someone — the code is still perfectly usable, and a
+// malformed clock reading is worse than none.
+func activationCodeCallout(a activationCodeState) ui.Node {
+	copyLabel := "Copy code"
+	if a.Copied {
+		copyLabel = "Copied ✓"
+	}
+	footer := "single use — generate another any time"
+	if t, err := time.Parse(time.RFC3339, a.ExpiresAt); err == nil {
+		footer = "expires " + t.Local().Format("3:04 pm") + " · single use"
+	}
+	return Div(Class(Bg(theme.Bg), Border(theme.Accent), Rounded(RadiusLg), Pad(Spacing4), Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(360))),
+		Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em")), "ENTER THIS IN CASHFLUX"),
+		Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3)),
+			Div(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), FontSize(Rem(1.6)),
+				css.Raw("letter-spacing", "0.08em"), FontSemibold, Fg(theme.Fg)), a.Code),
+			ghostButton(copyLabel, a.OnCopy),
+		),
+		Span(Class(TextSize(TextSm), Fg(theme.Dim)), footer),
+	)
 }
 
 // storageStatsSection renders the two on-disk-size numbers (database + artifact blobs) as a small
