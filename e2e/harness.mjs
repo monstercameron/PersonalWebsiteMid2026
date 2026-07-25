@@ -221,11 +221,20 @@ export async function addMarkerTransaction(page, marker) {
 }
 
 // hasMarker looks for the marker anywhere in the transactions screen.
-export async function hasMarker(page, marker) {
+// hasMarker polls rather than sleeping a fixed interval. The app deliberately defers
+// sync until the renderer is idle, so "how long until a hydrated row is on screen"
+// is a range, not a constant — a flat sleep turns that range into a coin flip and
+// reports the harness's impatience as a product failure. Polling asserts exactly the
+// same thing (the row IS there) without pretending to know when.
+export async function hasMarker(page, marker, timeoutMs = 30_000) {
   await page.goto(`${BASE}/budget/transactions`, { waitUntil: 'load', timeout: BOOT_MS });
   await waitForApp(page);
-  await page.waitForTimeout(3000);
-  return (await page.locator('body').innerText()).includes(marker);
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if ((await page.locator('body').innerText()).includes(marker)) return true;
+    if (Date.now() > deadline) return false;
+    await page.waitForTimeout(1000);
+  }
 }
 
 
