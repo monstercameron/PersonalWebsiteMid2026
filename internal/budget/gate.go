@@ -37,6 +37,42 @@ type Gate struct {
 	password string
 	secret   []byte
 	ttl      time.Duration
+	// activationValid, when set, reports whether an activation code is one the
+	// embedded CashFlux server minted and has not yet consumed. A visitor arriving
+	// with a live code came from an authenticated admin console that minted it for
+	// them, which is at least as strong a claim as knowing the gate password — so
+	// the gate lets them in on that basis instead of asking for a second secret.
+	// Nil when CashFlux embedding isn't configured, in which case nothing changes.
+	activationValid func(code string) (bool, error)
+}
+
+// ActivationParam is the query parameter carrying a handoff activation code. The
+// gate only PEEKS at it; the client redeems it, once, over the normal RPC.
+const ActivationParam = "activate"
+
+// SetActivationChecker wires the non-consuming code check. Kept separate from
+// NewGate so the gate has no compile-time dependency on CashFlux: a deployment
+// without the embedded sync engine simply never calls this.
+func (g *Gate) SetActivationChecker(fn func(code string) (bool, error)) {
+	if g != nil {
+		g.activationValid = fn
+	}
+}
+
+// arrivingWithLiveActivationCode reports whether this request carries a code the
+// embedded server minted and has not consumed. Errors are treated as "no": a
+// lookup failure must fall back to asking for the password, never to opening the
+// door.
+func (g *Gate) arrivingWithLiveActivationCode(r *http.Request) bool {
+	if g == nil || g.activationValid == nil {
+		return false
+	}
+	code := strings.TrimSpace(r.URL.Query().Get(ActivationParam))
+	if code == "" {
+		return false
+	}
+	ok, err := g.activationValid(code)
+	return err == nil && ok
 }
 
 // NewGate builds a gate for the given password and cookie-signing secret. An empty password disables
@@ -173,6 +209,15 @@ func (g *Gate) Wrap(app http.Handler) http.Handler {
 			return
 		}
 		if _, ok := g.modeFromRequest(r); ok {
+			app.ServeHTTP(w, r)
+			return
+		}
+		// Arriving from the admin console with a live activation code: the operator
+		// has already authenticated to mint it, so making them type a second,
+		// unrelated password here proves nothing. Grant the session and continue —
+		// the code itself is still redeemed by the client, once, over the RPC.
+		if g.arrivingWithLiveActivationCode(r) {
+			g.setCookie(w, r, modeFull)
 			app.ServeHTTP(w, r)
 			return
 		}

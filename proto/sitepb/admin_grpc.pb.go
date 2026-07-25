@@ -52,6 +52,10 @@ const (
 	AdminService_ListCashFluxUsers_FullMethodName          = "/site.v1.AdminService/ListCashFluxUsers"
 	AdminService_GetCashFluxStorageStats_FullMethodName    = "/site.v1.AdminService/GetCashFluxStorageStats"
 	AdminService_DeleteCashFluxUser_FullMethodName         = "/site.v1.AdminService/DeleteCashFluxUser"
+	AdminService_CreateCashFluxUser_FullMethodName         = "/site.v1.AdminService/CreateCashFluxUser"
+	AdminService_UpdateCashFluxUser_FullMethodName         = "/site.v1.AdminService/UpdateCashFluxUser"
+	AdminService_SuspendCashFluxUser_FullMethodName        = "/site.v1.AdminService/SuspendCashFluxUser"
+	AdminService_ResetCashFluxCredentials_FullMethodName   = "/site.v1.AdminService/ResetCashFluxCredentials"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -159,6 +163,19 @@ type AdminServiceClient interface {
 	// looks like. Not reversible. Fails FailedPrecondition when CashFlux embedding isn't
 	// configured on this deployment.
 	DeleteCashFluxUser(ctx context.Context, in *CashFluxDeleteUserRequest, opts ...grpc.CallOption) (*CashFluxDeleteUserResponse, error)
+	// CreateCashFluxUser adds an invited account with a username and role and NO password: the
+	// person activates with a code and sets their own credential, so one never travels from the
+	// operator to them out of band.
+	CreateCashFluxUser(ctx context.Context, in *CashFluxCreateUserRequest, opts ...grpc.CallOption) (*CashFluxUserRef, error)
+	// UpdateCashFluxUser changes a username and/or role; blank fields are left alone. Refuses to
+	// demote the owner account, which is what every activation code binds to.
+	UpdateCashFluxUser(ctx context.Context, in *CashFluxUpdateUserRequest, opts ...grpc.CallOption) (*Ack, error)
+	// SuspendCashFluxUser freezes or restores an account, revoking live sessions when freezing so it
+	// takes effect on devices that are already signed in.
+	SuspendCashFluxUser(ctx context.Context, in *CashFluxSuspendUserRequest, opts ...grpc.CallOption) (*Ack, error)
+	// ResetCashFluxCredentials clears the password AND signs the account out everywhere. Either half
+	// alone leaves a live way in.
+	ResetCashFluxCredentials(ctx context.Context, in *CashFluxUserRef, opts ...grpc.CallOption) (*Ack, error)
 }
 
 type adminServiceClient struct {
@@ -499,6 +516,46 @@ func (c *adminServiceClient) DeleteCashFluxUser(ctx context.Context, in *CashFlu
 	return out, nil
 }
 
+func (c *adminServiceClient) CreateCashFluxUser(ctx context.Context, in *CashFluxCreateUserRequest, opts ...grpc.CallOption) (*CashFluxUserRef, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxUserRef)
+	err := c.cc.Invoke(ctx, AdminService_CreateCashFluxUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateCashFluxUser(ctx context.Context, in *CashFluxUpdateUserRequest, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_UpdateCashFluxUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SuspendCashFluxUser(ctx context.Context, in *CashFluxSuspendUserRequest, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_SuspendCashFluxUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ResetCashFluxCredentials(ctx context.Context, in *CashFluxUserRef, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AdminService_ResetCashFluxCredentials_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -604,6 +661,19 @@ type AdminServiceServer interface {
 	// looks like. Not reversible. Fails FailedPrecondition when CashFlux embedding isn't
 	// configured on this deployment.
 	DeleteCashFluxUser(context.Context, *CashFluxDeleteUserRequest) (*CashFluxDeleteUserResponse, error)
+	// CreateCashFluxUser adds an invited account with a username and role and NO password: the
+	// person activates with a code and sets their own credential, so one never travels from the
+	// operator to them out of band.
+	CreateCashFluxUser(context.Context, *CashFluxCreateUserRequest) (*CashFluxUserRef, error)
+	// UpdateCashFluxUser changes a username and/or role; blank fields are left alone. Refuses to
+	// demote the owner account, which is what every activation code binds to.
+	UpdateCashFluxUser(context.Context, *CashFluxUpdateUserRequest) (*Ack, error)
+	// SuspendCashFluxUser freezes or restores an account, revoking live sessions when freezing so it
+	// takes effect on devices that are already signed in.
+	SuspendCashFluxUser(context.Context, *CashFluxSuspendUserRequest) (*Ack, error)
+	// ResetCashFluxCredentials clears the password AND signs the account out everywhere. Either half
+	// alone leaves a live way in.
+	ResetCashFluxCredentials(context.Context, *CashFluxUserRef) (*Ack, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -712,6 +782,18 @@ func (UnimplementedAdminServiceServer) GetCashFluxStorageStats(context.Context, 
 }
 func (UnimplementedAdminServiceServer) DeleteCashFluxUser(context.Context, *CashFluxDeleteUserRequest) (*CashFluxDeleteUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteCashFluxUser not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateCashFluxUser(context.Context, *CashFluxCreateUserRequest) (*CashFluxUserRef, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCashFluxUser not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateCashFluxUser(context.Context, *CashFluxUpdateUserRequest) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateCashFluxUser not implemented")
+}
+func (UnimplementedAdminServiceServer) SuspendCashFluxUser(context.Context, *CashFluxSuspendUserRequest) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method SuspendCashFluxUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ResetCashFluxCredentials(context.Context, *CashFluxUserRef) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetCashFluxCredentials not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -1328,6 +1410,78 @@ func _AdminService_DeleteCashFluxUser_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreateCashFluxUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxCreateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateCashFluxUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateCashFluxUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateCashFluxUser(ctx, req.(*CashFluxCreateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateCashFluxUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxUpdateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateCashFluxUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateCashFluxUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateCashFluxUser(ctx, req.(*CashFluxUpdateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SuspendCashFluxUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxSuspendUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SuspendCashFluxUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SuspendCashFluxUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SuspendCashFluxUser(ctx, req.(*CashFluxSuspendUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ResetCashFluxCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxUserRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ResetCashFluxCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ResetCashFluxCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ResetCashFluxCredentials(ctx, req.(*CashFluxUserRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1466,6 +1620,22 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteCashFluxUser",
 			Handler:    _AdminService_DeleteCashFluxUser_Handler,
+		},
+		{
+			MethodName: "CreateCashFluxUser",
+			Handler:    _AdminService_CreateCashFluxUser_Handler,
+		},
+		{
+			MethodName: "UpdateCashFluxUser",
+			Handler:    _AdminService_UpdateCashFluxUser_Handler,
+		},
+		{
+			MethodName: "SuspendCashFluxUser",
+			Handler:    _AdminService_SuspendCashFluxUser_Handler,
+		},
+		{
+			MethodName: "ResetCashFluxCredentials",
+			Handler:    _AdminService_ResetCashFluxCredentials_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -6,6 +6,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/monstercameron/GoWebComponents/v4/ui"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -889,6 +891,23 @@ func AdminApp() ui.Node {
 			}
 		}()
 	})
+	// onOpenBudget is the one-click path from this console into a signed-in CashFlux:
+	// mint a code against the session we already hold, and carry it in the URL. The
+	// client redeems it once and strips it. If minting fails we still open the app —
+	// the operator lands on the normal activation screen rather than a dead link.
+	onOpenBudget := ui.WrapHandler(func() {
+		go func() {
+			target := "/budget/"
+			if c, err := adminClient(); err == nil {
+				ctx, cancel := callCtx(token.Get())
+				defer cancel()
+				if resp, err := c.MintCashFluxActivationCode(ctx, &sitepb.Empty{}); err == nil && resp.GetCode() != "" {
+					target = "/budget/?activate=" + resp.GetCode()
+				}
+			}
+			openInNewTab(target)
+		}()
+	})
 	onCopyActivationCode := ui.WrapHandler(func() {
 		if code := cashfluxActivationCode.Get(); code != "" {
 			copyToClipboard(code)
@@ -908,6 +927,63 @@ func AdminApp() ui.Node {
 			delete(next, userID)
 		}
 		cashfluxDeleting.Set(next)
+	}
+	// reloadCashfluxUsers re-reads the roster after any management action, so the row
+	// the operator just changed reflects the server rather than an optimistic guess.
+	reloadCashfluxUsers := func() {
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if users, err := c.ListCashFluxUsers(ctx, &sitepb.CashFluxListUsersRequest{Limit: cashfluxUsersPageSize}); err == nil {
+				cashfluxUsers.Set(users.GetItems())
+				cashfluxUsersMore.Set(len(users.GetItems()) == cashfluxUsersPageSize)
+			}
+		}()
+	}
+	// cashfluxManage runs one management RPC and refreshes the list. Refusals from
+	// pkg/embed (demoting the owner, a taken username) arrive as InvalidArgument
+	// carrying their reason, so the flash shows WHY rather than "failed".
+	cashfluxManage := func(what string, call func(c sitepb.AdminServiceClient, ctx context.Context) error) {
+		flash.Set("")
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			if err := call(c, ctx); err != nil {
+				if onAuthErr(err) {
+					return
+				}
+				flash.Set(what + " failed: " + err.Error())
+				return
+			}
+			reloadCashfluxUsers()
+		}()
+	}
+	onSetCashfluxRole := func(userID, role string) {
+		cashfluxManage("role change", func(c sitepb.AdminServiceClient, ctx context.Context) error {
+			_, err := c.UpdateCashFluxUser(ctx, &sitepb.CashFluxUpdateUserRequest{UserId: userID, Role: role})
+			return err
+		})
+	}
+	onSuspendCashfluxUser := func(userID string, suspended bool) {
+		cashfluxManage("suspend", func(c sitepb.AdminServiceClient, ctx context.Context) error {
+			_, err := c.SuspendCashFluxUser(ctx, &sitepb.CashFluxSuspendUserRequest{UserId: userID, Suspended: suspended})
+			return err
+		})
+	}
+	onResetCashfluxCreds := func(userID string) {
+		cashfluxManage("credential reset", func(c sitepb.AdminServiceClient, ctx context.Context) error {
+			_, err := c.ResetCashFluxCredentials(ctx, &sitepb.CashFluxUserRef{UserId: userID})
+			return err
+		})
 	}
 	onAskDeleteUser := func(userID string) {
 		flash.Set("")
@@ -1014,9 +1090,12 @@ func AdminApp() ui.Node {
 				OnAskDelete:     onAskDeleteUser,
 				OnCancelDelete:  onCancelDeleteUser,
 				OnConfirmDelete: onConfirmDeleteUser,
+				OnSetRole:       onSetCashfluxRole,
+				OnSuspend:       onSuspendCashfluxUser,
+				OnReset:         onResetCashfluxCreds,
 			}, cashfluxStorage.Get())
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)
 	}
-	return consoleShell(view.Get(), navTo, onLogout, flash.Get(), content)
+	return consoleShell(view.Get(), navTo, onLogout, onOpenBudget, flash.Get(), content)
 }

@@ -501,3 +501,25 @@ Two small calls worth keeping. A never-synced account renders "—" and "never s
 "0 B" — "0 B" reads as "synced, and empty", which is a much more alarming claim than "hasn't
 synced". And the zero time is sent as literal 0, because `time.Time{}.Unix()` is
 -62135596800 and would have rendered as a date in year 1.
+
+## 2026-07-24 — Authn/authz build-out
+
+Implemented phases 1–4 of the auth plan: roles, account management, set-a-password, and the
+one-credential handoff. CashFlux side is in its own repo; here it is the RPCs, the console
+controls, the gate change, and the test rig.
+
+**The gate stopped being a second password.** It now recognises a visitor arriving with a
+live activation code — one this console minted moments earlier from an authenticated session
+— and opens on that basis. Peeking at the code rather than consuming it matters: a consuming
+check would let anyone burn a legitimate code by visiting a URL.
+
+**Test rig split.** `harness.mjs` holds the hermetic rig and the helpers; `sync-flows.mjs` and
+`auth-flows.mjs` are scenario files. Two of the failures during this work were the suite's own
+bad assertions — sampling a sync state once when it settles, and counting a control that
+appears with the signed-in state rather than with the page. Both now wait. A flaky suite
+spends its credibility fast, and these had already earned some by catching two real bugs.
+
+**Known gap, stated plainly:** the e2e suites do not prove viewer/suspension enforcement.
+Reaching a second IDENTITY requires the device-initiated pairing flow, which did not cooperate
+in the harness. That enforcement is covered by Go tests driving SyncService directly — the
+authoritative level for it — but the end-to-end gap is real.

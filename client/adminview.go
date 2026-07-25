@@ -131,7 +131,7 @@ func toAny(nodes []ui.Node) []any {
 // --- console shell ---
 
 // consoleShell renders the header nav + the active view's content.
-func consoleShell(active string, navTo func(string) ui.Handler, onLogout ui.Handler, flash string, content ui.Node) ui.Node {
+func consoleShell(active string, navTo func(string) ui.Handler, onLogout, onOpenBudget ui.Handler, flash string, content ui.Node) ui.Node {
 	tab := func(v, label string) ui.Node {
 		c := theme.Dim
 		if v == active {
@@ -143,7 +143,13 @@ func consoleShell(active string, navTo func(string) ui.Handler, onLogout ui.Hand
 		A(Class(FontSemibold, Fg(theme.Accent)), Props{Href: "/"}, "~/earlcameron"),
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
 			tab("anime", "anime"), tab("resume", "résumé"), tab("rss", "rss"), tab("cashflux", "cashflux"), tab("settings", "settings"),
-			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)), Props{Href: "/budget/", Target: "_blank", Rel: "noopener"}, "budget ↗"),
+			// Opens CashFlux already signed in: the click mints an activation code
+			// against this authenticated console session and carries it over, so the
+			// operator never types a credential to reach their own data. Falls back to
+			// a plain link if minting fails — a broken shortcut must not become a
+			// broken way in.
+			Span(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm), css.Raw("cursor", "pointer")),
+				Props{OnClick: onOpenBudget}, "budget ↗"),
 			ghostButton("logout", onLogout),
 		),
 	)
@@ -609,6 +615,11 @@ type usersPanelState struct {
 	OnAskDelete     func(string)
 	OnCancelDelete  func()
 	OnConfirmDelete func(string)
+	// Management actions. Roles are what an account may DO; suspend freezes it
+	// without losing a byte; reset clears its password and signs it out everywhere.
+	OnSetRole func(userID, role string)
+	OnSuspend func(userID string, suspended bool)
+	OnReset   func(userID string)
 }
 
 // activationCodeSection renders the activation-code panel — the primary way a device gets into
@@ -708,7 +719,8 @@ func usersSection(u usersPanelState) ui.Node {
 	}
 	list := []any{Class(Flex, FlexCol, Gap(Spacing2))}
 	for _, user := range u.Users {
-		list = append(list, userRow(user, u.ConfirmDeleteID == user.GetId(), u.Deleting[user.GetId()], u.OnAskDelete, u.OnCancelDelete, u.OnConfirmDelete))
+		list = append(list, userRow(user, u.ConfirmDeleteID == user.GetId(), u.Deleting[user.GetId()],
+			u.OnAskDelete, u.OnCancelDelete, u.OnConfirmDelete, u.OnSetRole, u.OnSuspend, u.OnReset))
 	}
 	rows = append(rows, Div(list...))
 	if u.More {
@@ -730,7 +742,8 @@ func usersSection(u usersPanelState) ui.Node {
 // Delete is two-step and the row itself is the confirmation — no modal, and no way to erase an
 // account with a single click. confirming swaps the row for its own are-you-sure state; deleting
 // disables both buttons while the purge is in flight.
-func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(string), onCancel func(), onConfirm func(string)) ui.Node {
+func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(string), onCancel func(), onConfirm func(string),
+	onSetRole func(string, string), onSuspend func(string, bool), onReset func(string)) ui.Node {
 	id := u.GetId()
 	who := u.GetEmail()
 	if who == "" {
@@ -747,6 +760,9 @@ func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(strin
 	if p := u.GetProvider(); p != "" {
 		meta += " · " + p
 	}
+	if u.GetSuspended() {
+		meta += " · suspended"
+	}
 	if plan := u.GetSubscriptionPlan(); plan != "" {
 		meta += " · " + plan
 		if s := u.GetSubscriptionStatus(); s != "" {
@@ -754,6 +770,13 @@ func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(strin
 		}
 	}
 	onDelete := ui.WrapHandler(func() { onAsk(id) })
+	suspended := u.GetSuspended()
+	suspendLabel := "Suspend"
+	if suspended {
+		suspendLabel = "Restore"
+	}
+	onToggleSuspend := ui.WrapHandler(func() { onSuspend(id, !suspended) })
+	onResetCreds := ui.WrapHandler(func() { onReset(id) })
 	// The owner row is the one whose deletion costs YOU data, so it carries a badge before
 	// anyone reaches for the button — not only inside the confirmation.
 	name := []any{Class(Flex, ItemsCenter, Gap(Spacing2)),
@@ -776,11 +799,35 @@ func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(strin
 				Span(Class(FontSemibold, TextSize(TextSm), Fg(theme.Accent2)), userDataLabel(u)),
 				Span(Class(TextSize(TextXs), Fg(theme.Faint)), userSyncedLabel(u)),
 			),
+			roleSelect(u, onSetRole),
+			Button(Class(Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm),
+				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(theme.Fg))),
+				Props{OnClick: onToggleSuspend}, suspendLabel),
+			Button(Class(Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm),
+				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(theme.Fg))),
+				Props{OnClick: onResetCreds}, "Reset"),
 			Button(Class(Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm),
 				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(theme.Red))),
 				Props{OnClick: onDelete}, "Delete"),
 		),
 	)
+}
+
+// roleSelect is the per-row role picker. The OWNER row gets a static label instead:
+// pkg/embed refuses to demote that account (it is what every activation code binds
+// to), so offering a control that can only fail would be a lie about what is
+// possible.
+func roleSelect(u *sitepb.CashFluxUser, onSetRole func(string, string)) ui.Node {
+	if u.GetIsOwner() {
+		return Span(Class(TextSize(TextXs), Fg(theme.Faint)), "owner")
+	}
+	id := u.GetId()
+	onChange := ui.WrapHandler(func(e ui.Event) { onSetRole(id, e.GetValue()) })
+	opts := []any{inputBase(), Props{OnChange: onChange}}
+	for _, r := range []string{"member", "viewer"} {
+		opts = append(opts, Tag("option", Props{Value: r, Selected: u.GetRole() == r}, r))
+	}
+	return Tag("select", opts...)
 }
 
 // userDataLabel is the headline figure for a user row: how much of their data this server is

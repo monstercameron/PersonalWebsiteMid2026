@@ -107,6 +107,19 @@ service AdminService {
   // looks like. Not reversible. Fails FailedPrecondition when CashFlux embedding isn't
   // configured on this deployment.
   rpc DeleteCashFluxUser(CashFluxDeleteUserRequest) returns (CashFluxDeleteUserResponse);
+  // CreateCashFluxUser adds an invited account with a username and role and NO password: the
+  // person activates with a code and sets their own credential, so one never travels from the
+  // operator to them out of band.
+  rpc CreateCashFluxUser(CashFluxCreateUserRequest) returns (CashFluxUserRef);
+  // UpdateCashFluxUser changes a username and/or role; blank fields are left alone. Refuses to
+  // demote the owner account, which is what every activation code binds to.
+  rpc UpdateCashFluxUser(CashFluxUpdateUserRequest) returns (Ack);
+  // SuspendCashFluxUser freezes or restores an account, revoking live sessions when freezing so it
+  // takes effect on devices that are already signed in.
+  rpc SuspendCashFluxUser(CashFluxSuspendUserRequest) returns (Ack);
+  // ResetCashFluxCredentials clears the password AND signs the account out everywhere. Either half
+  // alone leaves a live way in.
+  rpc ResetCashFluxCredentials(CashFluxUserRef) returns (Ack);
 }
 
 // PromptText carries the single QOTD generation instruction.
@@ -384,11 +397,40 @@ message CashFluxUser {
   int32 workspaces = 9;
   int64 dataset_bytes = 10;
   int64 last_synced_at = 11; // unix seconds; 0 = never synced
+  // What this account may DO ("owner" / "member" / "viewer") and whether it is
+  // frozen. A suspended account keeps every byte of its data but cannot push.
+  string role = 12;
+  bool suspended = 13;
+  string username = 14;
 }
 
 // CashFluxUserList is one page of enrolled accounts, newest first.
 message CashFluxUserList {
   repeated CashFluxUser items = 1;
+}
+
+// CashFluxUserRef identifies one account.
+message CashFluxUserRef {
+  string user_id = 1;
+}
+
+// CashFluxCreateUserRequest describes an invited account. role defaults to "member" server-side.
+message CashFluxCreateUserRequest {
+  string username = 1;
+  string role = 2;
+}
+
+// CashFluxUpdateUserRequest changes an account. A blank username or role means "leave it alone".
+message CashFluxUpdateUserRequest {
+  string user_id = 1;
+  string username = 2;
+  string role = 3;
+}
+
+// CashFluxSuspendUserRequest freezes (true) or restores (false) an account.
+message CashFluxSuspendUserRequest {
+  string user_id = 1;
+  bool suspended = 2;
 }
 
 // CashFluxDeleteUserRequest identifies the account to purge.

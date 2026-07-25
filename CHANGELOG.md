@@ -5,6 +5,25 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Admin console: CashFlux account management.** Each user row now carries a role picker
+  (member/viewer), Suspend/Restore, Reset, and Delete, plus the account's role and suspended state
+  in the list. Four new owner-only RPCs over CashFlux's new `pkg/embed` surface. Refusals from
+  CashFlux (demoting the owner, an unknown role, a taken username) arrive as `InvalidArgument`
+  carrying their reason, so the flash says WHY rather than "failed". The owner row deliberately
+  renders a static "owner" label instead of a picker: `pkg/embed` refuses to demote that account, so
+  offering a control that can only fail would misrepresent what is possible.
+- **One-click, one-credential entry to CashFlux.** The console's "budget ↗" now mints an activation
+  code against its own authenticated session and opens `/budget/?activate=<code>`; the client
+  redeems and strips it. The budget gate recognises a live code and opens on that basis — demanding
+  a second, unrelated password from someone who just proved themselves to mint it proves nothing.
+  Opened with `noopener` because the URL carries a single-use credential.
+- **End-to-end suites.** `e2e/harness.mjs` (hermetic rig: own port, site DB, CashFlux data dir,
+  fresh owner), `e2e/sync-flows.mjs` (21 checks: pairing, upload, hydration, re-login) and
+  `e2e/auth-flows.mjs` (9 checks: handoff, owner protection, management actions). Assertions go
+  through the real UIs, and the payload is a uniquely-named transaction typed on one browser and
+  read back on another — byte counts and status labels were green through two real bugs these
+  suites then caught.
+
 - **Admin console: CashFlux stats that actually move.** Cam: "I don't see any updates on the
   server side stats." He was right and the panel was at fault — neither figure it showed CAN
   reflect sync. "Requests this month" counts metered AI calls (`AddUsage` is reached only from the

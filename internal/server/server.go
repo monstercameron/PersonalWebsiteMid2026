@@ -155,7 +155,15 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, adminSvc: adminSvc, budgetGate: budget.NewGate(cfg.BudgetPassword, cfg.AdminSecret), cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose, cashfluxAdmin: cashfluxAdmin}, nil
+	gate := budget.NewGate(cfg.BudgetPassword, cfg.AdminSecret)
+	// Let the gate recognise a visitor arriving with a live activation code — one
+	// the admin console minted for them moments earlier, from an authenticated
+	// session. Only wired when CashFlux embedding is configured; without it the gate
+	// behaves exactly as before.
+	if cashfluxAdmin != nil {
+		gate.SetActivationChecker(cashfluxAdmin.ActivationCodeIsValid)
+	}
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, adminSvc: adminSvc, budgetGate: gate, cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose, cashfluxAdmin: cashfluxAdmin}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket

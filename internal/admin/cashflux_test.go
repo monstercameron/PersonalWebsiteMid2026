@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,6 +49,52 @@ type fakeCashFluxAdmin struct {
 	deleteDeleted bool
 	deleteErr     error
 	deleteUserID  string // records the id the last DeleteUser call was made with
+
+	createdID      string
+	createErr      error
+	createUsername string
+	createRole     string
+
+	updateErr      error
+	updateUserID   string
+	updateUsername string
+	updateRole     string
+
+	suspendErr       error
+	suspendUserID    string
+	suspendSuspended bool
+
+	resetErr    error
+	resetUserID string
+
+	codeValid bool
+	codeErr   error
+	codeSeen  string
+}
+
+func (f *fakeCashFluxAdmin) CreateUser(username, role string) (string, error) {
+	f.createUsername, f.createRole = username, role
+	return f.createdID, f.createErr
+}
+
+func (f *fakeCashFluxAdmin) UpdateUser(userID, username, role string) error {
+	f.updateUserID, f.updateUsername, f.updateRole = userID, username, role
+	return f.updateErr
+}
+
+func (f *fakeCashFluxAdmin) SetSuspended(userID string, suspended bool) error {
+	f.suspendUserID, f.suspendSuspended = userID, suspended
+	return f.suspendErr
+}
+
+func (f *fakeCashFluxAdmin) ResetCredentials(userID string) error {
+	f.resetUserID = userID
+	return f.resetErr
+}
+
+func (f *fakeCashFluxAdmin) ActivationCodeIsValid(code string) (bool, error) {
+	f.codeSeen = code
+	return f.codeValid, f.codeErr
 }
 
 func (f *fakeCashFluxAdmin) MintActivationCode() (string, time.Time, error) {
@@ -466,5 +513,66 @@ func TestGetCashFluxStorageStatsIncludesSnapshotBytes(t *testing.T) {
 	}
 	if resp.GetSnapshotBytes() != 17064 {
 		t.Fatalf("SnapshotBytes = %d, want 17064", resp.GetSnapshotBytes())
+	}
+}
+
+func TestCreateCashFluxUserPassesFields(t *testing.T) {
+	fake := &fakeCashFluxAdmin{createdID: "device:NEW"}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.CreateCashFluxUser(context.Background(), &sitepb.CashFluxCreateUserRequest{Username: "priya", Role: "viewer"})
+	if err != nil {
+		t.Fatalf("CreateCashFluxUser: %v", err)
+	}
+	if resp.GetUserId() != "device:NEW" || fake.createUsername != "priya" || fake.createRole != "viewer" {
+		t.Fatalf("got id=%q username=%q role=%q", resp.GetUserId(), fake.createUsername, fake.createRole)
+	}
+}
+
+// TestUpdateCashFluxUserSurfacesRefusalReason proves a refusal (demoting the owner, an unknown
+// role, a taken username) reaches the console as InvalidArgument carrying the reason, rather than
+// a generic failure the operator has to guess at.
+func TestUpdateCashFluxUserSurfacesRefusalReason(t *testing.T) {
+	fake := &fakeCashFluxAdmin{updateErr: errors.New("the owner account cannot be demoted")}
+	svc := newCashFluxTestService(t, fake)
+	_, err := svc.UpdateCashFluxUser(context.Background(), &sitepb.CashFluxUpdateUserRequest{UserId: "device:owner", Role: "viewer"})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("err = %v, want InvalidArgument", err)
+	}
+	if !strings.Contains(err.Error(), "cannot be demoted") {
+		t.Fatalf("err = %v, want it to carry the reason", err)
+	}
+}
+
+func TestSuspendAndResetPassThrough(t *testing.T) {
+	fake := &fakeCashFluxAdmin{}
+	svc := newCashFluxTestService(t, fake)
+	if _, err := svc.SuspendCashFluxUser(context.Background(), &sitepb.CashFluxSuspendUserRequest{UserId: "u1", Suspended: true}); err != nil {
+		t.Fatalf("SuspendCashFluxUser: %v", err)
+	}
+	if fake.suspendUserID != "u1" || !fake.suspendSuspended {
+		t.Fatalf("suspend got id=%q suspended=%v", fake.suspendUserID, fake.suspendSuspended)
+	}
+	if _, err := svc.ResetCashFluxCredentials(context.Background(), &sitepb.CashFluxUserRef{UserId: "u2"}); err != nil {
+		t.Fatalf("ResetCashFluxCredentials: %v", err)
+	}
+	if fake.resetUserID != "u2" {
+		t.Fatalf("reset got id=%q", fake.resetUserID)
+	}
+}
+
+func TestCashFluxCRUDUnconfigured(t *testing.T) {
+	svc := newCashFluxTestService(t, nil)
+	ctx := context.Background()
+	if _, err := svc.CreateCashFluxUser(ctx, &sitepb.CashFluxCreateUserRequest{Username: "x"}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("Create: %v", err)
+	}
+	if _, err := svc.UpdateCashFluxUser(ctx, &sitepb.CashFluxUpdateUserRequest{UserId: "x"}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("Update: %v", err)
+	}
+	if _, err := svc.SuspendCashFluxUser(ctx, &sitepb.CashFluxSuspendUserRequest{UserId: "x"}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("Suspend: %v", err)
+	}
+	if _, err := svc.ResetCashFluxCredentials(ctx, &sitepb.CashFluxUserRef{UserId: "x"}); status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("Reset: %v", err)
 	}
 }

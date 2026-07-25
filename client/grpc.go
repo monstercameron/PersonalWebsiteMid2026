@@ -128,3 +128,11 @@ func saveToken(t string) { js.Global().Get("localStorage").Call("setItem", token
 
 // clearToken removes the stored admin JWT (logout).
 func clearToken() { js.Global().Get("localStorage").Call("removeItem", tokenKey) }
+
+// openInNewTab navigates to url in a new tab with the opener relationship severed.
+// "noopener" matters here because the URL can carry a single-use activation code:
+// without it the opened page could reach back through window.opener, and a handoff
+// credential is not something to leave reachable from another document.
+func openInNewTab(url string) {
+	js.Global().Call("open", url, "_blank", "noopener")
+}

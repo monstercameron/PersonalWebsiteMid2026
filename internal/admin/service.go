@@ -35,7 +35,14 @@ type CashFluxAdmin interface {
 	ApprovePairing(deviceID string) (approved bool, pairingCode string, err error)
 	RejectPairing(deviceID string) (rejected bool, err error)
 	ListUsers(limit, offset int) ([]cashfluxembed.User, error)
+	CreateUser(username, role string) (userID string, err error)
+	UpdateUser(userID, username, role string) error
+	SetSuspended(userID string, suspended bool) error
+	ResetCredentials(userID string) error
 	DeleteUser(userID string) (deleted bool, err error)
+	// ActivationCodeIsValid peeks at a handoff code without consuming it, so the
+	// budget gate can recognise a visitor the admin console just sent over.
+	ActivationCodeIsValid(code string) (bool, error)
 	StorageStats() (dbBytes, blobBytes, snapshotBytes int64, err error)
 }
 
@@ -629,9 +636,63 @@ func (s *Service) ListCashFluxUsers(_ context.Context, req *sitepb.CashFluxListU
 			Workspaces:   int32(u.Workspaces),
 			DatasetBytes: u.DatasetBytes,
 			LastSyncedAt: unixOrZero(u.LastSyncedAt),
+			Role:         u.Role,
+			Suspended:    u.Suspended,
+			Username:     u.Username,
 		})
 	}
 	return out, nil
+}
+
+// CreateCashFluxUser adds an invited account: a username and a role, deliberately with no
+// password. The person receives an activation code and sets their own credential afterwards, so a
+// password never travels from the operator to them out of band.
+func (s *Service) CreateCashFluxUser(_ context.Context, req *sitepb.CashFluxCreateUserRequest) (*sitepb.CashFluxUserRef, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	id, err := s.cashflux.CreateUser(req.GetUsername(), req.GetRole())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "create user failed: %v", err)
+	}
+	return &sitepb.CashFluxUserRef{UserId: id}, nil
+}
+
+// UpdateCashFluxUser changes a username and/or role. Blank fields are left alone, so the console
+// can change one without restating the other. Refusals (demoting the owner, an unknown role, a
+// taken username) come back as InvalidArgument with the reason, not as a generic failure.
+func (s *Service) UpdateCashFluxUser(_ context.Context, req *sitepb.CashFluxUpdateUserRequest) (*sitepb.Ack, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	if err := s.cashflux.UpdateUser(req.GetUserId(), req.GetUsername(), req.GetRole()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update user failed: %v", err)
+	}
+	return &sitepb.Ack{Ok: true}, nil
+}
+
+// SuspendCashFluxUser freezes or restores an account. Suspending also revokes live sessions, so it
+// bites devices that are already signed in rather than only at their next sign-in.
+func (s *Service) SuspendCashFluxUser(_ context.Context, req *sitepb.CashFluxSuspendUserRequest) (*sitepb.Ack, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	if err := s.cashflux.SetSuspended(req.GetUserId(), req.GetSuspended()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "suspend failed: %v", err)
+	}
+	return &sitepb.Ack{Ok: true}, nil
+}
+
+// ResetCashFluxCredentials clears an account's password and signs it out everywhere, leaving the
+// account and all its data intact. The person gets back in with a fresh activation code.
+func (s *Service) ResetCashFluxCredentials(_ context.Context, req *sitepb.CashFluxUserRef) (*sitepb.Ack, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	if err := s.cashflux.ResetCredentials(req.GetUserId()); err != nil {
+		return nil, status.Errorf(codes.Internal, "reset credentials failed: %v", err)
+	}
+	return &sitepb.Ack{Ok: true}, nil
 }
 
 // DeleteCashFluxUser permanently purges an enrolled CashFlux account and every row and blob it

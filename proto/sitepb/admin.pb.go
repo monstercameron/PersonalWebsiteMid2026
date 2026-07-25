@@ -2184,9 +2184,14 @@ type CashFluxUser struct {
 	// The three fields that answer "did this account's data actually arrive?".
 	// requests_this_month cannot: usage rows are written only by the metered AI proxy,
 	// never by the sync path, so it reads 0 for an account that syncs constantly.
-	Workspaces    int32 `protobuf:"varint,9,opt,name=workspaces,proto3" json:"workspaces,omitempty"`
-	DatasetBytes  int64 `protobuf:"varint,10,opt,name=dataset_bytes,json=datasetBytes,proto3" json:"dataset_bytes,omitempty"`
-	LastSyncedAt  int64 `protobuf:"varint,11,opt,name=last_synced_at,json=lastSyncedAt,proto3" json:"last_synced_at,omitempty"` // unix seconds; 0 = never synced
+	Workspaces   int32 `protobuf:"varint,9,opt,name=workspaces,proto3" json:"workspaces,omitempty"`
+	DatasetBytes int64 `protobuf:"varint,10,opt,name=dataset_bytes,json=datasetBytes,proto3" json:"dataset_bytes,omitempty"`
+	LastSyncedAt int64 `protobuf:"varint,11,opt,name=last_synced_at,json=lastSyncedAt,proto3" json:"last_synced_at,omitempty"` // unix seconds; 0 = never synced
+	// What this account may DO ("owner" / "member" / "viewer") and whether it is
+	// frozen. A suspended account keeps every byte of its data but cannot push.
+	Role          string `protobuf:"bytes,12,opt,name=role,proto3" json:"role,omitempty"`
+	Suspended     bool   `protobuf:"varint,13,opt,name=suspended,proto3" json:"suspended,omitempty"`
+	Username      string `protobuf:"bytes,14,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2298,6 +2303,27 @@ func (x *CashFluxUser) GetLastSyncedAt() int64 {
 	return 0
 }
 
+func (x *CashFluxUser) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *CashFluxUser) GetSuspended() bool {
+	if x != nil {
+		return x.Suspended
+	}
+	return false
+}
+
+func (x *CashFluxUser) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
 // CashFluxUserList is one page of enrolled accounts, newest first.
 type CashFluxUserList struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2343,6 +2369,218 @@ func (x *CashFluxUserList) GetItems() []*CashFluxUser {
 	return nil
 }
 
+// CashFluxUserRef identifies one account.
+type CashFluxUserRef struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxUserRef) Reset() {
+	*x = CashFluxUserRef{}
+	mi := &file_admin_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxUserRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxUserRef) ProtoMessage() {}
+
+func (x *CashFluxUserRef) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxUserRef.ProtoReflect.Descriptor instead.
+func (*CashFluxUserRef) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *CashFluxUserRef) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+// CashFluxCreateUserRequest describes an invited account. role defaults to "member" server-side.
+type CashFluxCreateUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxCreateUserRequest) Reset() {
+	*x = CashFluxCreateUserRequest{}
+	mi := &file_admin_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxCreateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxCreateUserRequest) ProtoMessage() {}
+
+func (x *CashFluxCreateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxCreateUserRequest.ProtoReflect.Descriptor instead.
+func (*CashFluxCreateUserRequest) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *CashFluxCreateUserRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *CashFluxCreateUserRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+// CashFluxUpdateUserRequest changes an account. A blank username or role means "leave it alone".
+type CashFluxUpdateUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxUpdateUserRequest) Reset() {
+	*x = CashFluxUpdateUserRequest{}
+	mi := &file_admin_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxUpdateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxUpdateUserRequest) ProtoMessage() {}
+
+func (x *CashFluxUpdateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxUpdateUserRequest.ProtoReflect.Descriptor instead.
+func (*CashFluxUpdateUserRequest) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *CashFluxUpdateUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *CashFluxUpdateUserRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *CashFluxUpdateUserRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+// CashFluxSuspendUserRequest freezes (true) or restores (false) an account.
+type CashFluxSuspendUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Suspended     bool                   `protobuf:"varint,2,opt,name=suspended,proto3" json:"suspended,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CashFluxSuspendUserRequest) Reset() {
+	*x = CashFluxSuspendUserRequest{}
+	mi := &file_admin_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CashFluxSuspendUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CashFluxSuspendUserRequest) ProtoMessage() {}
+
+func (x *CashFluxSuspendUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CashFluxSuspendUserRequest.ProtoReflect.Descriptor instead.
+func (*CashFluxSuspendUserRequest) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *CashFluxSuspendUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *CashFluxSuspendUserRequest) GetSuspended() bool {
+	if x != nil {
+		return x.Suspended
+	}
+	return false
+}
+
 // CashFluxDeleteUserRequest identifies the account to purge.
 type CashFluxDeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2353,7 +2591,7 @@ type CashFluxDeleteUserRequest struct {
 
 func (x *CashFluxDeleteUserRequest) Reset() {
 	*x = CashFluxDeleteUserRequest{}
-	mi := &file_admin_proto_msgTypes[39]
+	mi := &file_admin_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2365,7 +2603,7 @@ func (x *CashFluxDeleteUserRequest) String() string {
 func (*CashFluxDeleteUserRequest) ProtoMessage() {}
 
 func (x *CashFluxDeleteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[39]
+	mi := &file_admin_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2378,7 +2616,7 @@ func (x *CashFluxDeleteUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxDeleteUserRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxDeleteUserRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{39}
+	return file_admin_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *CashFluxDeleteUserRequest) GetUserId() string {
@@ -2399,7 +2637,7 @@ type CashFluxDeleteUserResponse struct {
 
 func (x *CashFluxDeleteUserResponse) Reset() {
 	*x = CashFluxDeleteUserResponse{}
-	mi := &file_admin_proto_msgTypes[40]
+	mi := &file_admin_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2411,7 +2649,7 @@ func (x *CashFluxDeleteUserResponse) String() string {
 func (*CashFluxDeleteUserResponse) ProtoMessage() {}
 
 func (x *CashFluxDeleteUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[40]
+	mi := &file_admin_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2424,7 +2662,7 @@ func (x *CashFluxDeleteUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxDeleteUserResponse.ProtoReflect.Descriptor instead.
 func (*CashFluxDeleteUserResponse) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{40}
+	return file_admin_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *CashFluxDeleteUserResponse) GetDeleted() bool {
@@ -2451,7 +2689,7 @@ type CashFluxStorageStats struct {
 
 func (x *CashFluxStorageStats) Reset() {
 	*x = CashFluxStorageStats{}
-	mi := &file_admin_proto_msgTypes[41]
+	mi := &file_admin_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2463,7 +2701,7 @@ func (x *CashFluxStorageStats) String() string {
 func (*CashFluxStorageStats) ProtoMessage() {}
 
 func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[41]
+	mi := &file_admin_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2476,7 +2714,7 @@ func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxStorageStats.ProtoReflect.Descriptor instead.
 func (*CashFluxStorageStats) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{41}
+	return file_admin_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *CashFluxStorageStats) GetSnapshotBytes() int64 {
@@ -2657,7 +2895,7 @@ const file_admin_proto_rawDesc = "" +
 	"\brejected\x18\x01 \x01(\bR\brejected\"H\n" +
 	"\x18CashFluxListUsersRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x05R\x06offset\"\x83\x03\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\"\xd1\x03\n" +
 	"\fCashFluxUser\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x14\n" +
@@ -2673,9 +2911,24 @@ const file_admin_proto_rawDesc = "" +
 	"workspaces\x12#\n" +
 	"\rdataset_bytes\x18\n" +
 	" \x01(\x03R\fdatasetBytes\x12$\n" +
-	"\x0elast_synced_at\x18\v \x01(\x03R\flastSyncedAt\"?\n" +
+	"\x0elast_synced_at\x18\v \x01(\x03R\flastSyncedAt\x12\x12\n" +
+	"\x04role\x18\f \x01(\tR\x04role\x12\x1c\n" +
+	"\tsuspended\x18\r \x01(\bR\tsuspended\x12\x1a\n" +
+	"\busername\x18\x0e \x01(\tR\busername\"?\n" +
 	"\x10CashFluxUserList\x12+\n" +
-	"\x05items\x18\x01 \x03(\v2\x15.site.v1.CashFluxUserR\x05items\"4\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.site.v1.CashFluxUserR\x05items\"*\n" +
+	"\x0fCashFluxUserRef\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"K\n" +
+	"\x19CashFluxCreateUserRequest\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\"d\n" +
+	"\x19CashFluxUpdateUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\"S\n" +
+	"\x1aCashFluxSuspendUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1c\n" +
+	"\tsuspended\x18\x02 \x01(\bR\tsuspended\"4\n" +
 	"\x19CashFluxDeleteUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"6\n" +
 	"\x1aCashFluxDeleteUserResponse\x12\x18\n" +
@@ -2684,7 +2937,7 @@ const file_admin_proto_rawDesc = "" +
 	"\x0esnapshot_bytes\x18\x03 \x01(\x03R\rsnapshotBytes\x12\x19\n" +
 	"\bdb_bytes\x18\x01 \x01(\x03R\adbBytes\x12\x1d\n" +
 	"\n" +
-	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\xe7\x0f\n" +
+	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\x91\x12\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x124\n" +
 	"\tAuthState\x12\x0e.site.v1.Empty\x1a\x17.site.v1.AuthStateReply\x123\n" +
@@ -2721,7 +2974,11 @@ const file_admin_proto_rawDesc = "" +
 	"\x15RejectCashFluxPairing\x12%.site.v1.CashFluxRejectPairingRequest\x1a&.site.v1.CashFluxRejectPairingResponse\x12Q\n" +
 	"\x11ListCashFluxUsers\x12!.site.v1.CashFluxListUsersRequest\x1a\x19.site.v1.CashFluxUserList\x12H\n" +
 	"\x17GetCashFluxStorageStats\x12\x0e.site.v1.Empty\x1a\x1d.site.v1.CashFluxStorageStats\x12]\n" +
-	"\x12DeleteCashFluxUser\x12\".site.v1.CashFluxDeleteUserRequest\x1a#.site.v1.CashFluxDeleteUserResponseB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
+	"\x12DeleteCashFluxUser\x12\".site.v1.CashFluxDeleteUserRequest\x1a#.site.v1.CashFluxDeleteUserResponse\x12R\n" +
+	"\x12CreateCashFluxUser\x12\".site.v1.CashFluxCreateUserRequest\x1a\x18.site.v1.CashFluxUserRef\x12F\n" +
+	"\x12UpdateCashFluxUser\x12\".site.v1.CashFluxUpdateUserRequest\x1a\f.site.v1.Ack\x12H\n" +
+	"\x13SuspendCashFluxUser\x12#.site.v1.CashFluxSuspendUserRequest\x1a\f.site.v1.Ack\x12B\n" +
+	"\x18ResetCashFluxCredentials\x12\x18.site.v1.CashFluxUserRef\x1a\f.site.v1.AckB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -2735,7 +2992,7 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
 var file_admin_proto_goTypes = []any{
 	(*PromptText)(nil),                     // 0: site.v1.PromptText
 	(*PostPreview)(nil),                    // 1: site.v1.PostPreview
@@ -2776,10 +3033,14 @@ var file_admin_proto_goTypes = []any{
 	(*CashFluxListUsersRequest)(nil),       // 36: site.v1.CashFluxListUsersRequest
 	(*CashFluxUser)(nil),                   // 37: site.v1.CashFluxUser
 	(*CashFluxUserList)(nil),               // 38: site.v1.CashFluxUserList
-	(*CashFluxDeleteUserRequest)(nil),      // 39: site.v1.CashFluxDeleteUserRequest
-	(*CashFluxDeleteUserResponse)(nil),     // 40: site.v1.CashFluxDeleteUserResponse
-	(*CashFluxStorageStats)(nil),           // 41: site.v1.CashFluxStorageStats
-	(*Ack)(nil),                            // 42: site.v1.Ack
+	(*CashFluxUserRef)(nil),                // 39: site.v1.CashFluxUserRef
+	(*CashFluxCreateUserRequest)(nil),      // 40: site.v1.CashFluxCreateUserRequest
+	(*CashFluxUpdateUserRequest)(nil),      // 41: site.v1.CashFluxUpdateUserRequest
+	(*CashFluxSuspendUserRequest)(nil),     // 42: site.v1.CashFluxSuspendUserRequest
+	(*CashFluxDeleteUserRequest)(nil),      // 43: site.v1.CashFluxDeleteUserRequest
+	(*CashFluxDeleteUserResponse)(nil),     // 44: site.v1.CashFluxDeleteUserResponse
+	(*CashFluxStorageStats)(nil),           // 45: site.v1.CashFluxStorageStats
+	(*Ack)(nil),                            // 46: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
 	4,  // 0: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
@@ -2824,42 +3085,50 @@ var file_admin_proto_depIdxs = []int32{
 	34, // 39: site.v1.AdminService.RejectCashFluxPairing:input_type -> site.v1.CashFluxRejectPairingRequest
 	36, // 40: site.v1.AdminService.ListCashFluxUsers:input_type -> site.v1.CashFluxListUsersRequest
 	8,  // 41: site.v1.AdminService.GetCashFluxStorageStats:input_type -> site.v1.Empty
-	39, // 42: site.v1.AdminService.DeleteCashFluxUser:input_type -> site.v1.CashFluxDeleteUserRequest
-	10, // 43: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	11, // 44: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
-	13, // 45: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
-	15, // 46: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
-	20, // 47: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	20, // 48: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	42, // 49: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	42, // 50: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	18, // 51: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	21, // 52: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	42, // 53: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	26, // 54: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	6,  // 55: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	42, // 56: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	7,  // 57: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	26, // 58: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	21, // 59: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
-	5,  // 60: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
-	26, // 61: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
-	42, // 62: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
-	0,  // 63: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
-	42, // 64: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
-	1,  // 65: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
-	2,  // 66: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
-	42, // 67: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
-	42, // 68: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
-	31, // 69: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
-	30, // 70: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
-	33, // 71: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
-	35, // 72: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
-	38, // 73: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
-	41, // 74: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
-	40, // 75: site.v1.AdminService.DeleteCashFluxUser:output_type -> site.v1.CashFluxDeleteUserResponse
-	43, // [43:76] is the sub-list for method output_type
-	10, // [10:43] is the sub-list for method input_type
+	43, // 42: site.v1.AdminService.DeleteCashFluxUser:input_type -> site.v1.CashFluxDeleteUserRequest
+	40, // 43: site.v1.AdminService.CreateCashFluxUser:input_type -> site.v1.CashFluxCreateUserRequest
+	41, // 44: site.v1.AdminService.UpdateCashFluxUser:input_type -> site.v1.CashFluxUpdateUserRequest
+	42, // 45: site.v1.AdminService.SuspendCashFluxUser:input_type -> site.v1.CashFluxSuspendUserRequest
+	39, // 46: site.v1.AdminService.ResetCashFluxCredentials:input_type -> site.v1.CashFluxUserRef
+	10, // 47: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	11, // 48: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
+	13, // 49: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
+	15, // 50: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
+	20, // 51: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	20, // 52: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	46, // 53: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	46, // 54: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	18, // 55: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	21, // 56: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	46, // 57: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	26, // 58: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	6,  // 59: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	46, // 60: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	7,  // 61: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	26, // 62: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	21, // 63: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	5,  // 64: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	26, // 65: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	46, // 66: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	0,  // 67: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
+	46, // 68: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
+	1,  // 69: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
+	2,  // 70: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
+	46, // 71: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
+	46, // 72: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
+	31, // 73: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
+	30, // 74: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
+	33, // 75: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
+	35, // 76: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
+	38, // 77: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
+	45, // 78: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
+	44, // 79: site.v1.AdminService.DeleteCashFluxUser:output_type -> site.v1.CashFluxDeleteUserResponse
+	39, // 80: site.v1.AdminService.CreateCashFluxUser:output_type -> site.v1.CashFluxUserRef
+	46, // 81: site.v1.AdminService.UpdateCashFluxUser:output_type -> site.v1.Ack
+	46, // 82: site.v1.AdminService.SuspendCashFluxUser:output_type -> site.v1.Ack
+	46, // 83: site.v1.AdminService.ResetCashFluxCredentials:output_type -> site.v1.Ack
+	47, // [47:84] is the sub-list for method output_type
+	10, // [10:47] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -2877,7 +3146,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   42,
+			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
