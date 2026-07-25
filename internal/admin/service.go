@@ -36,6 +36,7 @@ type CashFluxAdmin interface {
 	RejectPairing(deviceID string) (rejected bool, err error)
 	ListUsers(limit, offset int) ([]cashfluxembed.User, error)
 	CreateUser(username, role string) (userID string, err error)
+	MintActivationCodeForUser(userID string) (code string, expiresAt time.Time, err error)
 	UpdateUser(userID, username, role string) error
 	SetSuspended(userID string, suspended bool) error
 	ResetCredentials(userID string) error
@@ -642,6 +643,20 @@ func (s *Service) ListCashFluxUsers(_ context.Context, req *sitepb.CashFluxListU
 		})
 	}
 	return out, nil
+}
+
+// MintCashFluxActivationCodeForUser mints a code bound to one specific account, so an invited
+// person signs in to their own data rather than the operator's. An unknown account id is an
+// InvalidArgument rather than a silently-redeemable code for an account that does not exist.
+func (s *Service) MintCashFluxActivationCodeForUser(_ context.Context, req *sitepb.CashFluxUserRef) (*sitepb.CashFluxActivationCode, error) {
+	if s.cashflux == nil {
+		return nil, errCashFluxNotConfigured
+	}
+	code, expiresAt, err := s.cashflux.MintActivationCodeForUser(req.GetUserId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "mint activation code failed: %v", err)
+	}
+	return &sitepb.CashFluxActivationCode{Code: code, ExpiresAt: expiresAt.UTC().Format(time.RFC3339)}, nil
 }
 
 // CreateCashFluxUser adds an invited account: a username and a role, deliberately with no

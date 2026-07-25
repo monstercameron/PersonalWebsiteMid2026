@@ -2937,7 +2937,7 @@ const file_admin_proto_rawDesc = "" +
 	"\x0esnapshot_bytes\x18\x03 \x01(\x03R\rsnapshotBytes\x12\x19\n" +
 	"\bdb_bytes\x18\x01 \x01(\x03R\adbBytes\x12\x1d\n" +
 	"\n" +
-	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\x91\x12\n" +
+	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\xf1\x12\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x124\n" +
 	"\tAuthState\x12\x0e.site.v1.Empty\x1a\x17.site.v1.AuthStateReply\x123\n" +
@@ -2978,7 +2978,8 @@ const file_admin_proto_rawDesc = "" +
 	"\x12CreateCashFluxUser\x12\".site.v1.CashFluxCreateUserRequest\x1a\x18.site.v1.CashFluxUserRef\x12F\n" +
 	"\x12UpdateCashFluxUser\x12\".site.v1.CashFluxUpdateUserRequest\x1a\f.site.v1.Ack\x12H\n" +
 	"\x13SuspendCashFluxUser\x12#.site.v1.CashFluxSuspendUserRequest\x1a\f.site.v1.Ack\x12B\n" +
-	"\x18ResetCashFluxCredentials\x12\x18.site.v1.CashFluxUserRef\x1a\f.site.v1.AckB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
+	"\x18ResetCashFluxCredentials\x12\x18.site.v1.CashFluxUserRef\x1a\f.site.v1.Ack\x12^\n" +
+	"!MintCashFluxActivationCodeForUser\x12\x18.site.v1.CashFluxUserRef\x1a\x1f.site.v1.CashFluxActivationCodeB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -3090,45 +3091,47 @@ var file_admin_proto_depIdxs = []int32{
 	41, // 44: site.v1.AdminService.UpdateCashFluxUser:input_type -> site.v1.CashFluxUpdateUserRequest
 	42, // 45: site.v1.AdminService.SuspendCashFluxUser:input_type -> site.v1.CashFluxSuspendUserRequest
 	39, // 46: site.v1.AdminService.ResetCashFluxCredentials:input_type -> site.v1.CashFluxUserRef
-	10, // 47: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	11, // 48: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
-	13, // 49: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
-	15, // 50: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
-	20, // 51: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	20, // 52: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	46, // 53: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	46, // 54: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	18, // 55: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	21, // 56: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	46, // 57: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	26, // 58: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	6,  // 59: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	46, // 60: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	7,  // 61: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	26, // 62: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	21, // 63: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
-	5,  // 64: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
-	26, // 65: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
-	46, // 66: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
-	0,  // 67: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
-	46, // 68: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
-	1,  // 69: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
-	2,  // 70: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
-	46, // 71: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
-	46, // 72: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
-	31, // 73: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
-	30, // 74: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
-	33, // 75: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
-	35, // 76: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
-	38, // 77: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
-	45, // 78: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
-	44, // 79: site.v1.AdminService.DeleteCashFluxUser:output_type -> site.v1.CashFluxDeleteUserResponse
-	39, // 80: site.v1.AdminService.CreateCashFluxUser:output_type -> site.v1.CashFluxUserRef
-	46, // 81: site.v1.AdminService.UpdateCashFluxUser:output_type -> site.v1.Ack
-	46, // 82: site.v1.AdminService.SuspendCashFluxUser:output_type -> site.v1.Ack
-	46, // 83: site.v1.AdminService.ResetCashFluxCredentials:output_type -> site.v1.Ack
-	47, // [47:84] is the sub-list for method output_type
-	10, // [10:47] is the sub-list for method input_type
+	39, // 47: site.v1.AdminService.MintCashFluxActivationCodeForUser:input_type -> site.v1.CashFluxUserRef
+	10, // 48: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	11, // 49: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
+	13, // 50: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
+	15, // 51: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
+	20, // 52: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	20, // 53: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	46, // 54: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	46, // 55: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	18, // 56: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	21, // 57: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	46, // 58: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	26, // 59: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	6,  // 60: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	46, // 61: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	7,  // 62: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	26, // 63: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	21, // 64: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	5,  // 65: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	26, // 66: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	46, // 67: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	0,  // 68: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
+	46, // 69: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
+	1,  // 70: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
+	2,  // 71: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
+	46, // 72: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
+	46, // 73: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
+	31, // 74: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
+	30, // 75: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
+	33, // 76: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
+	35, // 77: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
+	38, // 78: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
+	45, // 79: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
+	44, // 80: site.v1.AdminService.DeleteCashFluxUser:output_type -> site.v1.CashFluxDeleteUserResponse
+	39, // 81: site.v1.AdminService.CreateCashFluxUser:output_type -> site.v1.CashFluxUserRef
+	46, // 82: site.v1.AdminService.UpdateCashFluxUser:output_type -> site.v1.Ack
+	46, // 83: site.v1.AdminService.SuspendCashFluxUser:output_type -> site.v1.Ack
+	46, // 84: site.v1.AdminService.ResetCashFluxCredentials:output_type -> site.v1.Ack
+	31, // 85: site.v1.AdminService.MintCashFluxActivationCodeForUser:output_type -> site.v1.CashFluxActivationCode
+	48, // [48:86] is the sub-list for method output_type
+	10, // [10:48] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name

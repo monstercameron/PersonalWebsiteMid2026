@@ -81,6 +81,12 @@ func AdminApp() ui.Node {
 	// waiting to happen.
 	cashfluxDeleteConfirm := ui.UseState("")
 	cashfluxDeleting := ui.UseState[map[string]bool](nil) // ids with a purge in flight
+	// Inviting: the new person's name/role, and the most recently minted per-account
+	// code (single-use and short-lived, so leaving it on screen is harmless).
+	cashfluxNewName := ui.UseState("")
+	cashfluxNewRole := ui.UseState("member")
+	cashfluxCodeForID := ui.UseState("")
+	cashfluxCodeValue := ui.UseState("")
 
 	// Auth flow: first-run setup + password reset (the owner has no session in these cases).
 	needsSetup := ui.UseState(false)
@@ -209,6 +215,9 @@ func AdminApp() ui.Node {
 			cashfluxActivationCopied.Set(false)
 			// Never return to this tab with a row already armed to delete.
 			cashfluxDeleteConfirm.Set("")
+			// A per-account code from a previous visit has expired; never show a dead one.
+			cashfluxCodeForID.Set("")
+			cashfluxCodeValue.Set("")
 			go func() {
 				c, err := adminClient()
 				if err != nil {
@@ -979,6 +988,50 @@ func AdminApp() ui.Node {
 			return err
 		})
 	}
+	// onAddCashfluxUser creates the account only. The code is a separate, explicit
+	// step (onMintCodeFor) so an invite that is never taken up leaves an account you
+	// can see and delete, rather than a code nobody can trace back to anything.
+	onAddCashfluxUser := ui.WrapHandler(func() {
+		name := cashfluxNewName.Get()
+		if name == "" {
+			flash.Set("give the person a name first")
+			return
+		}
+		cashfluxManage("add person", func(c sitepb.AdminServiceClient, ctx context.Context) error {
+			_, err := c.CreateCashFluxUser(ctx, &sitepb.CashFluxCreateUserRequest{
+				Username: name, Role: cashfluxNewRole.Get(),
+			})
+			if err == nil {
+				cashfluxNewName.Set("")
+			}
+			return err
+		})
+	})
+	// onMintCodeFor hands ONE account its own activation code. Distinct from the
+	// owner shortcut, which always binds to the operator's account: an invited person
+	// signing in with that would land in the operator's data, not their own.
+	onMintCodeFor := func(userID string) {
+		flash.Set("")
+		go func() {
+			c, err := adminClient()
+			if err != nil {
+				flash.Set("connection error")
+				return
+			}
+			ctx, cancel := callCtx(token.Get())
+			defer cancel()
+			resp, err := c.MintCashFluxActivationCodeForUser(ctx, &sitepb.CashFluxUserRef{UserId: userID})
+			if onAuthErr(err) {
+				return
+			}
+			if err != nil {
+				flash.Set("couldn't generate a code: " + err.Error())
+				return
+			}
+			cashfluxCodeForID.Set(userID)
+			cashfluxCodeValue.Set(resp.GetCode())
+		}()
+	}
 	onResetCashfluxCreds := func(userID string) {
 		cashfluxManage("credential reset", func(c sitepb.AdminServiceClient, ctx context.Context) error {
 			_, err := c.ResetCashFluxCredentials(ctx, &sitepb.CashFluxUserRef{UserId: userID})
@@ -1093,6 +1146,12 @@ func AdminApp() ui.Node {
 				OnSetRole:       onSetCashfluxRole,
 				OnSuspend:       onSuspendCashfluxUser,
 				OnReset:         onResetCashfluxCreds,
+				NewName:         cashfluxNewName,
+				NewRole:         cashfluxNewRole,
+				OnAddUser:       onAddCashfluxUser,
+				OnMintFor:       onMintCodeFor,
+				CodeForID:       cashfluxCodeForID.Get(),
+				Code:            cashfluxCodeValue.Get(),
 			}, cashfluxStorage.Get())
 	default:
 		content = animeView(query, onSearch, onCheck, results.Get(), tracked.Get(), trackFn)

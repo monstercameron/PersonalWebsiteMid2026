@@ -67,9 +67,19 @@ type fakeCashFluxAdmin struct {
 	resetErr    error
 	resetUserID string
 
+	forUserCode    string
+	forUserExpires time.Time
+	forUserErr     error
+	forUserID      string
+
 	codeValid bool
 	codeErr   error
 	codeSeen  string
+}
+
+func (f *fakeCashFluxAdmin) MintActivationCodeForUser(userID string) (string, time.Time, error) {
+	f.forUserID = userID
+	return f.forUserCode, f.forUserExpires, f.forUserErr
 }
 
 func (f *fakeCashFluxAdmin) CreateUser(username, role string) (string, error) {
@@ -574,5 +584,33 @@ func TestCashFluxCRUDUnconfigured(t *testing.T) {
 	}
 	if _, err := svc.ResetCashFluxCredentials(ctx, &sitepb.CashFluxUserRef{UserId: "x"}); status.Code(err) != codes.FailedPrecondition {
 		t.Fatalf("Reset: %v", err)
+	}
+}
+
+// TestMintCashFluxActivationCodeForUserTargetsTheAccount proves the console can hand an invited
+// person a code for THEIR account. Without it, CreateUser produced an account nobody could sign
+// in to, because the only other minting path always binds to the owner.
+func TestMintCashFluxActivationCodeForUserTargetsTheAccount(t *testing.T) {
+	expires := time.Date(2026, 7, 24, 23, 0, 0, 0, time.UTC)
+	fake := &fakeCashFluxAdmin{forUserCode: "314159", forUserExpires: expires}
+	svc := newCashFluxTestService(t, fake)
+	resp, err := svc.MintCashFluxActivationCodeForUser(context.Background(), &sitepb.CashFluxUserRef{UserId: "device:PRIYA"})
+	if err != nil {
+		t.Fatalf("MintCashFluxActivationCodeForUser: %v", err)
+	}
+	if resp.GetCode() != "314159" || fake.forUserID != "device:PRIYA" {
+		t.Fatalf("code=%q forUserID=%q", resp.GetCode(), fake.forUserID)
+	}
+	if got, want := resp.GetExpiresAt(), expires.Format(time.RFC3339); got != want {
+		t.Fatalf("expiresAt = %q, want %q", got, want)
+	}
+}
+
+func TestMintCashFluxActivationCodeForUnknownAccountIsInvalidArgument(t *testing.T) {
+	fake := &fakeCashFluxAdmin{forUserErr: errors.New(`no such account "device:TYPO"`)}
+	svc := newCashFluxTestService(t, fake)
+	_, err := svc.MintCashFluxActivationCodeForUser(context.Background(), &sitepb.CashFluxUserRef{UserId: "device:TYPO"})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("err = %v, want InvalidArgument", err)
 	}
 }

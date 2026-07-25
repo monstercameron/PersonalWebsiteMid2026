@@ -120,6 +120,10 @@ service AdminService {
   // ResetCashFluxCredentials clears the password AND signs the account out everywhere. Either half
   // alone leaves a live way in.
   rpc ResetCashFluxCredentials(CashFluxUserRef) returns (Ack);
+  // MintCashFluxActivationCodeForUser mints a code bound to an EXISTING account, so an invited
+  // person signs in to their own data. MintCashFluxActivationCode always binds to the owner
+  // account, which is right for the operator's own devices and wrong for anybody else.
+  rpc MintCashFluxActivationCodeForUser(CashFluxUserRef) returns (CashFluxActivationCode);
 }
 
 // PromptText carries the single QOTD generation instruction.

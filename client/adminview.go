@@ -620,6 +620,17 @@ type usersPanelState struct {
 	OnSetRole func(userID, role string)
 	OnSuspend func(userID string, suspended bool)
 	OnReset   func(userID string)
+	// Inviting a person: create the account, then hand them a code for it. Both are
+	// needed — an account with no way to mint it a code is an account nobody can
+	// ever sign in to.
+	NewName   ui.State[string]
+	NewRole   ui.State[string]
+	OnAddUser ui.Handler
+	OnMintFor func(userID string)
+	// CodeForID / Code hold the most recently minted per-account code, shown on that
+	// row only. Single-use and short-lived, so leaving it on screen is harmless.
+	CodeForID string
+	Code      string
 }
 
 // activationCodeSection renders the activation-code panel — the primary way a device gets into
@@ -713,14 +724,20 @@ func usersSection(u usersPanelState) ui.Node {
 	rows := []any{Class(Flex, FlexCol, Gap(Spacing3), MaxWidth(Px(760))),
 		sectionLabel("users (" + strconv.Itoa(len(u.Users)) + ")"),
 	}
+	rows = append(rows, inviteRow(u))
 	if len(u.Users) == 0 {
 		rows = append(rows, P(Class(Fg(theme.Dim), TextSize(TextSm)), "No one has signed up yet."))
 		return Div(rows...)
 	}
 	list := []any{Class(Flex, FlexCol, Gap(Spacing2))}
 	for _, user := range u.Users {
+		code := ""
+		if u.CodeForID == user.GetId() {
+			code = u.Code
+		}
 		list = append(list, userRow(user, u.ConfirmDeleteID == user.GetId(), u.Deleting[user.GetId()],
-			u.OnAskDelete, u.OnCancelDelete, u.OnConfirmDelete, u.OnSetRole, u.OnSuspend, u.OnReset))
+			u.OnAskDelete, u.OnCancelDelete, u.OnConfirmDelete, u.OnSetRole, u.OnSuspend, u.OnReset,
+			u.OnMintFor, code))
 	}
 	rows = append(rows, Div(list...))
 	if u.More {
@@ -743,7 +760,8 @@ func usersSection(u usersPanelState) ui.Node {
 // account with a single click. confirming swaps the row for its own are-you-sure state; deleting
 // disables both buttons while the purge is in flight.
 func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(string), onCancel func(), onConfirm func(string),
-	onSetRole func(string, string), onSuspend func(string, bool), onReset func(string)) ui.Node {
+	onSetRole func(string, string), onSuspend func(string, bool), onReset func(string),
+	onMintFor func(string), code string) ui.Node {
 	id := u.GetId()
 	who := u.GetEmail()
 	if who == "" {
@@ -777,6 +795,7 @@ func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(strin
 	}
 	onToggleSuspend := ui.WrapHandler(func() { onSuspend(id, !suspended) })
 	onResetCreds := ui.WrapHandler(func() { onReset(id) })
+	onMintCode := ui.WrapHandler(func() { onMintFor(id) })
 	// The owner row is the one whose deletion costs YOU data, so it carries a badge before
 	// anyone reaches for the button — not only inside the confirmation.
 	name := []any{Class(Flex, ItemsCenter, Gap(Spacing2)),
@@ -784,6 +803,15 @@ func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(strin
 	}
 	if u.GetIsOwner() {
 		name = append(name, Span(Class(TextSize(TextXs), Fg(theme.Accent2), Border(theme.Border), Rounded(RadiusSm), PadX(Spacing2)), "your account"))
+	}
+	if code != "" {
+		return Div(Class(Flex, FlexCol, Gap(Spacing2), Bg(theme.Bg), Border(theme.Accent), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing3)),
+			Span(Class(TextSize(TextXs), Fg(theme.Faint), css.Raw("letter-spacing", "0.06em")), "ACTIVATION CODE FOR "+strings.ToUpper(who)),
+			Div(Class(css.Raw("font-family", "ui-monospace,SFMono-Regular,Menlo,monospace"), FontSize(Rem(1.6)),
+				css.Raw("letter-spacing", "0.08em"), FontSemibold, Fg(theme.Fg)),
+				Props{Data: map[string]string{"testid": "user-activation-code"}}, code),
+			Span(Class(TextSize(TextSm), Fg(theme.Dim)), "they enter this in CashFlux under Settings → Cloud · single use · 5 minutes"),
+		)
 	}
 	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2)),
 		Div(Class(Flex, FlexCol, Gap(Spacing1)),
@@ -800,6 +828,9 @@ func userRow(u *sitepb.CashFluxUser, confirming, deleting bool, onAsk func(strin
 				Span(Class(TextSize(TextXs), Fg(theme.Faint)), userSyncedLabel(u)),
 			),
 			roleSelect(u, onSetRole),
+			Button(Class(Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm),
+				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(theme.Accent))),
+				Props{OnClick: onMintCode}, "Code"),
 			Button(Class(Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2), TextSize(TextSm),
 				css.Raw("background", "transparent"), css.Raw("cursor", "pointer"), css.Raw("font", "inherit"), Hover(Fg(theme.Fg))),
 				Props{OnClick: onToggleSuspend}, suspendLabel),
@@ -865,6 +896,28 @@ func userSyncedLabel(u *sitepb.CashFluxUser) string {
 		ago += " · " + strconv.Itoa(int(n)) + " workspaces"
 	}
 	return ago
+}
+
+// inviteRow creates an account for someone else. Two steps by design: the account
+// exists first (with a name and a role), then you hand them a code for it. The
+// alternative — one button that creates and mints together — reads as "invite" but
+// leaves a half-made account behind whenever the person never uses the code.
+func inviteRow(u usersPanelState) ui.Node {
+	onName := ui.WrapHandler(func(e ui.Event) { u.NewName.Set(e.GetValue()) })
+	onRole := ui.WrapHandler(func(e ui.Event) { u.NewRole.Set(e.GetValue()) })
+	role := u.NewRole.Get()
+	if role == "" {
+		role = "member"
+	}
+	roleOpts := []any{inputBase(), Props{OnChange: onRole}}
+	for _, r := range []string{"member", "viewer"} {
+		roleOpts = append(roleOpts, Tag("option", Props{Value: r, Selected: role == r}, r))
+	}
+	return Div(Class(Flex, ItemsCenter, Gap(Spacing2), css.Raw("flex-wrap", "wrap")),
+		textInput(u.NewName.Get(), onName, "name for the person you're inviting", "text", false),
+		Tag("select", roleOpts...),
+		ghostButton("Add person", u.OnAddUser),
+	)
 }
 
 // deleteConfirmRow is the are-you-sure state a user row swaps into. It names what is destroyed

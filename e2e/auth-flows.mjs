@@ -15,7 +15,7 @@ import {
   BASE, KEEP, BOOT_MS, chromium,
   check, step, failed,
   startServer, waitForServer, adminPage, mintCode, openCashfluxTab, serverView,
-  newClient, waitForApp, waitForHealthySync,
+  newClient, openCloudTab, enableSync, activate, waitForApp, waitForHealthySync,
   addMarkerTransaction, hasMarker,
 } from './harness.mjs';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -65,42 +65,54 @@ async function run() {
     const seeded = await serverView(admin);
     check('that device syncs real data', !seeded.neverSynced, `syncedData=${seeded.syncedData}`);
 
-    // ---- 2. The owner account is protected from its own console ----------
+    // ---- 2. Invite a second person onto their OWN account -----------------
     console.log(`
-[2] the console cannot lock the operator out`);
+[2] an invited person gets their own account and data`);
+    await openCashfluxTab(admin);
+    await admin.locator('input[type=text]').last().fill('priya');
+    await admin.getByText('Add person', { exact: true }).click();
+    await admin.waitForTimeout(4000);
+
+    const afterAdd = await serverView(admin);
+    check('adding a person creates a second account', afterAdd.users === 2, `users=${afterAdd.users}`);
+
+    // Their own code — NOT the owner shortcut, which would land them in Cam's data.
+    await openCashfluxTab(admin);
+    await admin.getByText('Code', { exact: true }).first().click();
+    await admin.waitForTimeout(3000);
+    const inviteCode = (await admin.getByTestId('user-activation-code').first().innerText().catch(() => '')).trim();
+    check('the console hands out a code for that account', /^\d{6}$/.test(inviteCode), `code=${inviteCode}`);
+
+    const G = await newClient(browser);
+    await openCloudTab(G.page);
+    await enableSync(G.page);
+    await activate(G.page, inviteCode);
+    const guestState = await waitForHealthySync(G.page);
+    check('the invited person signs in', guestState === 'synced' || guestState === 'syncing', `state=${guestState}`);
+
+    // The decisive check: they must NOT see the owner's transaction.
+    check('the invited person does NOT see the owner data',
+      !(await hasMarker(G.page, MARKER_A)), MARKER_A);
+    check('the owner still sees their own data', await hasMarker(H.page, MARKER_A), MARKER_A);
+    check('two accounts exist, not one', (await serverView(admin)).users === 2);
+
+    // ---- 3. The owner account is protected from its own console ----------
+    console.log(`
+[3] the console cannot lock the operator out`);
     const view = await serverView(admin);
     check('the owner row is labelled as yours', /your account/i.test(view.text));
-    // The owner row deliberately renders a STATIC role label rather than a picker:
-    // pkg/embed refuses to demote or suspend that account (it is what every
-    // activation code binds to), so offering a control that can only fail would
-    // misrepresent what is possible. Assert the absence.
-    await openCashfluxTab(admin);
-    check('the owner row offers no role picker', (await admin.locator('select').count()) === 0,
-      `selects=${await admin.locator('select').count()}`);
-    check('every activation code binds to the one owner account', view.users === 1, `users=${view.users}`);
 
-    // ---- 3. Management actions are wired and non-destructive -------------
+    // ---- 4. Management actions keep the data -----------------------------
     console.log(`
-[3] suspend / restore / reset keep the data`);
-    // Suspend and Reset are offered on every row. The owner cannot be suspended
-    // (pkg/embed refuses), so what is asserted here is that using the controls never
-    // costs data — the enforcement itself is covered by the Go tests, which drive
-    // the SyncService directly rather than through a browser.
+[4] suspend / reset keep the data`);
     const before = await serverView(admin);
     await clickRowAction(admin, 'Reset');
     const afterReset = await serverView(admin);
-    check('resetting credentials keeps the account and its data',
-      afterReset.users === before.users && !afterReset.neverSynced,
-      `users=${afterReset.users} syncedData=${afterReset.syncedData}`);
-    check('the owner data is byte-for-byte intact after a reset',
-      afterReset.syncedData === before.syncedData,
-      `before=${before.syncedData} after=${afterReset.syncedData}`);
-
-    // ---- 4. A reset does not silently sign the owner out of its data ------
-    console.log(`
-[4] the owner device survives a credential reset`);
-    // Resetting revokes live sessions by design. What must NOT happen is data loss:
-    // the device still holds its local copy and the server still holds the snapshot.
+    // Asserted on the stored bytes, not on neverSynced: that flag scans the whole
+    // page, and the account we just invited has legitimately never synced.
+    check('resetting keeps the accounts and the owner data',
+      afterReset.users === before.users && afterReset.syncedData === before.syncedData,
+      `users=${afterReset.users} before=${before.syncedData} after=${afterReset.syncedData}`);
     check('the owner device still shows its own transaction',
       await hasMarker(H.page, MARKER_A), MARKER_A);
   } finally {

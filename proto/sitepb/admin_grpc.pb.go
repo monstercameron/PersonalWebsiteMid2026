@@ -19,43 +19,44 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminService_Login_FullMethodName                      = "/site.v1.AdminService/Login"
-	AdminService_AuthState_FullMethodName                  = "/site.v1.AdminService/AuthState"
-	AdminService_Setup_FullMethodName                      = "/site.v1.AdminService/Setup"
-	AdminService_ResetPassword_FullMethodName              = "/site.v1.AdminService/ResetPassword"
-	AdminService_SearchAnime_FullMethodName                = "/site.v1.AdminService/SearchAnime"
-	AdminService_ListTracked_FullMethodName                = "/site.v1.AdminService/ListTracked"
-	AdminService_TrackAnime_FullMethodName                 = "/site.v1.AdminService/TrackAnime"
-	AdminService_UntrackAnime_FullMethodName               = "/site.v1.AdminService/UntrackAnime"
-	AdminService_RunReleaseCheck_FullMethodName            = "/site.v1.AdminService/RunReleaseCheck"
-	AdminService_GetResume_FullMethodName                  = "/site.v1.AdminService/GetResume"
-	AdminService_ApplyResume_FullMethodName                = "/site.v1.AdminService/ApplyResume"
-	AdminService_TailorResume_FullMethodName               = "/site.v1.AdminService/TailorResume"
-	AdminService_GetSettings_FullMethodName                = "/site.v1.AdminService/GetSettings"
-	AdminService_SaveSettings_FullMethodName               = "/site.v1.AdminService/SaveSettings"
-	AdminService_ListModels_FullMethodName                 = "/site.v1.AdminService/ListModels"
-	AdminService_GetLastTailoring_FullMethodName           = "/site.v1.AdminService/GetLastTailoring"
-	AdminService_GetBaseResume_FullMethodName              = "/site.v1.AdminService/GetBaseResume"
-	AdminService_ListTailorings_FullMethodName             = "/site.v1.AdminService/ListTailorings"
-	AdminService_GetTailoring_FullMethodName               = "/site.v1.AdminService/GetTailoring"
-	AdminService_DeleteTailoring_FullMethodName            = "/site.v1.AdminService/DeleteTailoring"
-	AdminService_GetPrompt_FullMethodName                  = "/site.v1.AdminService/GetPrompt"
-	AdminService_SavePrompt_FullMethodName                 = "/site.v1.AdminService/SavePrompt"
-	AdminService_DryRunPrompt_FullMethodName               = "/site.v1.AdminService/DryRunPrompt"
-	AdminService_GetSlackConfig_FullMethodName             = "/site.v1.AdminService/GetSlackConfig"
-	AdminService_SaveSlackConfig_FullMethodName            = "/site.v1.AdminService/SaveSlackConfig"
-	AdminService_PostToSlackNow_FullMethodName             = "/site.v1.AdminService/PostToSlackNow"
-	AdminService_MintCashFluxActivationCode_FullMethodName = "/site.v1.AdminService/MintCashFluxActivationCode"
-	AdminService_ListCashFluxPendingDevices_FullMethodName = "/site.v1.AdminService/ListCashFluxPendingDevices"
-	AdminService_ApproveCashFluxPairing_FullMethodName     = "/site.v1.AdminService/ApproveCashFluxPairing"
-	AdminService_RejectCashFluxPairing_FullMethodName      = "/site.v1.AdminService/RejectCashFluxPairing"
-	AdminService_ListCashFluxUsers_FullMethodName          = "/site.v1.AdminService/ListCashFluxUsers"
-	AdminService_GetCashFluxStorageStats_FullMethodName    = "/site.v1.AdminService/GetCashFluxStorageStats"
-	AdminService_DeleteCashFluxUser_FullMethodName         = "/site.v1.AdminService/DeleteCashFluxUser"
-	AdminService_CreateCashFluxUser_FullMethodName         = "/site.v1.AdminService/CreateCashFluxUser"
-	AdminService_UpdateCashFluxUser_FullMethodName         = "/site.v1.AdminService/UpdateCashFluxUser"
-	AdminService_SuspendCashFluxUser_FullMethodName        = "/site.v1.AdminService/SuspendCashFluxUser"
-	AdminService_ResetCashFluxCredentials_FullMethodName   = "/site.v1.AdminService/ResetCashFluxCredentials"
+	AdminService_Login_FullMethodName                             = "/site.v1.AdminService/Login"
+	AdminService_AuthState_FullMethodName                         = "/site.v1.AdminService/AuthState"
+	AdminService_Setup_FullMethodName                             = "/site.v1.AdminService/Setup"
+	AdminService_ResetPassword_FullMethodName                     = "/site.v1.AdminService/ResetPassword"
+	AdminService_SearchAnime_FullMethodName                       = "/site.v1.AdminService/SearchAnime"
+	AdminService_ListTracked_FullMethodName                       = "/site.v1.AdminService/ListTracked"
+	AdminService_TrackAnime_FullMethodName                        = "/site.v1.AdminService/TrackAnime"
+	AdminService_UntrackAnime_FullMethodName                      = "/site.v1.AdminService/UntrackAnime"
+	AdminService_RunReleaseCheck_FullMethodName                   = "/site.v1.AdminService/RunReleaseCheck"
+	AdminService_GetResume_FullMethodName                         = "/site.v1.AdminService/GetResume"
+	AdminService_ApplyResume_FullMethodName                       = "/site.v1.AdminService/ApplyResume"
+	AdminService_TailorResume_FullMethodName                      = "/site.v1.AdminService/TailorResume"
+	AdminService_GetSettings_FullMethodName                       = "/site.v1.AdminService/GetSettings"
+	AdminService_SaveSettings_FullMethodName                      = "/site.v1.AdminService/SaveSettings"
+	AdminService_ListModels_FullMethodName                        = "/site.v1.AdminService/ListModels"
+	AdminService_GetLastTailoring_FullMethodName                  = "/site.v1.AdminService/GetLastTailoring"
+	AdminService_GetBaseResume_FullMethodName                     = "/site.v1.AdminService/GetBaseResume"
+	AdminService_ListTailorings_FullMethodName                    = "/site.v1.AdminService/ListTailorings"
+	AdminService_GetTailoring_FullMethodName                      = "/site.v1.AdminService/GetTailoring"
+	AdminService_DeleteTailoring_FullMethodName                   = "/site.v1.AdminService/DeleteTailoring"
+	AdminService_GetPrompt_FullMethodName                         = "/site.v1.AdminService/GetPrompt"
+	AdminService_SavePrompt_FullMethodName                        = "/site.v1.AdminService/SavePrompt"
+	AdminService_DryRunPrompt_FullMethodName                      = "/site.v1.AdminService/DryRunPrompt"
+	AdminService_GetSlackConfig_FullMethodName                    = "/site.v1.AdminService/GetSlackConfig"
+	AdminService_SaveSlackConfig_FullMethodName                   = "/site.v1.AdminService/SaveSlackConfig"
+	AdminService_PostToSlackNow_FullMethodName                    = "/site.v1.AdminService/PostToSlackNow"
+	AdminService_MintCashFluxActivationCode_FullMethodName        = "/site.v1.AdminService/MintCashFluxActivationCode"
+	AdminService_ListCashFluxPendingDevices_FullMethodName        = "/site.v1.AdminService/ListCashFluxPendingDevices"
+	AdminService_ApproveCashFluxPairing_FullMethodName            = "/site.v1.AdminService/ApproveCashFluxPairing"
+	AdminService_RejectCashFluxPairing_FullMethodName             = "/site.v1.AdminService/RejectCashFluxPairing"
+	AdminService_ListCashFluxUsers_FullMethodName                 = "/site.v1.AdminService/ListCashFluxUsers"
+	AdminService_GetCashFluxStorageStats_FullMethodName           = "/site.v1.AdminService/GetCashFluxStorageStats"
+	AdminService_DeleteCashFluxUser_FullMethodName                = "/site.v1.AdminService/DeleteCashFluxUser"
+	AdminService_CreateCashFluxUser_FullMethodName                = "/site.v1.AdminService/CreateCashFluxUser"
+	AdminService_UpdateCashFluxUser_FullMethodName                = "/site.v1.AdminService/UpdateCashFluxUser"
+	AdminService_SuspendCashFluxUser_FullMethodName               = "/site.v1.AdminService/SuspendCashFluxUser"
+	AdminService_ResetCashFluxCredentials_FullMethodName          = "/site.v1.AdminService/ResetCashFluxCredentials"
+	AdminService_MintCashFluxActivationCodeForUser_FullMethodName = "/site.v1.AdminService/MintCashFluxActivationCodeForUser"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -176,6 +177,10 @@ type AdminServiceClient interface {
 	// ResetCashFluxCredentials clears the password AND signs the account out everywhere. Either half
 	// alone leaves a live way in.
 	ResetCashFluxCredentials(ctx context.Context, in *CashFluxUserRef, opts ...grpc.CallOption) (*Ack, error)
+	// MintCashFluxActivationCodeForUser mints a code bound to an EXISTING account, so an invited
+	// person signs in to their own data. MintCashFluxActivationCode always binds to the owner
+	// account, which is right for the operator's own devices and wrong for anybody else.
+	MintCashFluxActivationCodeForUser(ctx context.Context, in *CashFluxUserRef, opts ...grpc.CallOption) (*CashFluxActivationCode, error)
 }
 
 type adminServiceClient struct {
@@ -556,6 +561,16 @@ func (c *adminServiceClient) ResetCashFluxCredentials(ctx context.Context, in *C
 	return out, nil
 }
 
+func (c *adminServiceClient) MintCashFluxActivationCodeForUser(ctx context.Context, in *CashFluxUserRef, opts ...grpc.CallOption) (*CashFluxActivationCode, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CashFluxActivationCode)
+	err := c.cc.Invoke(ctx, AdminService_MintCashFluxActivationCodeForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -674,6 +689,10 @@ type AdminServiceServer interface {
 	// ResetCashFluxCredentials clears the password AND signs the account out everywhere. Either half
 	// alone leaves a live way in.
 	ResetCashFluxCredentials(context.Context, *CashFluxUserRef) (*Ack, error)
+	// MintCashFluxActivationCodeForUser mints a code bound to an EXISTING account, so an invited
+	// person signs in to their own data. MintCashFluxActivationCode always binds to the owner
+	// account, which is right for the operator's own devices and wrong for anybody else.
+	MintCashFluxActivationCodeForUser(context.Context, *CashFluxUserRef) (*CashFluxActivationCode, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -794,6 +813,9 @@ func (UnimplementedAdminServiceServer) SuspendCashFluxUser(context.Context, *Cas
 }
 func (UnimplementedAdminServiceServer) ResetCashFluxCredentials(context.Context, *CashFluxUserRef) (*Ack, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResetCashFluxCredentials not implemented")
+}
+func (UnimplementedAdminServiceServer) MintCashFluxActivationCodeForUser(context.Context, *CashFluxUserRef) (*CashFluxActivationCode, error) {
+	return nil, status.Error(codes.Unimplemented, "method MintCashFluxActivationCodeForUser not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -1482,6 +1504,24 @@ func _AdminService_ResetCashFluxCredentials_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_MintCashFluxActivationCodeForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CashFluxUserRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).MintCashFluxActivationCodeForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_MintCashFluxActivationCodeForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).MintCashFluxActivationCodeForUser(ctx, req.(*CashFluxUserRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1636,6 +1676,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResetCashFluxCredentials",
 			Handler:    _AdminService_ResetCashFluxCredentials_Handler,
+		},
+		{
+			MethodName: "MintCashFluxActivationCodeForUser",
+			Handler:    _AdminService_MintCashFluxActivationCodeForUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
