@@ -147,11 +147,11 @@ async function run() {
     }
   }
 
-  console.log(`\n${failures === 0 ? 'ALL SCENARIOS PASSED' : `${failures} CHECK(S) FAILED`}`);
-  process.exit(failures === 0 ? 0 : 1);
+  console.log(`\n${failed() === 0 ? 'ALL SCENARIOS PASSED' : `${failed()} CHECK(S) FAILED`}`);
+  process.exit(failed() === 0 ? 0 : 1);
 }
 
 run().catch((e) => {
-  console.error(`\nsuite aborted during "${scenario}":`, e);
+  console.error('sync-flows aborted:', e);
   process.exit(2);
 });

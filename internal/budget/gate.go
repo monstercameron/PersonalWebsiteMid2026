@@ -221,13 +221,47 @@ func (g *Gate) Wrap(app http.Handler) http.Handler {
 			app.ServeHTTP(w, r)
 			return
 		}
-		// No valid session: show the door. Serve it for every unauthenticated GET — the SPA never
-		// requests its assets until index.html has run, which requires a session, so this only ever
-		// renders for the initial navigation.
+		// No valid session. Answer the lock page ONLY to a document navigation; every
+		// other unauthenticated request gets a bodyless 401.
+		//
+		// The old assumption here — "the SPA never requests its assets until index.html
+		// has run, which requires a session" — is false, and the way it fails is nasty.
+		// A service worker fetches "./bin/main.wasm.gz" on install, in the background,
+		// carrying whatever cookies it has: none, on a first visit or after the cookie
+		// expires. It would receive this HTML with a 200, cache it under the WASM's URL,
+		// and the next boot would try to instantiate a lock page as WebAssembly and hang
+		// with no error anyone could act on. The SW's cache key is precached and
+		// long-lived, so the poisoning outlives any number of reloads.
+		//
+		// A 401 is both correct and self-healing: the SW's install cache-put is skipped
+		// for a non-ok response, so nothing is poisoned, and the asset is fetched
+		// properly once a session exists.
+		if !isDocumentNavigation(r) {
+			w.Header().Set("Cache-Control", "no-store")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(renderGatePage("")))
 	})
+}
+
+// isDocumentNavigation reports whether this request is a browser navigating to a
+// page, as opposed to a subresource or script-initiated fetch.
+//
+// Sec-Fetch-Mode is the reliable signal and every browser that ships service
+// workers sends it. The Accept header is the fallback for anything that does not:
+// a navigation asks for text/html, while a service worker fetching a .wasm or a
+// script fetching JSON does not. Both are advisory headers a client could lie
+// about — which is fine, because getting this wrong only decides whether an
+// unauthenticated caller sees a login page or an empty 401. It gates no data.
+func isDocumentNavigation(r *http.Request) bool {
+	if mode := r.Header.Get("Sec-Fetch-Mode"); mode != "" {
+		return mode == "navigate"
+	}
+	return strings.Contains(r.Header.Get("Accept"), "text/html")
 }
 
 // handleEnter processes the gate form: a "guest" bypass grants a local-only session; otherwise the

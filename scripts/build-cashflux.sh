@@ -84,6 +84,23 @@ mkdir -p "$OUT_DIR/fonts" "$OUT_DIR/audio"
 cp -r "$CASHFLUX_SRC/web/fonts/." "$OUT_DIR/fonts/"
 cp "$CASHFLUX_SRC/web/audio/"*.mp3 "$OUT_DIR/audio/" 2>/dev/null || true
 
+# Stamp the service-worker cache key with a hash of the wasm we just staged.
+#
+# sw.js PRECACHES ./bin/main.wasm.gz under `const CACHE = "cashflux-vNNN"` and only
+# evicts caches whose key differs from it. That constant is bumped by hand on
+# release — so shipping a new wasm without bumping it leaves every returning
+# browser serving the OLD binary from Cache Storage, forever. A hard refresh does
+# not help: it bypasses the HTTP cache, not a service worker answering from its own
+# store. (This bit us for a full day of builds on 2026-07-24.)
+#
+# Deriving the key from the artifact makes the failure impossible rather than
+# merely documented: the key changes exactly when the bytes change, sw.js therefore
+# differs, the browser re-installs it, and the stale precache is evicted.
+WASM_HASH="$(sha256sum "$OUT_DIR/bin/main.wasm.gz" | cut -c1-12)"
+echo "==> stamping sw.js cache key with wasm hash $WASM_HASH"
+sed -i "s/^const CACHE = \".*\";/const CACHE = \"cashflux-${WASM_HASH}\";/" "$OUT_DIR/sw.js"
+grep -q "cashflux-${WASM_HASH}" "$OUT_DIR/sw.js" || { echo "!! failed to stamp sw.js cache key" >&2; exit 1; }
+
 echo "==> rewriting <base href> in index.html for mount path $BUDGET_MOUNT_PATH"
 sed -i "s|<base href=\"/\" />|<base href=\"${BUDGET_MOUNT_PATH}\" />|" "$OUT_DIR/index.html"
 
