@@ -59,16 +59,40 @@ async function run() {
     const banner = A.page.getByTestId('sample-data-banner');
     check('the sample banner is showing before personalising', (await banner.count()) === 1);
     await A.page.getByTestId('sample-dismiss').click(); // marks the dataset as the user's own
+    // Wait for the banner to go rather than sleeping a guess at how long that takes.
+    // Every flat sleep in this suite was calibrated when sync hogged the thread and
+    // therefore settled predictably; now that it yields to the renderer, the same
+    // durations are coin flips that report the harness's impatience as a product bug.
+    await A.page.getByTestId('sample-data-banner').waitFor({ state: 'detached', timeout: 30_000 }).catch(() => {});
+    // Then settle. This one IS a sleep on purpose, and the exception proves the rule:
+    // dismissing marks the dataset as the user's own INSIDE the dataset, not in a
+    // browser key a test can read, and nothing observable from out here reports when
+    // that write and the autosave behind it have landed. The next step navigates,
+    // which reboots the app — reload too early and it comes back still believing it
+    // holds the sample, at which point pushBlockedReason() refuses every push for the
+    // rest of the run and the server sits at 0 B forever. Replacing this with a
+    // condition on `cashflux:sampleActive` looked tidier and was worthless: that key
+    // reads null either way, so the wait passed instantly and waited for nothing.
     await A.page.waitForTimeout(4000);
     check('dismissing clears the sample banner on this device',
       (await A.page.getByTestId('sample-data-banner').count()) === 0);
 
     await addMarkerTransaction(A.page, MARKER);
     check('the marker transaction is on the first device', await hasMarker(A.page, MARKER), MARKER);
+    // hasMarker above NAVIGATES, which reboots the app, and the app now defers its
+    // sync engine until after first paint. Clicking the pulse before that engine
+    // exists asks nothing of nobody: the click is swallowed, no push is triggered,
+    // and no amount of polling afterwards will conjure one. Wait for sync to be live
+    // first, THEN ask it to run.
+    await waitForHealthySync(A.page);
     await A.page.getByTestId('sync-pulse').click().catch(() => {});
-    await A.page.waitForTimeout(12_000);
-
-    const afterPush = await serverView(admin);
+    // Poll the server rather than assuming 12s is enough for a push to land.
+    let afterPush = await serverView(admin);
+    for (const deadline = Date.now() + 60_000; Date.now() < deadline;) {
+      if (!afterPush.neverSynced && afterPush.syncedData !== '0 B') break;
+      await A.page.waitForTimeout(2000);
+      afterPush = await serverView(admin);
+    }
     check('personalised data reaches the server', !afterPush.neverSynced && afterPush.syncedData !== '0 B',
       `syncedData=${afterPush.syncedData}`);
     check('the console reports when it last synced', /just now|m ago|h ago/.test(afterPush.syncedAgo),
@@ -120,9 +144,24 @@ async function run() {
     // page. A one-shot count here was the suite's own flakiness, not the product's.
     const signOut = A.page.getByText(/^Sign out$/).first();
     await signOut.waitFor({ timeout: 30_000 }).catch(() => {});
-    check('a signed-in device offers Sign out', (await signOut.count()) === 1);
+    // On failure, say what the pane WAS showing. "Sign out is missing" is the symptom
+    // of several different faults — a dropped session, a pane stuck on the activation
+    // card, a dead wasm instance — and they are indistinguishable from a bare count.
+    let paneWhy = '';
+    if ((await signOut.count()) !== 1) {
+      paneWhy = await A.page.evaluate(() => {
+        const el = document.querySelector('#app');
+        return JSON.stringify({
+          alive: typeof window.cashfluxStoreGet === 'function',
+          codeField: !!document.querySelector('[data-testid="device-link-code"]'),
+          url: location.pathname,
+          pane: (el ? el.innerText : '').replace(/\s+/g, ' ').slice(-500),
+        });
+      }).catch((e) => `probe threw: ${String(e).slice(0, 120)}`);
+    }
+    check('a signed-in device offers Sign out', (await signOut.count()) === 1, paneWhy);
     await signOut.click();
-    await A.page.waitForTimeout(5000);
+    await A.page.getByTestId('device-link-code').waitFor({ timeout: 45_000 }).catch(() => {});
     check('signing out returns the activation field', (await A.page.getByTestId('device-link-code').count()) === 1);
 
     const code3 = await mintCode(admin);

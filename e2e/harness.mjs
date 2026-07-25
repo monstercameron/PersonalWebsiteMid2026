@@ -53,6 +53,17 @@ export function startServer(dataDir) {
       // these scenarios aren't about.
       ADMIN_PASSWORD: '',
       ADMIN_USERNAME: '',
+      // The tunnel throttles per CLIENT, and every browser context this rig opens
+      // — the admin console, device A, device B — shares 127.0.0.1, so the server
+      // sees one very busy client rather than three ordinary ones. The default cap
+      // of 8 connections is ample for a real device and nowhere near enough for a
+      // rig that also churns connections across sign-out and re-activation; the
+      // last scenario in sync-flows runs after all of it and was the one that paid.
+      // Raised HERE, in the test environment, rather than in the product: the
+      // throttle is doing its job, this rig is simply not what it is defending
+      // against. Anything that would fail in production still fails here.
+      CASHFLUX_SERVER_GRPC_MAX_CONNECTIONS_PER_CLIENT: '256',
+      CASHFLUX_SERVER_GRPC_MAX_UPGRADES_PER_CLIENT_PER_MINUTE: '1000',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -145,11 +156,45 @@ export async function newClient(browser) {
   return { ctx, page };
 }
 
+// openCloudTab navigates straight to the Cloud tab's own route and waits for the
+// pane to actually be there.
+//
+// It used to load /budget/settings and click a "Cloud" tab IF one happened to be on
+// screen already, then sleep 2500ms. Both halves were wrong. The conditional click
+// meant that whenever the tab list had not rendered yet the click was silently
+// skipped, the helper returned successfully, and the scenario ran its assertions
+// against the plain Settings page — reporting "a signed-in device offers Sign out"
+// as a product failure when the truth was that nothing had ever opened the pane
+// holding that control. The flat sleep then decided how long rendering was allowed
+// to take. /settings/:tab is a real route, so ask for the pane directly and wait for
+// evidence it arrived.
 export async function openCloudTab(page) {
-  await page.goto(`${BASE}/budget/settings`, { waitUntil: 'load', timeout: BOOT_MS });
+  // Retry the navigation: an applying pull calls reloadPage() inside the app, which
+  // can interrupt a goto issued at the same moment. That is the product behaving
+  // correctly — a hydrating device is supposed to reload — so the test accommodates
+  // it rather than treating it as a failure.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await page.goto(`${BASE}/budget/settings/cloud`, { waitUntil: 'load', timeout: BOOT_MS });
+      break;
+    } catch (e) {
+      if (attempt >= 2 || !/interrupted by another navigation/.test(String(e))) throw e;
+      await page.waitForTimeout(3000);
+    }
+  }
   await waitForApp(page);
-  const cloud = page.getByText(/^cloud$/i).first();
-  if (await cloud.count()) { await cloud.click(); await page.waitForTimeout(2500); }
+  // The pane looks different in each of its states — sync off, discovering, paired,
+  // locked — so key off the fact that ANY of its own controls rendered rather than
+  // one state's control. sync-pulse is excluded deliberately: it is the top-bar
+  // indicator, present on every screen, and matching it would mean this helper
+  // returned successfully from pages that are not the Cloud pane at all.
+  await page.waitForFunction(
+    () => !!document.querySelector('[data-testid^="sync-"]:not([data-testid="sync-pulse"])')
+      || !!document.querySelector('[data-testid="device-link-code"]')
+      || /Sign out/.test(document.querySelector('#app')?.innerText || ''),
+    null,
+    { timeout: 45_000 },
+  );
 }
 
 // waitForApp waits for the wasm shell to actually paint, instead of guessing a duration.
@@ -174,8 +219,25 @@ export async function enableSync(page) {
 }
 
 export async function activate(page, code) {
-  await page.getByTestId('device-link-code').fill(code);
-  await page.getByTestId('device-link-submit').click();
+  // Fill and submit, retrying across reloads the app performs on its own.
+  //
+  // A pull that applies a remote snapshot calls reloadPage(), and a sign-out
+  // immediately followed by a re-activation is exactly when one is most likely to be
+  // in flight. When that reload lands between locating the field and filling it, the
+  // handle goes stale and fill() times out — reported as "the activation field is
+  // missing" when it was there before the reload and is there again after. Re-open
+  // the pane and try again rather than calling a reload a failure.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await page.getByTestId('device-link-code').fill(code, { timeout: 30_000 });
+      await page.getByTestId('device-link-submit').click({ timeout: 15_000 });
+      break;
+    } catch (e) {
+      if (attempt >= 2) throw e;
+      await page.waitForTimeout(4000);
+      await openCloudTab(page);
+    }
+  }
   // The pull that follows may reload the page; either way give it room to land.
   await page.waitForTimeout(15_000);
 }
