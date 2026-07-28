@@ -6,3 +6,7 @@
 *.service       text eol=lf
 deploy/nginx/*  text eol=lf
 deploy/env.example text eol=lf
+# Workflow `run:` blocks are shell. YAML itself tolerates CRLF, but there is no reason for
+# the scripts inside them to differ from every other script in the repo.
+*.yml           text eol=lf
+*.yaml          text eol=lf

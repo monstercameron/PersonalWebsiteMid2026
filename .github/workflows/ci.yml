@@ -143,12 +143,18 @@ jobs:
       # CRLF is not cosmetic for these: a CRLF shebang on Ubuntu fails as
       # "/usr/bin/env: 'bash\r': No such file or directory", and .gitattributes is the only
       # thing standing between a Windows-authored script and that failure.
-      - name: No CRLF in shell, unit or nginx files
+      - name: No CRLF in shell, unit, nginx or workflow files
         run: |
           set -euo pipefail
+          # The CR comes from printf rather than $'\r' so the check does not depend on the
+          # shell supporting ANSI-C quoting. A $'\r' that silently expands to empty matches
+          # EVERY line, which reads as "CRLF everywhere" and is indistinguishable from a
+          # real finding until you check the bytes.
+          cr="$(printf '\r')"
           bad=0
-          for f in deploy/*.sh scripts/*.sh deploy/*.service deploy/nginx/* deploy/env.example; do
-            if grep -qU $'\r' "$f"; then echo "::error file=$f::contains CRLF line endings"; bad=1; fi
+          for f in deploy/*.sh scripts/*.sh deploy/*.service deploy/nginx/* deploy/env.example \
+                   .github/workflows/*.yml; do
+            if grep -qU "$cr" "$f"; then echo "::error file=$f::contains CRLF line endings"; bad=1; fi
           done
           [ "$bad" = "0" ] || exit 1
           echo "line endings clean"
