@@ -1,0 +1,61 @@
+; systemd unit for earlcameron.com — installed to /etc/systemd/system/earlcameron.service
+; by deploy/install.sh. Logs go to journald: journalctl -u earlcameron -f
+[Unit]
+Description=earlcameron.com ingress (Go gRPC-over-WebSocket + SSR)
+Documentation=https://github.com/monstercameron/PersonalWebsiteMid2026
+; network-online (not just network) because the server binds a concrete address at
+; startup and OpenAI egress wants working DNS on the first request.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=earlcameron
+Group=earlcameron
+; WorkingDirectory is the release symlink, NOT a fixed release: internal/server serves
+; web/static and web/cashflux by CWD-relative path, so flipping the symlink and
+; restarting is what actually swaps the frontend. systemd resolves the symlink at each
+; start, which is exactly the atomic-swap behaviour deploy/update.sh relies on.
+WorkingDirectory=/opt/earlcameron/current
+EnvironmentFile=/opt/earlcameron/.env
+ExecStart=/opt/earlcameron/current/server
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=2
+; The server traps SIGTERM and drains via http.Server.Shutdown, so let it finish.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=earlcameron
+
+; --- hardening -------------------------------------------------------------------
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+; ProtectSystem=strict makes the whole filesystem read-only, so name the one writable
+; path. The SQLite databases live OUTSIDE the release dir precisely so a deploy never
+; touches them and the release itself can stay read-only.
+ReadWritePaths=/opt/earlcameron/data
+
+; DELIBERATELY ABSENT: MemoryDenyWriteExecute.
+; The CashFlux sync engine pulls in ncruces/go-sqlite3, which runs SQLite as WebAssembly
+; through wazero. wazero's compiler allocates W^X pages at runtime, so denying
+; write+execute mappings kills the budget app on its first query. Same reason there is no
+; aggressive SystemCallFilter here: mmap/mprotect are load-bearing for that path.
+
+[Install]
+WantedBy=multi-user.target

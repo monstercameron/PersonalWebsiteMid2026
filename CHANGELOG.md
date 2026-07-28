@@ -5,6 +5,34 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Deploy: the droplet story is real.** `deploy/` now holds `install.sh` (one-shot fresh-droplet
+  setup), `update.sh` (pull → build → stage → atomic symlink swap → `/healthz` → **auto-rollback**),
+  `rollback.sh` (manual undo, symlink-only, `--list`/by-name/back-one), a shared `lib.sh`, a hardened
+  systemd unit, an Nginx site, and `env.example` documenting every key the code actually reads.
+  Nginx upgrades **`/grpc` as well as `/socket`** — `/grpc` is the embedded CashFlux sync tunnel, and
+  missing it fails "Test connection" with no obvious cause — and gzips `application/wasm`, which is
+  the only thing between a visitor and a 26 MB `app.wasm`. The systemd unit deliberately omits
+  `MemoryDenyWriteExecute`: `ncruces/go-sqlite3` runs SQLite through wazero, which JITs W^X pages, so
+  the hardening flag that looks obviously correct would kill the budget app on its first query.
+- `.gitattributes` pinning `eol=lf` for shell/unit/conf files, so a Windows-authored script cannot
+  reach Ubuntu with a CRLF shebang.
+
+### Changed
+- **Frontend moved to GoWebComponents v5** (`/v4` → `/v5`, `replace` retargeted). The repo did not
+  build before this: the local GWC checkout had moved to the `v5` module path while `go.mod` still
+  required `/v4`. Migration was import-path-only — v5 is additive — except for one genuine API
+  break, fixed upstream and released as **GWC v5.0.1**: `css/u` re-exported seven names
+  (`Track`, `Repeat`, `LinearGradient`, `RadialGradient`, `Stop`, `Circle`, `Ellipse`) that
+  `html/shorthand` already declares, so the five files here that dot-import both failed with
+  `redeclared in this block`. **The GWC pin must stay ≥ v5.0.1.**
+- `scripts/build.sh` names the binary `bin/server$(go env GOEXE)` — `server.exe` on Windows, `server`
+  on the droplet — so `deploy/` has one predictable path.
+- `scripts/build-cashflux.sh` falls back to the Go toolchain's `wasm_exec.js` when the CashFlux
+  checkout lacks one. CashFlux gitignores that file, so a fresh clone — i.e. every droplet — has no
+  copy and the staging loop died on it. The toolchain's copy is byte-identical and actually matches
+  the wasm just compiled.
+
+### Added (earlier)
 - **Admin console: CashFlux account management.** Each user row now carries a role picker
   (member/viewer), Suspend/Restore, Reset, and Delete, plus the account's role and suspended state
   in the list. Four new owner-only RPCs over CashFlux's new `pkg/embed` surface. Refusals from

@@ -8,7 +8,7 @@ package main
 import (
 	"context"
 
-	"github.com/monstercameron/GoWebComponents/v4/ui"
+	"github.com/monstercameron/GoWebComponents/v5/ui"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 

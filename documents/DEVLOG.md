@@ -2,6 +2,58 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-28 — Deploy for real, and a v5 migration that was already overdue
+
+Cam asked to get the repo ready for a DigitalOcean Ubuntu + Nginx droplet. The first thing recon
+turned up was that **the repo did not build.** `go.mod` required `GoWebComponents/v4` and replaced
+it with `../GoWebComponents`, but that checkout had moved onto the `v5` branch, whose `go.mod`
+declares the `/v5` module path. So every build was failing on "no required module provides package
+.../v5/…" before any deploy question mattered.
+
+Cam's call was to go to v5. The migration itself was nearly nothing — v5 is explicitly additive,
+and this repo only touches four GWC packages (`css`, `css/u`, `html/shorthand`, `ui`) across eight
+files, so it was an import-path rewrite. **One real break:** v5.0.0's `css/u/exports.go` re-exports
+seven names — `Track`, `Repeat`, `LinearGradient`, `RadialGradient`, `Stop`, `Circle`, `Ellipse` —
+that `html/shorthand` already declares as element constructors. Five files here dot-import both, and
+Go rejects that eagerly: `Track redeclared in this block`. The fix belonged upstream, not here: that
+file's own header says its purpose is to let you dot-import `u` alongside `shorthand`, and it already
+withholds names that would shadow (`Gap`, `Bg`, `Rounded`, `Border`). These seven were the same
+oversight against a different package. Dropped them, released as **GWC v5.0.1**, pinned here.
+
+**On the deploy design, two plan items got rejected on contact with the code.**
+
+The plan said one `go:embed`-ed binary. It can't be, and shouldn't be: the server resolves
+`web/static` and `web/cashflux` by CWD-relative path, and CashFlux's frontend is ~120 MB of wasm,
+fonts and audio. What the single-binary plan was really buying was *atomicity* — code and frontend
+swapping together. A release directory behind a symlink buys that directly. `WorkingDirectory` in
+the unit points at the symlink, not a release, which is the whole trick.
+
+The plan also said GitHub Actions push-to-deploy. Cam chose build-on-droplet, which removes the
+problem the plan had flagged as undecided: the relative `replace` directives that don't exist in CI
+*do* exist if you clone the three repos as siblings, which is what `install.sh` does.
+
+**Things that would have broken a real deploy, found by dry-running the droplet layout** (clean
+clones of all three repos into a scratch dir, then building):
+
+- `scripts/build-cashflux.sh` copies `web/wasm_exec.js` out of the CashFlux checkout — and CashFlux
+  **gitignores** it, because it's a toolchain artifact. A fresh clone has no copy, so the staging
+  loop would `set -e` out on the first droplet build. Now falls back to `$(go env GOROOT)`'s copy,
+  which is byte-identical and, on the droplet, is the one that actually matches the wasm just built.
+- `build.sh` only ever emitted `bin/server.exe`. Now `bin/server$(go env GOEXE)`.
+- Nginx needed the WebSocket upgrade on **`/grpc`**, not just `/socket` — `/grpc` is the embedded
+  CashFlux sync engine's tunnel. The DEPLOYMENT.md sketch had only `/socket`, which would have left
+  the budget app failing "Test connection" with nothing in the logs to explain it.
+- `MemoryDenyWriteExecute=true` is the obvious systemd hardening line to add and would have been a
+  live-site bug: `ncruces/go-sqlite3` runs SQLite as wasm through wazero, which allocates W^X pages.
+  Left out, with the reason written in the unit so nobody adds it back.
+- Windows git doesn't record the exec bit, so a cloned `update.sh` can land 644. `install.sh` invokes
+  it through `bash`, and `.gitattributes` now pins `eol=lf` so a CRLF shebang can't reach Ubuntu.
+- `update.sh` pulls this repo and then **re-execs itself once**. bash reads a script incrementally as
+  it runs it; a pull that rewrites the running file resumes at a byte offset into new content.
+
+**Not done:** nothing backs `data/` up off-box. It's the only irreplaceable thing on the droplet.
+Logged in TODOS §11.
+
 ## 2026-07-24 — CashFlux admin tab: enrolled users + storage stats
 
 Cam asked for more on the same `/admin` "cashflux" tab, alongside the pending-device panel from

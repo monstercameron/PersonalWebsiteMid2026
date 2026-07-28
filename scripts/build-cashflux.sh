@@ -70,7 +70,7 @@ echo "==> copying static SPA assets (index.html, wasm_exec.js, vendored JS, font
 # NOTE: web/admin and web/portal are CashFlux's own separate sub-apps (admin console, billing
 # portal) — intentionally excluded; this build only stages the main budgeting SPA.
 STATIC_FILES=(
-  index.html wasm_exec.js
+  index.html
   favicon.svg icon-192.png icon-512.png apple-touch-icon.png
   manifest.webmanifest sw.js fonts.css
   d3.min.js chart.js countup.js muzak.js wonder.js
@@ -79,6 +79,19 @@ STATIC_FILES=(
 for f in "${STATIC_FILES[@]}"; do
   cp "$CASHFLUX_SRC/web/$f" "$OUT_DIR/$f"
 done
+
+# wasm_exec.js is handled separately because CashFlux GITIGNORES it: it is a toolchain
+# artifact, not source, so a fresh clone (i.e. the deploy droplet) does not have one and
+# the loop above would die on a missing file. Prefer the checkout's copy when present —
+# that is the local-dev case and keeps behaviour identical — and otherwise take it from
+# the Go toolchain doing the build, which is the copy that actually matches the wasm we
+# just compiled.
+if [ -f "$CASHFLUX_SRC/web/wasm_exec.js" ]; then
+  cp "$CASHFLUX_SRC/web/wasm_exec.js" "$OUT_DIR/wasm_exec.js"
+else
+  echo "==> CashFlux checkout has no web/wasm_exec.js (gitignored); using the toolchain's"
+  cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$OUT_DIR/wasm_exec.js"
+fi
 
 mkdir -p "$OUT_DIR/fonts" "$OUT_DIR/audio"
 cp -r "$CASHFLUX_SRC/web/fonts/." "$OUT_DIR/fonts/"

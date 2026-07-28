@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/monstercameron/GoWebComponents/v4/ui"
+	"github.com/monstercameron/GoWebComponents/v5/ui"
 )
 
 // main mounts the right app for the current path: the admin console under /admin, else the terminal.

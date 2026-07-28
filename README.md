@@ -51,7 +51,7 @@ speak gRPC). The rule bans an ad-hoc REST *API*, not published documents.
 
 | Layer | Choice |
 |---|---|
-| Frontend | **GoWebComponents v4.3.0** (Go→WASM, React-style, my framework) |
+| Frontend | **GoWebComponents v5.0.1** (Go→WASM, React-style, my framework) |
 | Transport | **GoGRPCBridge** `grpctunnel` — gRPC over WebSocket, same-origin `/socket` |
 | Backend | **Go gRPC server** — one `http.Server` serves both the tunnel and the wasm/SSR assets |
 | Data | SQLite (contact messages, AI spend ledger, cached answers) |
@@ -119,13 +119,15 @@ third_party/
 
 ## Build & run
 
-> Prereqs: Go ≥1.26, `protoc` + `protoc-gen-go` + `protoc-gen-go-grpc`. GWC is pinned to the
-> local checkout via a `replace` directive (see below) so we track the newest v4.3.0 code.
+> Prereqs: Go ≥1.26, `protoc` + `protoc-gen-go` + `protoc-gen-go-grpc`. GWC and CashFlux are
+> pinned to **sibling local checkouts** via `replace` directives, so `../GoWebComponents` and
+> `../CashFlux` must exist next to this repo. GWC must be on **v5.0.1 or newer** — earlier v5
+> fails to compile here (`css/u` shadowed `html/shorthand`, and five files dot-import both).
 
 ```bash
-# 1. deps — GWC and GoGRPCBridge are wired via local replace directives in go.mod:
-#    replace github.com/monstercameron/GoWebComponents/v4 => ../GoWebComponents
-#    replace github.com/monstercameron/GoGRPCBridge     => ./third_party/GoGRPCBridge
+# 1. deps — GWC and CashFlux are wired via local replace directives in go.mod:
+#    replace github.com/monstercameron/GoWebComponents/v5 => ../GoWebComponents
+#    replace github.com/monstercameron/CashFlux           => ../CashFlux
 
 # 2. generate the proto contract
 protoc --go_out=. --go_opt=paths=source_relative \
@@ -143,9 +145,18 @@ browser, or view the published version. It is a **static mock** — the shipped 
 
 ## Deploy
 
-Ubuntu + Nginx on DigitalOcean, built to be **one-click install and push-to-deploy from
-GitHub**: a single `go:embed`-ed binary behind Nginx (TLS + WebSocket proxy) under systemd,
-with atomic swaps and auto-rollback. `git push` → live. See
+Ubuntu + Nginx on DigitalOcean, **one command to install and one to update**:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/monstercameron/PersonalWebsiteMid2026/main/deploy/install.sh | sudo bash
+sudo deploy/update.sh      # pull → build → atomic swap → health check → auto-rollback
+sudo deploy/rollback.sh    # undo a deploy that came up healthy but was wrong
+```
+
+The droplet **builds from source** (three sibling checkouts, because `go.mod` pins GWC and
+CashFlux by relative `replace`), a release is a *directory* of binary + assets swapped by
+symlink, and SQLite lives outside every release. Nginx terminates TLS and upgrades the
+WebSocket tunnels; systemd runs it hardened, with journald logs. See
 [`documents/DEPLOYMENT.md`](documents/DEPLOYMENT.md).
 
 ## Status

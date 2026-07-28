@@ -39,6 +39,9 @@ the proof of work: hand-built Go, top to bottom. See `README.md`, `documents/DES
    *One permitted exception:* a **tiny** bootstrap `<style>` (CSS reset, base background/color to
    avoid a flash, and the base `font-family` the typed system can't express). Keep it minimal —
    everything else is typed `css/u`.
+8. **All on-screen text via i18n.** Every user-visible string goes through the GWC typed i18n
+   layer (a message bundle + `gwc i18n gen` accessors) — never hardcode display copy inside
+   components. English is the base bundle; other locales layer on. (See DESIGN.md §12.)
 
 ## Tool routing — local vs backend-routed
 Every terminal program is one of:

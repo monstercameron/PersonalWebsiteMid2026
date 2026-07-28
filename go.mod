@@ -6,14 +6,16 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/monstercameron/CashFlux v0.0.0-00010101000000-000000000000
 	github.com/monstercameron/GoGRPCBridge v1.1.1
-	github.com/monstercameron/GoWebComponents/v4 v4.2.0
+	github.com/monstercameron/GoWebComponents/v5 v5.0.0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.54.0
 )
 
-// GWC tracks the local checkout (unreleased v4.3.0). GoGRPCBridge is the published v1.1.1 module.
-replace github.com/monstercameron/GoWebComponents/v4 => ../GoWebComponents
+// GWC tracks the local checkout (unreleased v5 — not on the module proxy, so the require version
+// above is a placeholder the directory replace overrides). GoGRPCBridge is the published v1.1.1
+// module. CashFlux still requires GWC /v4 v4.2.0, which resolves from the proxy as a separate major.
+replace github.com/monstercameron/GoWebComponents/v5 => ../GoWebComponents
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect

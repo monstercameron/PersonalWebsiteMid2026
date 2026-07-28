@@ -7,7 +7,7 @@
 // TextSm, …) — only these project-specific colors live here.
 package theme
 
-import "github.com/monstercameron/GoWebComponents/v4/css/u"
+import "github.com/monstercameron/GoWebComponents/v5/css/u"
 
 // Aubergine palette (Ubuntu-souled): deep aubergine ground, warm off-white text, Ubuntu-orange
 // accent, purple secondary. See documents/DESIGN.md for the design rationale.

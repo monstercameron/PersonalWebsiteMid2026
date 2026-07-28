@@ -170,16 +170,27 @@ _(No Claude Code todo tool exists in-session; tracked here per project conventio
 - [ ] Document clearly: new **code/schema** and **secret rotation** are NOT web-editable.
 
 ## 11. Deploy — Ubuntu + Nginx on DigitalOcean (see documents/DEPLOYMENT.md)
-Goal: **one-click install, push-to-deploy from GitHub, no brain-racking.**
-- [ ] Single Go binary with `go:embed`ed wasm/assets — droplet needs no toolchain.
-- [ ] CI build source: git submodule GWC (pinned v4.3.0, recursive) or `go mod vendor`.
-- [ ] GitHub Actions: on push→main → build wasm+binary → SSH atomic-swap + restart.
-- [ ] `deploy/install.sh` — one-shot fresh-droplet setup (user, systemd, nginx, certbot, ufw, .env).
-- [ ] `deploy/update.sh` — atomic swap + `/healthz` check + **auto-rollback** (manual fallback).
-- [ ] Nginx: WebSocket upgrade + long timeouts on `/socket`; TLS via certbot auto-renew.
-- [ ] systemd unit (Restart=always, EnvironmentFile=.env, journald).
-- [ ] SQLite in `/opt/earlcameron/data` (outside deploy dir) + nightly backup; auto-migrations on boot.
-- [ ] One-time: DNS A-record → droplet IP; one GitHub SSH deploy secret.
+Goal: **one-click install, one action to update, no brain-racking.**
+- [x] ~~Single Go binary with `go:embed`ed wasm/assets~~ — **rejected, see DEPLOYMENT.md.** Asset
+      paths are CWD-relative and CashFlux alone is ~120 MB; a release is a *directory* swapped by
+      symlink instead. The atomic unit was the point, not the file count.
+- [x] Build source decided: **droplet builds from source**, three sibling checkouts, because
+      `go.mod` pins GWC + CashFlux by relative `replace`. No submodule, no vendor, no CI.
+- [x] `deploy/install.sh` — one-shot fresh-droplet setup (packages, user, swap-if-small, Go
+      toolchain read from `go.mod`, clones, `.env` + generated secrets, systemd, nginx, ufw,
+      first build, certbot).
+- [x] `deploy/update.sh` — pull → build → stage → atomic swap + `/healthz` + **auto-rollback**.
+- [x] `deploy/rollback.sh` — manual undo (`--list`, by name, or back-one), symlink-only.
+- [x] Nginx: WebSocket upgrade + long timeouts on `/socket` **and `/grpc`**; gzip for
+      `application/wasm`; `X-Forwarded-Proto` for the budget gate's Secure cookie; TLS via certbot.
+- [x] systemd unit (Restart=always, EnvironmentFile=.env, journald, hardened —
+      **no `MemoryDenyWriteExecute`**, wazero JITs).
+- [x] SQLite in `/opt/earlcameron/data` (outside deploy dir); auto-migrations on boot.
+- [ ] **Nightly backup of `data/` off-box** (`sqlite3 .backup` → DO Spaces). Still the one
+      irreplaceable thing with no copy.
+- [ ] One-time: DNS A-record → droplet IP.
+- [ ] Push-to-deploy from GitHub (optional follow-on; `update.sh` is the manual equivalent and
+      needs no deploy secret).
 
 ## 12. Terminal — live tracker (Cam's asks)
 > Native Claude Code TodoWrite isn't available this session — tracking here instead.
