@@ -152,10 +152,22 @@ layout, spacing, colors, typography, and the terminal aesthetic must actually ma
   - Default working branch is `dev`. If you find yourself on `main`, switch before committing.
   - **Never commit directly to `main`**, and never promote to it on your own initiative — promotion
     is Cam's call, and it is a release decision, not a merge convenience.
-  - **The gates that promote `dev` → `main`**: `go build ./...` + `go vet ./...` + `go test ./...`
-    green, the client wasm builds (`GOOS=js GOARCH=wasm`), the deploy scripts still parse
-    (`bash -n deploy/*.sh`), UI changes screenshot-checked, and adversarial review survived. A
-    promotion that skips a gate is the bug the gates exist to catch.
+  - **The gates that promote `dev` → `main`** — enforced by `.github/workflows/ci.yml`, not by
+    memory. Automated: `gofmt`, `go build ./...`, `go vet ./...`, `go test ./...`, the js/wasm
+    client build, `bash -n` + ShellCheck on the deploy scripts, no CRLF in shell/unit/conf
+    files, `nginx -t` on the real site config, the systemd unit parsing, and the GWC pin in
+    `deploy/lib.sh` still matching what README and DEPLOYMENT.md claim. Still on you, because
+    CI cannot judge them: **UI changes screenshot-checked, and adversarial review survived.**
+  - **Promotion runs through `.github/workflows/promote.yml`** (manual `workflow_dispatch`, type
+    `promote` to confirm). It re-runs the full gate set on the exact tree being promoted, then
+    **fast-forwards only** — if `main` has commits `dev` lacks, it refuses and shows them, because
+    that means something was committed straight to `main`.
+  - CI checks out GoWebComponents and CashFlux as **siblings** of this repo, since the `replace`
+    directives are relative — and it reads their refs out of `deploy/lib.sh` rather than
+    hardcoding them, so CI can never prove a combination the droplet does not build.
+  - Worth doing once in repo settings: protect `main` (no direct pushes, require CI). The
+    workflow enforces the policy for anything going through it; branch protection is what stops
+    a hand-rolled `git push origin main` from bypassing it entirely.
   - Because deploys build from source on the droplet, **`main` is literally what ships**:
     `deploy/lib.sh` pins `SITE_REF=main`. A commit landing on `main` is a commit that the next
     `update.sh` puts in front of visitors.

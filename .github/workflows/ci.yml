@@ -1,0 +1,205 @@
+name: CI
+
+# The quality gates AGENTS.md defines, enforced rather than remembered. `dev` is where
+# work lands and `main` is what the droplet actually deploys (deploy/lib.sh pins
+# SITE_REF=main), so a red gate here is a red gate in front of visitors.
+#
+# workflow_call is what makes this reusable: promote.yml runs these exact gates before it
+# will fast-forward main, so promotion cannot use a weaker standard than daily CI.
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+  workflow_call:
+
+# A newer push to the same branch makes the older run irrelevant.
+#
+# github.workflow is in the key because it resolves to the CALLING workflow's name when
+# promote.yml invokes this one. Without it, a push to dev during a promotion would land in
+# the same group and cancel the promotion's own gates.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go — build, vet, test, wasm
+    runs-on: ubuntu-latest
+    steps:
+      # THE LAYOUT IS THE WHOLE TRICK.
+      # go.mod pins GoWebComponents and CashFlux by RELATIVE replace (../GoWebComponents,
+      # ../CashFlux), so the module graph only resolves when all three checkouts are
+      # siblings. That is why nothing is checked out at the workspace root: this repo goes
+      # in a subdirectory so the other two can sit beside it, exactly as they do on the
+      # droplet under /opt/earlcameron/src.
+      - name: Check out the site
+        uses: actions/checkout@v4
+        with:
+          path: PersonalWebsiteMid2026
+
+      # The refs are READ FROM deploy/lib.sh, never written here. Hardcoding them would put
+      # a second copy of the pin in the repo, and the second copy is the one that goes
+      # stale — CI would then happily prove a combination the droplet never builds.
+      - name: Derive dependency refs from deploy/lib.sh
+        id: refs
+        working-directory: PersonalWebsiteMid2026
+        run: |
+          set -euo pipefail
+          gwc="$(sed -n 's/^GWC_REF="\${GWC_REF:-\(.*\)}"$/\1/p' deploy/lib.sh)"
+          cf="$(sed -n 's/^CASHFLUX_REF="\${CASHFLUX_REF:-\(.*\)}"$/\1/p' deploy/lib.sh)"
+          [ -n "$gwc" ] || { echo "could not read GWC_REF from deploy/lib.sh"; exit 1; }
+          [ -n "$cf" ]  || { echo "could not read CASHFLUX_REF from deploy/lib.sh"; exit 1; }
+          echo "gwc=$gwc" >> "$GITHUB_OUTPUT"
+          echo "cashflux=$cf" >> "$GITHUB_OUTPUT"
+          echo "GoWebComponents=$gwc  CashFlux=$cf"
+
+      - name: Check out GoWebComponents
+        uses: actions/checkout@v4
+        with:
+          repository: monstercameron/GoWebComponents
+          ref: ${{ steps.refs.outputs.gwc }}
+          path: GoWebComponents
+          # GWC vendors GoGRPCBridge as a submodule and replaces it by relative path in its
+          # own go.mod.
+          submodules: recursive
+
+      - name: Check out CashFlux
+        uses: actions/checkout@v4
+        with:
+          repository: monstercameron/CashFlux
+          ref: ${{ steps.refs.outputs.cashflux }}
+          path: CashFlux
+
+      # go-version-file keeps the toolchain tied to go.mod, the same single source
+      # deploy/install.sh reads when it provisions a droplet.
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: PersonalWebsiteMid2026/go.mod
+          cache-dependency-path: PersonalWebsiteMid2026/go.sum
+
+      - name: gofmt
+        working-directory: PersonalWebsiteMid2026
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l . || true)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::these files are not gofmt-clean:"
+            echo "$unformatted"
+            gofmt -d .
+            exit 1
+          fi
+          echo "gofmt clean"
+
+      - name: go build
+        working-directory: PersonalWebsiteMid2026
+        run: go build ./...
+
+      - name: go vet
+        working-directory: PersonalWebsiteMid2026
+        run: go vet ./...
+
+      - name: go test
+        working-directory: PersonalWebsiteMid2026
+        run: go test ./...
+
+      # The client is the half that only breaks under the js/wasm build constraints, so a
+      # native build proves nothing about it. This is the gate that catches a syscall/js
+      # mistake before it reaches a browser.
+      - name: Build the client for js/wasm
+        working-directory: PersonalWebsiteMid2026
+        run: GOOS=js GOARCH=wasm go build -o /dev/null ./client
+
+  deploy-assets:
+    name: Deploy — scripts, nginx, unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A syntax error in these is not found until someone is mid-deploy on a droplet, which
+      # is the worst possible moment to find it.
+      - name: Shell syntax
+        run: |
+          set -euo pipefail
+          for f in deploy/*.sh scripts/*.sh; do
+            bash -n "$f"
+            echo "ok  $f"
+          done
+
+      # -S error only: warnings are advisory here on purpose. A gate that fails on style
+      # opinions gets muted, and a muted gate protects nothing.
+      - name: ShellCheck
+        run: |
+          set -euo pipefail
+          command -v shellcheck >/dev/null || sudo apt-get install -y -qq shellcheck
+          shellcheck -S error deploy/*.sh scripts/*.sh
+
+      # CRLF is not cosmetic for these: a CRLF shebang on Ubuntu fails as
+      # "/usr/bin/env: 'bash\r': No such file or directory", and .gitattributes is the only
+      # thing standing between a Windows-authored script and that failure.
+      - name: No CRLF in shell, unit or nginx files
+        run: |
+          set -euo pipefail
+          bad=0
+          for f in deploy/*.sh scripts/*.sh deploy/*.service deploy/nginx/* deploy/env.example; do
+            if grep -qU $'\r' "$f"; then echo "::error file=$f::contains CRLF line endings"; bad=1; fi
+          done
+          [ "$bad" = "0" ] || exit 1
+          echo "line endings clean"
+
+      # Validates the real config through the real parser. Installed the way install.sh
+      # installs it, so the test covers the arrangement rather than the file in isolation.
+      - name: nginx -t
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx
+          sudo cp deploy/nginx/earlcameron.conf /etc/nginx/sites-available/earlcameron
+          sudo ln -sfn /etc/nginx/sites-available/earlcameron /etc/nginx/sites-enabled/earlcameron
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t
+
+      # Catches a malformed directive or a misspelled key in the unit — the failure mode
+      # where systemd silently IGNORES a hardening line you believed was in effect.
+      #
+      # This asserts on specific bad signals rather than "any output at all". A runner has
+      # no /opt/earlcameron/.env and no installed release, so verify legitimately complains
+      # about the absent EnvironmentFile and ExecStart; treating all output as failure would
+      # make this gate red on every run and it would get muted within a day.
+      - name: systemd unit parses
+        run: |
+          set -euo pipefail
+          out="$(systemd-analyze verify deploy/earlcameron.service 2>&1 || true)"
+          echo "$out"
+          if echo "$out" | grep -qiE "unknown (lvalue|key|section)|failed to parse|invalid (value|option|setting)|syntax error"; then
+            echo "::error::systemd-analyze found a malformed or unrecognised directive in the unit"
+            exit 1
+          fi
+          echo "unit parses"
+
+  docs:
+    name: Docs — the facts that live in two places
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The GWC pin exists in deploy/lib.sh (what actually builds) and is quoted in README
+      # and DEPLOYMENT.md (what people read). This asserts the prose still matches the pin,
+      # because a stale documented version sends the next person to a build that cannot work.
+      - name: GWC pin matches the docs
+        run: |
+          set -euo pipefail
+          pin="$(sed -n 's/^GWC_REF="\${GWC_REF:-\(.*\)}"$/\1/p' deploy/lib.sh)"
+          echo "deploy/lib.sh pins GWC at: $pin"
+          fail=0
+          for doc in README.md documents/DEPLOYMENT.md; do
+            grep -q "$pin" "$doc" || { echo "::error file=$doc::does not mention the pinned GWC ref $pin"; fail=1; }
+          done
+          [ "$fail" = "0" ] || exit 1
+          echo "docs agree with the pin"

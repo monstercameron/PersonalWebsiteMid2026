@@ -1,0 +1,102 @@
+name: Promote dev to main
+
+# The policy in AGENTS.md, made mechanical: main advances ONLY by promoting dev, and only
+# once the gates pass.
+#
+# Manual trigger by design. AGENTS.md says promotion is Cam's call and not an agent's, so
+# this deliberately does not run on push — a green dev is a precondition for releasing, not
+# a decision to release. Because the droplet builds from source with SITE_REF=main, running
+# this is the act that puts code in front of visitors.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "promote" to confirm releasing dev to main'
+        required: true
+        default: ''
+
+concurrency:
+  group: promote-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  confirm:
+    name: Confirm intent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the confirmation word
+        # Through env, not interpolated into the script. `${{ }}` inside a run block splices
+        # the raw input into the shell before it executes, so an input containing shell
+        # metacharacters would run as code.
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRM" != "promote" ]; then
+            echo "::error::type 'promote' in the confirm box to release dev to main"
+            exit 1
+          fi
+
+  # Not "was CI green at some point" — the gates run again, here, on the exact tree being
+  # promoted. Reusing ci.yml rather than restating the steps is what keeps promotion from
+  # drifting into a weaker standard than daily CI.
+  gates:
+    name: Quality gates
+    needs: confirm
+    uses: ./.github/workflows/ci.yml
+
+  promote:
+    name: Fast-forward main
+    needs: gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the ancestry check below is meaningless against a shallow clone.
+          fetch-depth: 0
+          ref: dev
+
+      - name: Fast-forward main to dev
+        run: |
+          set -euo pipefail
+          git fetch origin main dev
+
+          dev_sha="$(git rev-parse origin/dev)"
+          main_sha="$(git rev-parse origin/main)"
+          echo "dev  $dev_sha"
+          echo "main $main_sha"
+
+          if [ "$dev_sha" = "$main_sha" ]; then
+            echo "main already matches dev — nothing to promote"
+            exit 0
+          fi
+
+          # Refuse anything that is not a clean fast-forward. If main has commits dev does
+          # not, someone committed straight to main — which the policy forbids — and
+          # merging here would paper over it. Better to stop and make that visible.
+          if ! git merge-base --is-ancestor "$main_sha" "$dev_sha"; then
+            echo "::error::main is not an ancestor of dev — refusing to promote."
+            echo "main has commits dev lacks, which means something landed on main directly."
+            git log --oneline "$dev_sha..$main_sha" || true
+            exit 1
+          fi
+
+          echo "promoting these commits:"
+          git log --oneline "$main_sha..$dev_sha"
+
+          git push origin "$dev_sha:refs/heads/main"
+          echo "main is now $dev_sha"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Promoted \`dev\` → \`main\`"
+            echo ""
+            echo "The next \`sudo deploy/update.sh\` on the droplet will build and serve this."
+          } >> "$GITHUB_STEP_SUMMARY"
