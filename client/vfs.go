@@ -122,15 +122,15 @@ const skillsMD = `SKILLS
 
 const projectsMD = `SELECTED OPEN-SOURCE WORK   github.com/monstercameron
 
+  CashFlux            Local-first budgeting suite in Go/WASM — 40+ pages, rules engine, AI layer.
+  ArticleFlux         Self-hosted feed reader, Go all the way down — FTS5 search, TTS, multi-tenant.
   GoWebComponents     A React-style UI framework in Go→WASM. This site runs on it.
   GoGRPCBridge        gRPC over WebSockets for the browser — no proxy. Carries this site's traffic.
-  CashFlux            Local-first budgeting suite in Go/WASM — 40+ pages, rules engine, AI layer.
   WASIBrowser         A no-JavaScript browser that renders WebAssembly apps via a custom ABI.
   SemanticScript      An agent-first programming language — auditable source designed for LLMs.
   SemanticAssembly    Agent-native RISC-V assembly layer.
   SemanticPortrait    Privacy-first journaling → a living self-portrait graph via a local model.
   Snapdragon LLMs     Running 12–27B models on the Snapdragon X2 NPU/GPU (QNN / ONNX pipelines).
-  Vulkan Path Tracer  Real-time GPU path tracing.
 `
 
 const workingStyleMD = `HOW I WORK

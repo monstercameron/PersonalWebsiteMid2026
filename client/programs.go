@@ -12,16 +12,17 @@ import (
 )
 
 // termProjects is the faux client-side project list the terminal programs read from.
+// Order mirrors internal/content.featured: the first three are the headliners.
 var termProjects = []struct{ id, name, status, blurb string }{
-	{"gwc", "GoWebComponents", "v4.3.0", "React-style UI framework in Go→WASM. This site runs on it."},
 	{"cashflux", "CashFlux", "shipping", "Local-first budgeting suite — all Go/WASM, no JS framework."},
+	{"articleflux", "ArticleFlux", "shipping", "Self-hosted feed reader, Go all the way down. Real gRPC in the browser."},
+	{"gwc", "GoWebComponents", "v5.0.1", "React-style UI framework in Go→WASM. This site runs on it."},
 	{"wasibrowser", "WASIBrowser", "prototype", "A no-JavaScript browser that renders WebAssembly apps."},
 	{"semanticscript", "SemanticScript", "research", "An agent-first programming language for LLMs."},
 	{"semanticassembly", "SemanticAssembly", "research", "Agent-native RISC-V-first assembly layer."},
 	{"whispertome", "WhisperToMe", "shipping", "Desktop dictation agent running Whisper on the NPU."},
-	{"pathtracer", "Vulkan Path Tracer", "demo", "Real-time GPU path tracer with a live browser demo."},
 	{"semanticportrait", "SemanticPortrait", "prototype", "Journaling app that builds a self-portrait graph."},
-	{"grpcbridge", "GoGRPCBridge", "v0.0.19", "gRPC over WebSockets for the browser — no proxy."},
+	{"grpcbridge", "GoGRPCBridge", "v1.1.1", "gRPC over WebSockets for the browser — no proxy."},
 }
 
 // programOutput dispatches a command name to its faux program output.

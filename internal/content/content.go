@@ -66,18 +66,27 @@ func aboutCopy() *sitepb.About {
 }
 
 // featured returns the curated set of projects, in display order.
+//
+// Order IS the billing: there is no "featured" flag on sitepb.Project, so the first three
+// entries are the headliners — CashFlux, ArticleFlux, GoWebComponents — and the SSR grid,
+// the terminal's `projects`, and /projects.md all read this same slice in this same order.
 func featured() []*sitepb.Project {
 	const gh = "https://github.com/monstercameron/"
 	return []*sitepb.Project{
-		{Id: "gwc", Name: "GoWebComponents", Status: "v4.3.0", Glyph: "⟠",
-			Tags: []string{"Go", "WASM", "framework"}, Repo: gh + "GoWebComponents",
-			Demo:  "https://monstercameron.github.io/GoWebComponents/",
-			Blurb: "A React-style UI framework in Go→WASM. Hooks, a fiber runtime, SSR/hydration, typed HTML. Benchmarked head-to-head with React — faster on overall geomean. This site runs on it.",
-			Long:  "The framework rendering the page you are reading — component model, reconciler, router, server functions, devtools. Benchmarked against React and winning on several axes. Zero npm."},
 		{Id: "cashflux", Name: "CashFlux", Status: "shipping", Glyph: "◈",
 			Tags: []string{"Go", "WASM", "gRPC", "SQLite"}, Repo: gh + "CashFlux",
 			Blurb: "Local-first budgeting suite — 40+ pages, live charts, a rules engine, an AI layer. All Go/WASM, no JS framework.",
 			Long:  "A full personal-finance app built entirely in Go compiled to WebAssembly on my own framework. Offline-first, enterprise-grade test suite, motion system, i18n. Runs live on this site — try `budget`."},
+		{Id: "articleflux", Name: "ArticleFlux", Status: "shipping", Glyph: "◨",
+			Tags: []string{"Go", "WASM", "gRPC", "FTS5"}, Repo: gh + "ArticleFlux",
+			Demo:  "https://monstercameron.github.io/ArticleFlux/",
+			Blurb: "A self-hosted feed reader that is Go all the way down — the server, the client, and the CSS. Real gRPC in the browser; the only JavaScript that ships is a boot shim.",
+			Long:  "Google Reader's key map over a virtualised list at firehose scale — 151 subscriptions, 3,621 items — with SQLite FTS5 search, tags, notes, per-source hues and text-to-speech. Multi-tenant and deduplicated: a popular feed is polled once no matter how many people subscribe. The live demo is the shipping client with only the transport swapped."},
+		{Id: "gwc", Name: "GoWebComponents", Status: "v5.0.1", Glyph: "⟠",
+			Tags: []string{"Go", "WASM", "framework"}, Repo: gh + "GoWebComponents",
+			Demo:  "https://monstercameron.github.io/GoWebComponents/",
+			Blurb: "A React-style UI framework in Go→WASM. Hooks, a fiber runtime, SSR/hydration, typed HTML. Benchmarked head-to-head with React — faster on overall geomean. This site runs on it.",
+			Long:  "The framework rendering the page you are reading — component model, reconciler, router, server functions, devtools. Benchmarked against React and winning on several axes. Zero npm."},
 		{Id: "wasibrowser", Name: "WASIBrowser", Status: "prototype", Glyph: "◵",
 			Tags: []string{"Go", "wasmtime", "C"}, Repo: gh + "WASIBrowser",
 			Blurb: "A no-JavaScript browser. Renders WebAssembly apps directly via a custom ABI (Blitz + wasmtime).",
@@ -95,16 +104,11 @@ func featured() []*sitepb.Project {
 			Demo:  "https://monstercameron.github.io/WhisperToMe/",
 			Blurb: "A desktop dictation agent that runs Whisper on the NPU — pinned there for all-day battery, not just speed.",
 			Long:  "On-device speech-to-text on the Hexagon NPU for all-day-battery dictation, wrapped in a clean desktop agent UX."},
-		{Id: "pathtracer", Name: "Vulkan Path Tracer", Status: "demo", Glyph: "✦",
-			Tags: []string{"Vulkan", "GPU", "graphics"}, Repo: gh + "pathtracer",
-			Demo:  "https://monstercameron.github.io/pathtracer/",
-			Blurb: "A real-time path tracer — physically-based light transport on the GPU, with a live in-browser demo.",
-			Long:  "A from-scratch GPU path tracer: BVH acceleration, importance sampling, progressive refinement — running live in the browser."},
 		{Id: "semanticportrait", Name: "SemanticPortrait", Status: "prototype", Glyph: "◮",
 			Tags: []string{"local-LLM", "graph", "journaling"}, Repo: gh + "SemanticPortrait",
 			Blurb: "A journaling app that turns entries into a living self-portrait graph via a local model.",
 			Long:  "A Windows journaling + self-portrait app: entries feed a local-model entry→graph loop, on a security-reviewed local-first store."},
-		{Id: "grpcbridge", Name: "GoGRPCBridge", Status: "v1.0.0", Glyph: "⇄",
+		{Id: "grpcbridge", Name: "GoGRPCBridge", Status: "v1.1.1", Glyph: "⇄",
 			Tags: []string{"Go", "gRPC", "WebSocket"}, Repo: gh + "GoGRPCBridge",
 			Demo:  "https://monstercameron.github.io/GoGRPCBridge/",
 			Blurb: "gRPC over WebSockets for the browser — no Envoy, no proxy. This site talks to its backend through it.",

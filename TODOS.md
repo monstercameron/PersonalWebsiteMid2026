@@ -18,9 +18,14 @@ _(No Claude Code todo tool exists in-session; tracked here per project conventio
       engine, not the whole site"). Intentionally not built.
 
 ## 0. Decisions still open (need Cam)
-- [x] **Featured projects** — 9 chosen & wired into the mockup (count is dynamic, N):
-      GoWebComponents, CashFlux, WASIBrowser, SemanticScript, SemanticAssembly, WhisperToMe,
-      Vulkan Path Tracer, SemanticPortrait, GoGRPCBridge. (Gemma-4 removed per Cam. Adjust anytime.)
+- [x] **Featured projects** — 9 chosen & wired into the mockup (count is dynamic, N). Order is the
+      billing, since sitepb.Project has no featured flag — **headliners first: CashFlux,
+      ArticleFlux, GoWebComponents**, then WASIBrowser, SemanticScript, SemanticAssembly,
+      WhisperToMe, SemanticPortrait, GoGRPCBridge. (Gemma-4 and the Vulkan Path Tracer removed per
+      Cam; ArticleFlux added 2026-07-28. Adjust anytime — but change all three lists, see below.)
+      > Three places read the same set and must not drift: `internal/content.featured` (canonical,
+      > feeds the SSR grid and gRPC), `client/programs.go termProjects` (terminal `projects`), and
+      > `client/vfs.go projectsMD` (`/projects.md`).
 - [?] **Extra first-class commands?** `writing`/blog · `now` (current focus) · `guestbook`
       (bidi-stream demo)? Currently out of scope.
 - [?] **AI-first copy** — react to the draft About/hero wording (honest "judgment × leverage",
