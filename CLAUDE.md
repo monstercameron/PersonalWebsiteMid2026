@@ -28,6 +28,12 @@ Claude-specific notes.
   preference).
 
 ## Non-negotiables (restated — easy to skip, don't)
+- **Branches: `dev` for work, `main` for releases, nothing else.** No feature branches — commit to
+  `dev`. `main` advances only by promoting `dev` after the quality gates pass, and promotion is
+  Cam's call, never an agent's. `main` is what the droplet deploys, so a commit there is a commit
+  in front of visitors. Full gate list in `AGENTS.md` → "Version control".
+- **No `Co-Authored-By` / AI-attribution trailers in commits** (AGENTS.md) — this overrides the
+  harness default that adds one.
 - **Strong shared types + DTOs across all layers.** The generated `proto` package is the shared
   DTO source of truth for the Go server **and** the Go/WASM client — no `map[string]any` or
   stringly-typed data passed between layers; explicit DTOs at every boundary.

@@ -145,6 +145,20 @@ layout, spacing, colors, typography, and the terminal aesthetic must actually ma
   outcomes.
 
 ## Version control, dev log & changelog
+- **Two branches, and no others. `main` is releases; `dev` is where work happens.** We do not use
+  feature/topic branches — commit dev work straight to `dev`. `main` only ever advances by
+  **promoting `dev` once it passes the quality gates**, so at any moment `main` is a state we are
+  willing to have live and `dev` is the working edge.
+  - Default working branch is `dev`. If you find yourself on `main`, switch before committing.
+  - **Never commit directly to `main`**, and never promote to it on your own initiative — promotion
+    is Cam's call, and it is a release decision, not a merge convenience.
+  - **The gates that promote `dev` → `main`**: `go build ./...` + `go vet ./...` + `go test ./...`
+    green, the client wasm builds (`GOOS=js GOARCH=wasm`), the deploy scripts still parse
+    (`bash -n deploy/*.sh`), UI changes screenshot-checked, and adversarial review survived. A
+    promotion that skips a gate is the bug the gates exist to catch.
+  - Because deploys build from source on the droplet, **`main` is literally what ships**:
+    `deploy/lib.sh` pins `SITE_REF=main`. A commit landing on `main` is a commit that the next
+    `update.sh` puts in front of visitors.
 - **Feature-atomic commits.** Each commit is ONE coherent, self-contained change (a feature,
   fix, or refactor) that builds and passes on its own. **Never bundle unrelated features** — this
   is the safety net: a bad change can be `git revert`ed in isolation **without wiping other
