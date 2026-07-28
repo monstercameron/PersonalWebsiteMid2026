@@ -48,10 +48,11 @@ func seedTree() *fnode {
 			"cam": dir(map[string]*fnode{
 				"about.md":   file(aboutMD),
 				"resume.pdf": file("%PDF-1.4 (faux) — run `resume` on the site to download the real one.\n"),
+				// The three headliners, matching internal/content.featured's leading entries.
 				"projects": dir(map[string]*fnode{
-					"gwc.md":         file("GoWebComponents — a React-style UI framework in Go→WASM. This site runs on it.\n"),
 					"cashflux.md":    file("CashFlux — local-first budgeting, all Go/WASM, no JS framework.\n"),
-					"wasibrowser.md": file("WASIBrowser — a no-JavaScript browser that renders WebAssembly apps.\n"),
+					"articleflux.md": file("ArticleFlux — self-hosted feed reader, Go all the way down. Real gRPC in the browser.\n"),
+					"gwc.md":         file("GoWebComponents — a React-style UI framework in Go→WASM. This site runs on it.\n"),
 				}),
 				"notes": dir(map[string]*fnode{
 					"README.md":        file(notesReadme),
