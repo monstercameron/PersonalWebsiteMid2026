@@ -1,8 +1,8 @@
 package admin
 
 import (
-	_ "embed"
 	"crypto/rand"
+	_ "embed"
 	"math/big"
 	"strings"
 

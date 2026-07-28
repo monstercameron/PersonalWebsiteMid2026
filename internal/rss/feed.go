@@ -117,8 +117,8 @@ func TrackedFeedXML(list []store.TrackedAnime, baseURL string, now time.Time) (s
 			Description: fmt.Sprintf("%s · %s · %d episodes · %d", a.Format, a.Status, a.Episodes, a.SeasonYear),
 			// GUID is stable per show (no episode count) so a tracked show isn't re-shown as "new"
 			// by readers each week its episode count ticks up; the episode count lives in the title/desc.
-			GUID: fmt.Sprintf("anime-tracked-%d", a.AniListID),
-			PubDate:     time.Unix(a.UpdatedAt, 0).UTC(),
+			GUID:    fmt.Sprintf("anime-tracked-%d", a.AniListID),
+			PubDate: time.Unix(a.UpdatedAt, 0).UTC(),
 		})
 	}
 	return buildFeed("Anime Release Radar — Tracked Releases", "Tracked show release updates and status snapshots.", baseURL, self, items, now)

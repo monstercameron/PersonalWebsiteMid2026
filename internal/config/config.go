@@ -51,19 +51,19 @@ type Config struct {
 // Load reads configuration from the environment, applying sane local defaults.
 func Load() Config {
 	return Config{
-		Addr:           env("LISTEN_ADDR", "127.0.0.1:8095"),
-		DBPath:         env("DB_PATH", "web/data/site.db"),
-		AllowedOrigins: splitCSV(os.Getenv("ALLOWED_ORIGINS")),
-		AdminUsername:  env("ADMIN_USERNAME", "cam"),
-		AdminPassword:  os.Getenv("ADMIN_PASSWORD"),
+		Addr:               env("LISTEN_ADDR", "127.0.0.1:8095"),
+		DBPath:             env("DB_PATH", "web/data/site.db"),
+		AllowedOrigins:     splitCSV(os.Getenv("ALLOWED_ORIGINS")),
+		AdminUsername:      env("ADMIN_USERNAME", "cam"),
+		AdminPassword:      os.Getenv("ADMIN_PASSWORD"),
 		AdminSecret:        os.Getenv("ADMIN_SECRET"),
 		AdminRecoveryToken: os.Getenv("ADMIN_RECOVERY_TOKEN"),
 		AdminSetupToken:    os.Getenv("ADMIN_SETUP_TOKEN"),
 		BudgetPassword:     env("BUDGET_PASSWORD", os.Getenv("ADMIN_PASSWORD")),
-		BaseURL:        env("BASE_URL", "http://127.0.0.1:8095"),
-		OpenAIKey:       os.Getenv("OPENAI_API_KEY"),
-		OpenAIModel:     env("OPENAI_MODEL", "gpt-4o-mini"),
-		CashFluxDataDir: env("CASHFLUX_DATA_DIR", "web/data/cashflux"),
+		BaseURL:            env("BASE_URL", "http://127.0.0.1:8095"),
+		OpenAIKey:          os.Getenv("OPENAI_API_KEY"),
+		OpenAIModel:        env("OPENAI_MODEL", "gpt-4o-mini"),
+		CashFluxDataDir:    env("CASHFLUX_DATA_DIR", "web/data/cashflux"),
 	}
 }
 

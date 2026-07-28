@@ -271,12 +271,12 @@ func globMatch(pattern, name string) bool {
 // manPage returns a short faux man page for a command.
 func manPage(cmd string) string {
 	pages := map[string]string{
-		"ls":    "LS(1)\n  ls [-lah] [path] — list directory contents.",
-		"cd":    "CD(1)\n  cd [path] — change the working directory.",
-		"grep":  "GREP(1)\n  grep [-Rni] pattern [path] — search text.",
-		"find":  "FIND(1)\n  find [path] [-name glob] [-type f|d] — walk the tree.",
-		"echo":  "ECHO(1)\n  echo text [> file] — print text (or write it to a file).",
-		"cat":   "CAT(1)\n  cat file... — print file contents.",
+		"ls":   "LS(1)\n  ls [-lah] [path] — list directory contents.",
+		"cd":   "CD(1)\n  cd [path] — change the working directory.",
+		"grep": "GREP(1)\n  grep [-Rni] pattern [path] — search text.",
+		"find": "FIND(1)\n  find [path] [-name glob] [-type f|d] — walk the tree.",
+		"echo": "ECHO(1)\n  echo text [> file] — print text (or write it to a file).",
+		"cat":  "CAT(1)\n  cat file... — print file contents.",
 	}
 	if p, ok := pages[cmd]; ok {
 		return p + "\n"
