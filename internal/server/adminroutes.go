@@ -2,11 +2,65 @@ package server
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/monstercameron/earlcameron/internal/rss"
 )
+
+// feedBaseURL decides the origin the RSS feeds print inside themselves — the channel <link>, the
+// atom:self href, and every item guid.
+//
+// It exists because those URLs outlive the request. A feed reader stores them and follows them for
+// months, so an origin that was merely *reachable* at generation time is not good enough: on
+// 2026-07-29 both public feeds were advertising `http://167.99.232.99:8080` — a raw IP on a
+// non-standard port — to anyone who subscribed through the real domain, because that is what
+// BASE_URL happened to be set to on the box.
+//
+// So: prefer the hostname the request actually arrived on when it is a real name, and fall back to
+// the configured BASE_URL otherwise. A request that came in on a name proves that name resolves
+// here; the configured value proves nothing.
+//
+// The Host header is attacker-controlled, so this deliberately cannot be pointed at another origin:
+// a candidate is accepted only if it is a DNS name (an IP literal is rejected, which is the whole
+// point), and only the host is taken — never a path or a scheme from the client. The scheme comes
+// from X-Forwarded-Proto, which nginx sets and which a direct client cannot forge past it.
+func feedBaseURL(r *http.Request, configured string) string {
+	host := r.Host
+	if fwd := r.Header.Get("X-Forwarded-Host"); fwd != "" {
+		// A comma-joined list means several proxies appended; the first is the client-facing one.
+		host = strings.TrimSpace(strings.Split(fwd, ",")[0])
+	}
+	if isDNSName(hostOnly(host)) {
+		scheme := "https"
+		if p := r.Header.Get("X-Forwarded-Proto"); p != "" {
+			scheme = strings.TrimSpace(strings.Split(p, ",")[0])
+		} else if r.TLS == nil {
+			scheme = "http"
+		}
+		return scheme + "://" + host
+	}
+	return strings.TrimRight(configured, "/")
+}
+
+// hostOnly strips a :port suffix, tolerating IPv6 literals in brackets.
+func hostOnly(hostport string) string {
+	if h, _, err := net.SplitHostPort(hostport); err == nil {
+		return h
+	}
+	return hostport
+}
+
+// isDNSName reports whether host is a routable domain name rather than an IP literal, "localhost",
+// or empty. The dot requirement is what rejects both bare IPs and single-label internal names.
+func isDNSName(host string) bool {
+	if host == "" || net.ParseIP(host) != nil {
+		return false
+	}
+	return strings.Contains(host, ".") && !strings.ContainsAny(host, " /\\")
+}
 
 // registerAdminRoutes wires the public anime RSS feeds and the admin console shell.
 //
@@ -28,7 +82,7 @@ func (s *Server) animeFeed(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
-	xml, err := rss.TrackedFeedXML(list, s.cfg.BaseURL, time.Now())
+	xml, err := rss.TrackedFeedXML(list, feedBaseURL(r, s.cfg.BaseURL), time.Now())
 	if err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
@@ -50,7 +104,7 @@ func (s *Server) qotdFeed(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
-	xml, err := rss.PublishedFeedXML(posts, s.cfg.BaseURL, time.Now())
+	xml, err := rss.PublishedFeedXML(posts, feedBaseURL(r, s.cfg.BaseURL), time.Now())
 	if err != nil {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return

@@ -5,6 +5,17 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Fixed
+- **The RSS feeds were advertising a raw IP to their own subscribers.** Both public feeds printed
+  `http://167.99.232.99:8080` as the channel `<link>`, the `atom:self` href and every item guid —
+  *including when served from `https://www.earlcameron.com`* — because that is what `BASE_URL` was
+  set to on the droplet. Feed URLs outlive the request: a reader stores them and follows them for
+  months, so this shipped a raw IP on a non-standard port into every subscription. `feedBaseURL` now
+  prefers the hostname the request actually arrived on when it is a real DNS name, falling back to
+  the configured value. A forged `Host` cannot redirect the advertised origin: IP literals,
+  `localhost`, single-label names and anything containing a path separator are rejected, and the
+  scheme comes from `X-Forwarded-Proto`, not the client. Covered by table tests. The droplet's
+  `BASE_URL` was also corrected to the real origin, which is what the homepage's feed field renders
+  from — it had been showing the IP too.
 - **The page title, description and OG tags still carried the old positioning.** The hero had moved
   to "Senior software engineer building AI-native products…" while `<title>` still said "AI-native
   systems engineer", so every crawler, search snippet and pasted-link preview reported the narrower

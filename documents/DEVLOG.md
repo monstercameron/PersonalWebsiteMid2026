@@ -2,6 +2,31 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-29 — The feeds were telling subscribers to visit an IP address
+
+Cam noticed `http://167.99.232.99:8080/anime.xml` and asked why the feeds use the IP instead of the
+domain when one exists. Checking it turned up worse than the report: the feed served **from
+`https://www.earlcameron.com/anime.xml`** was itself printing `http://167.99.232.99:8080` as the
+channel `<link>` and the `atom:self` href. The droplet's `BASE_URL` was set to the IP, and every
+absolute URL in both feeds came from it.
+
+This is not cosmetic, because **feed URLs outlive the request**. A reader stores them and follows
+them for months; anyone who subscribed was handed a raw IP on a non-standard port as the permanent
+home of the feed. It had also leaked straight into yesterday's work — the copy-to-clipboard field I
+added to the homepage renders from the same `BASE_URL`, so production was offering visitors
+`http://167.99.232.99:8080/anime.xml` to paste into their reader. I threaded that config value
+through without ever checking what it held in production; the field was verified locally, where it
+read `127.0.0.1:8096` and looked perfectly correct.
+
+`feedBaseURL` now prefers the host the request actually arrived on, falling back to the configured
+value. The reasoning: a request that arrived on a name proves that name resolves here, while a
+configured string proves nothing. The `Host` header is attacker-controlled, so the acceptance test
+is deliberately narrow — IP literals, `localhost`, single-label names and anything with a path
+separator are rejected, and the scheme is taken from `X-Forwarded-Proto` rather than from the
+client. Eight table cases pin both halves: the domain wins over a configured IP, and a forged host
+cannot move the origin. The droplet's `BASE_URL` was corrected as well, since the once-at-startup
+SSR page has no request to learn from.
+
 ## 2026-07-29 — The "stale root render" that wasn't, and the metadata that was
 
 A review reported something alarming: the bare root URL appeared to serve the *old* homepage —
