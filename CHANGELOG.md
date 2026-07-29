@@ -4,7 +4,32 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Fixed
+- **The page title, description and OG tags still carried the old positioning.** The hero had moved
+  to "Senior software engineer building AI-native products…" while `<title>` still said "AI-native
+  systems engineer", so every crawler, search snippet and pasted-link preview reported the narrower
+  framing — the strings read *first* and by the most people were the last ones updated. All four now
+  track the hero, with a note to change them in the same commit as any future H1.
+- **The résumé title was narrower than the site's.** Now "Senior Software Engineer — AI Systems,
+  Developer Platforms & WebAssembly". The résumé travels separately from the site, so a stale title
+  there quietly undoes the repositioning for whoever only ever sees the PDF.
+
 ### Added
+- **A `benchmarks ↗` link on the GoWebComponents card.** "Benchmarked head-to-head with React —
+  faster on overall geomean" was the least verifiable sentence on the page; the numbers existed in
+  the GWC repo's `docs/benchmarks` and simply were not reachable from here. Third links come from a
+  small `evidenceLinks` map rather than a new proto field, since protoc is unavailable (TODOS §2).
+
+### Changed
+- **CashFlux copy is measured rather than promotional.** "40+ pages" → "50 routes";
+  "enterprise-grade test suite" → "221 internal packages behind 2,998 tests", and the long
+  description now names the shipped modules instead of asserting quality.
+- **WASIBrowser leads with the result**, not the vocabulary: "A browser runtime where applications
+  ship as WebAssembly components instead of JavaScript bundles." The reactified-C ABI detail stays
+  one sentence later for the reader who wants it.
+- **CashFlux lock page states the personal-use angle up front** — "the same CashFlux deployment I
+  use personally" — so the password box reads as conviction rather than as a closed door, with guest
+  isolation stated as information rather than defence.
 - **Motion pass — one gesture, used twice, no JavaScript.** DESIGN.md §7 asks for a few earned
   moments rather than confetti, so the whole site shares a single `rise` gesture (a 10px lift with a
   fade): staggered at load across the hero, and tied to `animation-timeline: view()` for every

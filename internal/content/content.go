@@ -83,8 +83,10 @@ func featured() []*sitepb.Project {
 		{Id: "cashflux", Name: "CashFlux", Status: "shipping", Glyph: "◈",
 			Tags: []string{"Go", "WASM", "gRPC", "SQLite"}, Repo: gh + "CashFlux",
 			Demo:  "https://monstercameron.github.io/CashFlux/",
-			Blurb: "Local-first budgeting suite — 40+ pages, live charts, a rules engine, an AI layer. All Go/WASM, no JS framework.",
-			Long:  "A full personal-finance app built entirely in Go compiled to WebAssembly on my own framework. Offline-first, enterprise-grade test suite, motion system, i18n. Runs live on this site — try `budget`."},
+			Blurb: "Local-first budgeting suite — 50 routes, live charts, a rules engine, an AI layer. All Go/WASM, no JS framework.",
+			// "Enterprise-grade test suite" was doing the work a number should do: it reads as a
+			// claim about ambition rather than a fact, next to a velocity strip that prints 2,998.
+			Long: "A full personal-finance app built entirely in Go compiled to WebAssembly on my own framework — transactions, budgets, goals, reports, household ownership, a financial to-do system and an on-device assistant. Offline-first, 221 internal packages behind 2,998 tests, with a motion system and i18n. Runs live on this site — try `budget`."},
 		{Id: "articleflux", Name: "ArticleFlux", Status: "shipping", Glyph: "◨",
 			Tags: []string{"Go", "WASM", "gRPC", "FTS5"}, Repo: gh + "ArticleFlux",
 			Demo:  "https://monstercameron.github.io/ArticleFlux/",
@@ -97,8 +99,10 @@ func featured() []*sitepb.Project {
 			Long:  "The framework rendering the page you are reading — component model, reconciler, router, server functions, devtools. Benchmarked against React and winning on several axes. Zero npm."},
 		{Id: "wasibrowser", Name: "WASIBrowser", Status: "prototype", Glyph: "◵",
 			Tags: []string{"Go", "wasmtime", "C"}, Repo: gh + "WASIBrowser",
-			Blurb: "A no-JavaScript browser. Renders WebAssembly apps directly via a custom ABI (Blitz + wasmtime).",
-			Long:  "A browser where pages are WASM, not HTML+JS — a reactified-C component ABI, a Go host, and a real storefront demo over authenticated RPC."},
+			// Lead with the result a non-specialist can picture; the ABI vocabulary is still here,
+			// one sentence later, for the reader who wants it.
+			Blurb: "A browser runtime where applications ship as WebAssembly components instead of JavaScript bundles.",
+			Long:  "A browser where pages are WASM, not HTML+JS — a reactified-C component ABI, a Go host (Blitz + wasmtime), and a real storefront demo over authenticated RPC."},
 		{Id: "grpcbridge", Name: "GoGRPCBridge", Status: "v1.1.1", Glyph: "⇄",
 			Tags: []string{"Go", "gRPC", "WebSocket"}, Repo: gh + "GoGRPCBridge",
 			Demo:  "https://monstercameron.github.io/GoGRPCBridge/",

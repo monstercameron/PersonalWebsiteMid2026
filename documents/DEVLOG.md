@@ -2,6 +2,53 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-29 — The "stale root render" that wasn't, and the metadata that was
+
+A review reported something alarming: the bare root URL appeared to serve the *old* homepage —
+former headline, Lauderhill, nine equal projects, old email — while clicking through gave the new
+one. That would mean an SSR/hydration split or a cache serving stale HTML to crawlers, which is
+worse than any copy problem.
+
+**It was not happening.** `curl -L https://www.earlcameron.com/` returns the new content with zero
+occurrences of `Lauderhill` or `mr.e.cameron`, and `/` and `/work` are **byte-identical** documents
+(33,883 bytes each — `/work` is not a route, it is an in-page anchor served by the same shell). No
+divergent templates, no cache split, no hydration replacing a stale shell. Two things produced the
+impression: the first fetch almost certainly predated yesterday's deploy landing, since production
+was stuck on `bb0f044` until 11:52 UTC — and one genuine defect underneath it.
+
+**The genuine defect: the `<title>`, `og:title` and `meta description` still said "AI-native systems
+engineer".** The hero had been repositioned; the head had not. Those four strings are read first and
+by the most people — the browser tab, the search snippet, the preview card when the link is pasted
+into Slack or LinkedIn — and they were the last ones updated. The review's own citation was titled
+with the old positioning, which is exactly the failure. Fixed, with the reason recorded next to them
+so a future H1 change takes them along.
+
+**Where a claim had no receipt.** GoWebComponents said it was "benchmarked head-to-head with React —
+faster on overall geomean" with nothing to click. The numbers were already in the GWC repo under
+`docs/benchmarks`; they were just unreachable from the card. Third links now come from an
+`evidenceLinks` map keyed on project id rather than a new `sitepb.Project` field, because adding one
+means regenerating protos and protoc is unavailable here.
+
+**Two reported problems that were not problems, checked rather than assumed.** The "ambiguous blank
+input" on the CashFlux lock page is `<input type="hidden" name="mode" value="guest">` — a DOM parse
+sees it, a visitor never does; the page has exactly one visible field, the password. And `/budget/`
+answering a bare `curl` with a bodyless 401 is deliberate: the lock page renders only for a document
+navigation, because a service worker fetching `./bin/main.wasm.gz` without a session would otherwise
+cache an HTML lock page under the WASM's URL and hang the next boot. Neither was changed. The lock
+page *copy* was improved, which was the real suggestion.
+
+**One trap worth recording.** `/resume` prefers a stored `active_resume` override from the database
+over `resume.Data()`, so editing the Go file appeared to do nothing locally — the dev database has
+an override applied from testing the tailoring feature. Production has none: it renders `Remote` and
+`cam@earlcameron.com`, which are code values, so the new title lands there on deploy. Anyone
+wondering why a résumé edit "didn't take" should check that setting first.
+
+Also: `gofmt -l` flagged a dozen files this session, including several never touched. That is the
+CRLF artifact a `git checkout main`/`dev` round-trip leaves in the working tree, not real drift —
+`git show :<file> | gofmt -d` returns zero lines for every changed file, and `git status` sees only
+the four that were actually edited. Do not "fix" it with `gofmt -w`; that rewrites line endings and
+manufactures a repo-wide diff.
+
 ## 2026-07-29 — Motion: one gesture, and no JavaScript to deliver it
 
 DESIGN.md §7 is explicit that restraint is the strategy and that scattered effects read as

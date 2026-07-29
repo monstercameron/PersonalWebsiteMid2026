@@ -386,7 +386,13 @@ contact, and one immediate proof point.
       recruiter and the content.
 
 ### D. CashFlux as primary velocity evidence
-- [ ] "Built at high velocity" section driven by the release timeline (see the data check above).
+- [x] "Built at high velocity" metric strip — 26 releases · 221 packages · 50 routes · 2,998 tests ·
+      six weeks. Shipped 2026-07-29 and confirmed by review as stronger than a bare PR chart.
+- [ ] **Build timeline — now OPTIONAL supporting evidence, not the proof.** The five metrics already
+      carry speed; a timeline would only add *progressive delivery* (which capability landed when).
+      Put it behind a "See the build timeline" disclosure or inside the case-study page — it must not
+      dominate the homepage. Still no PR data (zero merged PRs), so it plots the 26 CHANGELOG
+      releases; each milestone date must be verified against `CHANGELOG.md` before publishing.
 - [ ] Metric strip — releases, active development weeks, feature modules, routes, tests, languages.
       **No lines-of-code headline**: LOC rewards duplication and verbosity and recruiters know it.
 - [ ] Milestone annotations: transaction import · budgets · goals · reports · household ownership ·
@@ -414,6 +420,16 @@ Linking the real instance beats a sanitized mockup: it proves he uses what he bu
       synthesised. Everything else (capabilities, architecture, metrics, timeline) is sourceable
       from the repo.
 - [ ] Then repeat the shape for ArticleFlux and GoWebComponents, one at a time.
+
+### H. Résumé — accomplishment-oriented, not task-oriented (2026-07-29 review)
+- [x] Title aligned with the site's positioning.
+- [ ] **Needs Cam's numbers.** The experience bullets read as tasks: "Built a Unified Search
+      micro-frontend", "Prototyped Bryte ChangeJob". Each needs scope, adoption, performance or
+      delivery outcome — users served, latency moved, teams onboarded, ship date held. These are
+      facts only Cam has; they must not be estimated or inferred. Until they land, the homepage
+      sells him better than the résumé does.
+- [ ] Note for whoever edits it: `/resume` prefers the stored `active_resume` setting over
+      `resume.Data()`, so a code edit silently does nothing while an override is applied.
 
 ### G. Per-featured-project answers (each must answer five things fast)
 - [ ] 1 · What is it, in one jargon-free sentence.

@@ -38,8 +38,11 @@ type Project struct{ Name, Desc string }
 // Data returns Cam's résumé (professional / tech-fit content only).
 func Data() Resume {
 	return Resume{
-		Name:  "Earl Cameron",
-		Title: "AI-native Systems Engineer",
+		Name: "Earl Cameron",
+		// Tracks the site's positioning (internal/site hero + <title>). The résumé is forwarded
+		// separately from the site, so a narrower title here quietly undoes the repositioning for
+		// exactly the reader who only ever sees the PDF.
+		Title: "Senior Software Engineer — AI Systems, Developer Platforms & WebAssembly",
 		// Availability, not a place — no city on the résumé by Cam's instruction (2026-07-29). The
 		// résumé is downloaded and forwarded by strangers; it is the last document to carry one.
 		Location: "Remote",

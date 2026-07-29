@@ -105,13 +105,18 @@ func prompt() ui.Node {
 }
 
 // explainer states, in plain language, what the two paths mean.
+//
+// It leads with "the same deployment I use personally" on purpose. A visitor's first instinct on
+// hitting a password box is that they are being kept out of a demo; the truthful framing turns that
+// into the stronger claim — this is a running instance its author trusts with his own money — and
+// the guest-isolation sentence then reads as information rather than as a defence.
 func explainer() ui.Node {
 	return P(Class(sansFont, TextSize(TextSm), Fg(theme.Dim), LineHeight(Num(1.5))),
-		Span("This is my budgeting app. Enter the password for "),
-		Span(Class(Fg(theme.Fg)), "your synced budget"),
-		Span(", or continue as a "),
-		Span(Class(Fg(theme.Fg)), "guest"),
-		Span(" to try it locally on this device (nothing syncs, my data never loads)."),
+		Span("This is the same CashFlux deployment I use personally. Enter your password for a "),
+		Span(Class(Fg(theme.Fg)), "synced workspace"),
+		Span(", or launch an isolated "),
+		Span(Class(Fg(theme.Fg)), "guest workspace"),
+		Span(" stored only on this device. My personal data is never loaded into a guest session."),
 	)
 }
 

@@ -155,11 +155,16 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project, baseURL string)
 	}
 	head := `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
 		`<meta name="viewport" content="width=device-width,initial-scale=1">` +
-		`<title>Earl Cameron — AI-native systems engineer</title>` +
-		// Search snippet + link-preview cards (Slack/Teams/LinkedIn) — recruiters share links.
-		`<meta name="description" content="AI-native systems engineer — Go, WebAssembly, on-device ML. The portfolio is the proof: a live terminal on a Go→WASM framework and gRPC bridge I built.">` +
-		`<meta property="og:title" content="Earl Cameron — AI-native systems engineer">` +
-		`<meta property="og:description" content="Go, WebAssembly, on-device ML — with LLMs in the loop. The site itself is the proof of work.">` +
+		// These four strings ARE the first impression: the tab, the search result, and the preview
+		// card a recruiter sees when the link is pasted into Slack or LinkedIn — read long before
+		// anyone scrolls. They must track the hero's positioning. They did not on 2026-07-29: the
+		// hero had moved to "Senior software engineer…" while the title still said "AI-native
+		// systems engineer", so every shared link and every crawler still reported the old, narrower
+		// framing. If the H1 changes again, change these in the same commit.
+		`<title>Earl Cameron — Senior Software Engineer · AI-native products & developer platforms</title>` +
+		`<meta name="description" content="Senior software engineer building AI-native products, developer platforms, and unconventional systems — Go, WebAssembly, local AI. Creator of CashFlux, ArticleFlux and GoWebComponents; this site runs on the framework and gRPC bridge I wrote.">` +
+		`<meta property="og:title" content="Earl Cameron — Senior Software Engineer · AI-native products & developer platforms">` +
+		`<meta property="og:description" content="Go, WebAssembly, local AI, developer platforms. Creator of CashFlux, ArticleFlux, GoWebComponents and WASIBrowser — and this site is the proof of work.">` +
 		`<meta property="og:type" content="website">` +
 		`<meta property="og:url" content="https://www.earlcameron.com/">` +
 		`<meta name="twitter:card" content="summary">` +
@@ -409,16 +414,33 @@ func work(projects []*sitepb.Project) ui.Node {
 	)
 }
 
+// evidenceLinks are per-project receipts for a claim the card makes in words.
+//
+// GoWebComponents says it was "benchmarked head-to-head with React — faster on overall geomean",
+// which is the single least verifiable sentence on the page and the first thing a sceptical
+// engineer would want to check. The numbers exist (docs/benchmarks in the GWC repo: the microbench
+// report, latest.json, reference.json); they were just not reachable from here.
+//
+// This is a map rather than a field on sitepb.Project because adding one would mean regenerating
+// the protos, and protoc is not available in this environment (TODOS §2). If a second project ever
+// earns a third link, promote it to the proto rather than growing this.
+var evidenceLinks = map[string]struct{ label, href string }{
+	"gwc": {"benchmarks ↗", "https://github.com/monstercameron/GoWebComponents/tree/main/docs/benchmarks"},
+}
+
 // card renders one project.
 func card(p *sitepb.Project) ui.Node {
 	tags := []any{Class(Flex, Gap(Spacing2))}
 	for _, t := range p.GetTags() {
 		tags = append(tags, Span(Class(TextSize(TextSm), Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2)), t))
 	}
-	links := []any{Class(Flex, Gap(Spacing4), TextSize(TextSm)),
+	links := []any{Class(Flex, Gap(Spacing4), TextSize(TextSm), css.Raw("flex-wrap", "wrap")),
 		A(Class(Fg(theme.Accent2)), Props{Href: p.GetRepo(), Target: "_blank", Rel: "noopener"}, "code ↗")}
 	if p.GetDemo() != "" {
 		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "demo ↗"))
+	}
+	if e, ok := evidenceLinks[p.GetId()]; ok {
+		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: e.href, Target: "_blank", Rel: "noopener"}, e.label))
 	}
 	return Div(Class(append([]any{Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing5), Flex, FlexCol, Gap(Spacing3),
 		Hover(Border(theme.Accent))}, lift()...)...),
