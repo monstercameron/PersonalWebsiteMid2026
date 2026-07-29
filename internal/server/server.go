@@ -150,7 +150,7 @@ func New(cfg config.Config) (*Server, error) {
 
 	// The standard site is static content, so render it once here (avoids per-request work and
 	// the process-global CSS sink accumulating across concurrent renders).
-	page, err := site.RenderHTML(cs.About(), cs.Projects())
+	page, err := site.RenderHTML(cs.About(), cs.Projects(), cfg.BaseURL)
 	if err != nil {
 		_ = st.Close()
 		return nil, err

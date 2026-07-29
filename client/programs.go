@@ -12,17 +12,18 @@ import (
 )
 
 // termProjects is the faux client-side project list the terminal programs read from.
-// Order mirrors internal/content.featured: the first three are the headliners.
+// Order mirrors internal/content.featured: the first four are the billed case studies, the rest
+// render in the site's Labs shelf.
 var termProjects = []struct{ id, name, status, blurb string }{
 	{"cashflux", "CashFlux", "shipping", "Local-first budgeting suite — all Go/WASM, no JS framework."},
 	{"articleflux", "ArticleFlux", "shipping", "Self-hosted feed reader, Go all the way down. Real gRPC in the browser."},
 	{"gwc", "GoWebComponents", "v5.0.1", "React-style UI framework in Go→WASM. This site runs on it."},
 	{"wasibrowser", "WASIBrowser", "prototype", "A no-JavaScript browser that renders WebAssembly apps."},
+	{"grpcbridge", "GoGRPCBridge", "v1.1.1", "gRPC over WebSockets for the browser — no proxy."},
+	{"pathtracer", "WebGL Path Tracer", "demo", "Path tracing live in a browser tab — materials, physics, benchmarks."},
 	{"semanticscript", "SemanticScript", "research", "An agent-first programming language for LLMs."},
 	{"semanticassembly", "SemanticAssembly", "research", "Agent-native RISC-V-first assembly layer."},
-	{"whispertome", "WhisperToMe", "shipping", "Desktop dictation agent running Whisper on the NPU."},
 	{"semanticportrait", "SemanticPortrait", "prototype", "Journaling app that builds a self-portrait graph."},
-	{"grpcbridge", "GoGRPCBridge", "v1.1.1", "gRPC over WebSockets for the browser — no proxy."},
 }
 
 // programOutput dispatches a command name to its faux program output.
@@ -125,7 +126,7 @@ func linksOut() []ui.Node {
 		row("linkedin", "linkedin.com/in/earl-cameron"),
 		row("youtube", "youtube.com/@EarlCameron007"),
 		row("site", "earlcameron.com"),
-		row("email", "mr.e.cameron@gmail.com"),
+		row("email", "cam@earlcameron.com"),
 	}
 }
 
@@ -158,7 +159,7 @@ func animeOut() []ui.Node {
 // contactOut prints how to reach Cam.
 func contactOut() []ui.Node {
 	return []ui.Node{
-		Div("Reach me at ", Span(Class(Fg(theme.Accent)), "mr.e.cameron@gmail.com")),
+		Div("Reach me at ", Span(Class(Fg(theme.Accent)), "cam@earlcameron.com")),
 		Div(Class(Fg(theme.Dim)), "or scroll down for the contact section."),
 	}
 }

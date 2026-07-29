@@ -2,6 +2,243 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-07-29 — Motion: one gesture, and no JavaScript to deliver it
+
+DESIGN.md §7 is explicit that restraint is the strategy and that scattered effects read as
+AI-generated, so the pass uses **one** gesture everywhere — `rise`, a 10px lift with a fade — played
+two ways: staggered across the hero at load (0/70/140/210/280/350ms), and tied to the element's own
+viewport progress for every section below it. Six different gestures is what makes a page feel
+generated; one gesture reused is what makes it feel composed.
+
+**The scroll reveal needs no JavaScript.** `animation-timeline: view()` is native CSS scroll-driven
+animation — no IntersectionObserver, no observer bookkeeping, nothing added to the wasm. That matters
+here beyond elegance: the sections are server-rendered, so a JS-driven reveal would have made the
+SSR content depend on the wasm having booted. The degradation is safe by construction: a browser
+that does not support the property ignores the timeline and runs the animation once at load, landing
+on the same final state.
+
+**The failure mode to guard was content stuck invisible**, since `animation-fill-mode: both` holds
+an element at its "from" frame. So it was checked rather than assumed: scroll the whole page, then
+read computed opacity for every section, heading and the footer — in normal mode *and* with
+`prefers-reduced-motion: reduce`. Zero elements below opacity 0.99 in both. And to prove the effect
+is not silently a no-op, the inverse: `#labs` reads opacity 0 while off-screen, 13 animations run on
+the page, hovering a card computes `matrix(1,0,0,1,0,-2)`, and expanding the terminal fires
+`scrim-in` + `term-open`.
+
+Reduced motion is a real collapse, not a shortened effect: `animation-name: none` with the final
+opacity and transform applied directly.
+
+The terminal expand is the honest cheap version of DESIGN.md's "signature transition" — a true FLIP
+from inline frame to modal needs measurement before paint. The modal arrives from 98.5% scale and
+6px low behind a fading scrim, which reads as one movement rather than a cut.
+
+## 2026-07-29 — Copyable RSS URLs, and the base URL that had to be threaded
+
+The feed cards were bare links, which is the wrong shape for an RSS address: nobody *clicks* a feed
+URL, they paste it into a reader. Each card now shows the address in a readonly field with a copy
+button beside it.
+
+**Two affordances, deliberately.** The button is the fast path but it can fail for reasons that
+aren't bugs — `navigator.clipboard` does not exist outside a secure context, and the write can be
+rejected — and it also depends on the wasm having booted at all. So the field carries the URL either
+way and the button says what actually happened (`copied` / `copy failed` / `select it instead`)
+rather than pretending. If the binding never runs, the address is still there to select by hand.
+
+**The base URL had to be threaded.** The cards were rendering relative paths, and a relative
+`/anime.xml` is worthless in a feed reader — the one place these strings are meant to go. `config`
+already had `BaseURL`; it just never reached the SSR layer, so it now passes through
+`site.RenderHTML` → `Page` → `animeRadar`.
+
+**Where the handler lives.** The buttons are SSR markup, so they exist before the wasm runs and
+can't be given handlers at render time — the same constraint as the hero CTA. One delegated
+`data-copy-url` listener on the document, bound in `main` before `ui.Run`, covers all of them and
+needs no cleanup. `closest()` resolves clicks that land inside the button rather than on it. The
+promise handlers are released from whichever of then/catch fires, since a promise settles once and
+an unreleased `js.Func` leaks for the life of the page.
+
+Verified by reading the clipboard back in the browser, not by trusting the label: click →
+`navigator.clipboard.readText()` returns `http://127.0.0.1:8096/anime.xml`, and the button returns
+to "copy" after the flash.
+
+## 2026-07-29 — Terminal chrome: hover glyphs and an escape hatch
+
+Two small things that make the terminal read as a window rather than a picture of one. The traffic
+lights now reveal glyphs on hover, and the reveal is a *group* hover — `u.GroupHover` compiles to
+`.group:hover &`, so the wrapper carries the literal class `group` concatenated with its generated
+one, and all three dots light together the way macOS does rather than one at a time.
+
+The glyph choice is deliberate and is *not* the macOS mapping. Here red shrinks the fullscreen modal
+and green expands it; nothing closes. So red gets `−` and green `⤢`, and yellow — which is inert
+decoration — gets no glyph at all, because a glyph would make it look clickable.
+
+Escape now shrinks. It is bound on `document`, not on the input: the terminal lets you select text
+in the scrollback, and selecting blurs the input, so an input-scoped handler would strand a visitor
+in a fullscreen overlay with a key that does nothing. Verified both paths — with the input focused,
+and after an explicit `blur()` — the modal drops from 810px back to its inline 460px.
+
+## 2026-07-29 — Recruiter refinement, and the metric that would have been a lie
+
+Cam brought a detailed recruiter/hiring-manager critique: keep the ambition, add the evidence layer.
+Featured case studies vs a quieter Labs shelf; a recruiter-efficient first screen; the terminal
+framed as a reward rather than a gate; and CashFlux as the primary velocity proof, charted as
+**cumulative merged PRs over time** with milestone annotations. TODOS §14 now carries the whole
+thing. Most of it is right and most of the first pass is built. Two findings changed the plan.
+
+**The PR chart cannot be built.** CashFlux has **zero merged pull requests**. All **2,745 commits**
+went straight to `main`. There is no PR data to plot, so the centrepiece of the proposed velocity
+section does not exist. Nor is the obvious substitute safe: commits per week run
+1179 · 626 · 227 · 124 · 408 · 181, a **front-loaded and declining** curve. Plotted honestly it says
+"big burst, then tapering", the opposite of sustained velocity, and it puts ~67 commits/day on
+screen — which invites the question of how much was agent-written instead of answering it. What is
+real: **26 documented releases** in `CHANGELOG.md`, each naming shipped capability. That is the
+chart if he wants one, and the decision is logged for him rather than made for him.
+
+**A metric was nearly published wrong.** The first count of the CashFlux test suite used `find`,
+which walked untracked build output and returned **3,669 test files**. `git ls-files` says **638**
+test files and **2,998** test functions — the `find` number overstated by roughly 6×. That number
+was one step from being printed on a public page aimed at people who verify claims. Anything
+measured for this site now goes through `git ls-files`, and the rule is written into the code
+comment above the strip. The published set: 26 releases · 221 packages · 50 routes · 2,998 tests ·
+six weeks. No lines-of-code headline — LOC rewards duplication and readers know it.
+
+**What shipped.** `splitTiers` divides `content.featured` positionally: the first four are billed
+case studies in wide two-up cards that now carry the long description as well as the blurb; the rest
+fall into a new `~/labs` ruled list. The tier difference is carried by *form* — cards vs a list —
+because size alone reads as an accident. Reordering the content slice now re-tiers the site, which
+is documented where the slice lives. The hero leads with "Senior software engineer building AI-native
+products, developer platforms, and unconventional systems", names UKG, and carries a proof strip
+built *from the featured slice* so it cannot drift. The terminal lost the loud orange button to
+"View the work", with its commands shown as chips rather than guessed.
+
+**The critique was wrong about the terminal, and the first copy shipped its error.** It described
+the terminal as something to occupy a visitor "while the WASM binary initializes", and that line
+went onto the page. It is self-contradictory here: `client/main.go` mounts *only* `Terminal` into
+`#term-root` on the public site — the terminal **is** the wasm. It cannot entertain anyone before
+the binary it lives in has loaded. Cam caught it. The truth is also the better line, because the
+rest of the page is server-rendered Go: "Everything above is server-rendered Go. The terminal below
+*is* the WebAssembly." The lesson worth keeping is narrower than "check copy": an outside critique
+carries assumptions about the architecture, and those assumptions need checking against the code
+before their words go on the page.
+
+**Note the conflict:** billing WASIBrowser as the fourth case study pushes **GoGRPCBridge into
+Labs** — the same project Cam asked to bill fourth yesterday. Flagged rather than quietly resolved;
+it is a one-line swap either way.
+
+**Two responsive bugs caught by screenshotting rather than reasoning.** `minmax(420px,1fr)` with
+`auto-fill` does not collapse below its own minimum, so the featured grid forced 54px of horizontal
+scroll at 390px — fixed with `min(420px,100%)`. And the new headline at 1.9rem ran six lines on a
+phone and pushed "View the work" below the fold, defeating the point of an actionable first screen;
+1.6rem on mobile puts the CTA at y=736 against an 844px fold.
+
+## 2026-07-29 — Four new workstreams on TODOS, and a CTA that did nothing
+
+**TODOS §13** now carries Cam's four current asks, each scoped against what the code actually does
+rather than against the slogan:
+
+*Decouple CashFlux.* The coupling is six-deep, and the `go.mod` line is the one that matters: this
+module **requires** CashFlux and replaces it with `../CashFlux`, and CashFlux still pins **GWC /v4
+v4.2.0** while this site runs **/v5** — one build graph, two GWC majors. Under that sit
+`internal/budget/`, the hardcoded `C:/Users/mreca/Desktop/CashFlux` in `scripts/build-cashflux.sh`,
+a third checkout cloned by `install.sh`, **CashFlux's `SyncService` running inside this server's
+`/grpc` tunnel**, its entire control plane in this wasm admin console, and ~120 MB of release
+directory. The target is the shape ArticleFlux already has: its own host, linked out to. Two
+decisions went to §0 (does the portfolio keep the CashFlux admin panels; what hostname).
+
+*Terminal testing.* `client/` is 9 files with **zero Go tests**, and `e2e/` only drives CashFlux
+auth/sync. The parser, pipes, vfs and completion are pure logic and testable natively — that's the
+cheap half, and it isn't done.
+
+*CSS and mobile.* `internal/site/site.go` has **5 breakpoints and 19 `css.Raw` escapes**;
+`client/*.go` has **zero breakpoints**. The terminal — the centrepiece — does not respond to width
+at all, and neither does the admin console.
+
+*Copy and links.* Framed around the failure mode this session already produced twice: a link that
+resolves but dead-ends. Includes a CI link-check, because that class of bug is silent.
+
+**The launch CTA was decoration.** "▶ Launch the live terminal" was a `<div>` with `cursor:pointer`
+and no handler attached to anything. The reason it was never wired: it is server-rendered in
+`internal/site`, above `#term-root`, so it lives outside the wasm tree and can't be given a handler
+at render time. Fix is a DOM binding from inside the component on mount, with the ID as the contract
+between the two, plus cleanup on unmount. It now expands *and* focuses — expanding without focus
+hands someone a shell that ignores their typing. Verified in the browser: after the click
+`document.activeElement` is `term-input`, the terminal is 1230×810 in a 1280×900 viewport, and typed
+input runs. Also switched `<div>` → `<button>` so it is keyboard-reachable at all.
+
+**Profile scrub.** No city on the site: hero eyebrow, `notes/about.md`, and the résumé's `Location`
+all read "Remote", and the contact address is `cam@earlcameron.com` everywhere (5 call sites). The
+résumé mattered most — it gets downloaded and forwarded by strangers. **Still present:** Florida
+International University and Miami Dade College in the education section, which narrow him to South
+Florida. Those are credentials rather than a location line, so they were left alone — flagged for
+Cam rather than silently stripped.
+
+**Footer.** `Border(theme.Border)` sets four sides, so the footer was a box floating under the page
+— cards are boxes here, endings are not. Now `css.BorderTop(css.Px(1), theme.Border)` on a real
+`<footer>`, with the credit line turned into evidence (both frameworks link to source) and one
+accent note, "zero npm". The separator before it was dropped after the mobile screenshot showed the
+line wrapping so that a bare "·" started the second line.
+
+## 2026-07-29 — ArticleFlux as a first-class link, and the URL that would have dead-ended
+
+Cam asked for ArticleFlux to sit alongside CashFlux as a first-class destination, pointing at
+`https://feed.earlcameron.com/`. It now appears in exactly the two places CashFlux does: the top nav
+(`articleflux`, new tab, next to `cashflux`) and an `~/elsewhere` card. It is deliberately *not* in
+the terminal's `links` — CashFlux isn't either, and parity is the point.
+
+**The URL needed changing to do what he asked.** The host root resolves to the reader, which requires
+an account: a visitor with no login lands on "Sign in to your reader — No account? Whoever runs this
+server creates one with `articleflux adduser`". A recruiter following a first-class link to a login
+wall is worse than no link. `/home` is the public front door — why it exists, reading, what it
+learns, what leaves the box, how it is built, plus its own live-demo and source links — so the
+constant `articleFluxURL` points there, with the reasoning on the constant so nobody "fixes" it back
+to the root later.
+
+The card copy says "my feed reader — running live", not CashFlux's "try it live". A visitor can see
+it and read how it works; they can't actually use it without an account, and the copy shouldn't
+promise what the sign-in form will refuse. The open question for Cam is whether to mint a read-only
+guest account and upgrade both the copy and the link to the reader itself.
+
+Side effect worth noting: `~/elsewhere` was five cards in a 3+2 ragged grid. Six makes it 3×2.
+
+## 2026-07-28 — Re-cutting the featured grid, and what a nine-card grid costs
+
+Cam asked to drop WhisperToMe, put ArticleFlux in its place, and lead with CashFlux, ArticleFlux,
+GoWebComponents, GoGRPCBridge. ArticleFlux was already in `featured` — what he was looking at was a
+**server binary built on 2026-07-25**, three days stale, still serving the old set. Worth remembering
+when a content change "doesn't take": `scripts/dev.sh` rebuilds and restarts, and nothing else does.
+
+The removal left eight cards, which is the wrong number: the desktop grid is
+`repeat(auto-fill,minmax(260px,1fr))` inside a 1000px column, so it lands on three columns and eight
+leaves a hole. Cam asked for a ninth.
+
+**The candidate list turned into an editorial question, not a technical one.** Two path tracers exist
+in his repos. `vkPathTracer` is his own — C++23, Vulkan/D3D12/Metal, Emscripten/WebGPU, Jolt physics,
+Lua scripting, a deterministic headless benchmark mode. `pathtracer` is JS/WebGL and, by its own
+README, a fork of Evan Wallace's demo — but heavily rebuilt (a dozen material models, Rapier physics,
+SDF/CSG primitives, OBJ/STL/PLY/glTF/GLB import, scene tree and inspector, benchmark panel with
+shareable score cards) and, decisively, it has a **live GitHub Pages demo**. Cam picked it on exactly
+that ground: a recruiter can click it. Right call for the audience — a clickable artifact beats an
+unclickable one — and the attribution problem is handled by crediting the original in the card's
+`Long`, which is where the terminal's `open pathtracer` shows it. The repo README leads with the same
+credit, so the disclosure is consistent in both places a reader can land.
+
+**What the re-cut costs, recorded so it isn't rediscovered later:** WhisperToMe was the only
+on-device-ML card. The hero copy says "on-device ML" and the résumé lists Snapdragon NPU / QNN / ONNX
+Runtime GenAI / INT4, and there is now nothing on the grid behind either. `Gemma4-12B-SnapdragonX2Elite`
+is public and would close it. Left open deliberately — nine slots, and Cam spent the ninth on reach
+rather than on backing a claim. Logged in `TODOS.md` §0.
+
+Two smaller things came in mid-pass: CashFlux had a GitHub Pages demo that its card never linked
+(verified 200, added), and the projects section now carries `github.com/monstercameron ↗` on the
+`~/projects · featured` eyebrow row. It sits on the eyebrow rather than under the grid because that's
+the "where am I" line — a visitor scanning cards for repos shouldn't have to pass nine of them to
+find the profile. It right-aligns to the content column on desktop and wraps under the shell path on
+mobile.
+
+**One false alarm worth writing down.** Driving the wasm terminal's `projects` command headless typed
+`proets` — two dropped keystrokes. Not a bug: headless Chrome renders this page at roughly 0.4fps, so
+`keyboard.type()` at full speed outruns the input handler. With `delay: 180` the command runs clean.
+Any future terminal e2e needs that delay, or it will report phantom input bugs.
+
 ## 2026-07-28 — Deploy for real, and a v5 migration that was already overdue
 
 Cam asked to get the repo ready for a DigitalOcean Ubuntu + Nginx droplet. The first thing recon

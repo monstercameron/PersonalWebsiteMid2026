@@ -20,5 +20,8 @@ func main() {
 		ui.Run("#admin-root", AdminApp)
 		return
 	}
+	// Bound before the terminal mounts: the copy buttons belong to the SSR shell, not to any
+	// component, so they are wired directly rather than through the reconciler.
+	bindCopyButtons()
 	ui.Run("#term-root", Terminal)
 }

@@ -67,14 +67,22 @@ func aboutCopy() *sitepb.About {
 
 // featured returns the curated set of projects, in display order.
 //
-// Order IS the billing: there is no "featured" flag on sitepb.Project, so the first three
-// entries are the headliners — CashFlux, ArticleFlux, GoWebComponents — and the SSR grid,
-// the terminal's `projects`, and /projects.md all read this same slice in this same order.
+// Order IS the billing, and since 2026-07-29 it is also the *tier*: there is no featured flag on
+// sitepb.Project, so site.splitTiers takes the first site.featuredCount (4) as the billed case
+// studies — CashFlux (product engineering), ArticleFlux (AI orchestration), GoWebComponents
+// (framework/platform), WASIBrowser (systems ambition) — and everything after them renders in the
+// quieter Labs shelf. The SSR page, the terminal's `projects`, and /projects.md all read this one
+// slice in this one order.
+//
+// Reordering therefore re-tiers the site. Moving a project above index 4 promotes it to a case
+// study; pushing one below demotes it to Labs. GoGRPCBridge sits at index 4 — first in Labs — as
+// the nearest thing to a fifth headliner.
 func featured() []*sitepb.Project {
 	const gh = "https://github.com/monstercameron/"
 	return []*sitepb.Project{
 		{Id: "cashflux", Name: "CashFlux", Status: "shipping", Glyph: "◈",
 			Tags: []string{"Go", "WASM", "gRPC", "SQLite"}, Repo: gh + "CashFlux",
+			Demo:  "https://monstercameron.github.io/CashFlux/",
 			Blurb: "Local-first budgeting suite — 40+ pages, live charts, a rules engine, an AI layer. All Go/WASM, no JS framework.",
 			Long:  "A full personal-finance app built entirely in Go compiled to WebAssembly on my own framework. Offline-first, enterprise-grade test suite, motion system, i18n. Runs live on this site — try `budget`."},
 		{Id: "articleflux", Name: "ArticleFlux", Status: "shipping", Glyph: "◨",
@@ -91,6 +99,16 @@ func featured() []*sitepb.Project {
 			Tags: []string{"Go", "wasmtime", "C"}, Repo: gh + "WASIBrowser",
 			Blurb: "A no-JavaScript browser. Renders WebAssembly apps directly via a custom ABI (Blitz + wasmtime).",
 			Long:  "A browser where pages are WASM, not HTML+JS — a reactified-C component ABI, a Go host, and a real storefront demo over authenticated RPC."},
+		{Id: "grpcbridge", Name: "GoGRPCBridge", Status: "v1.1.1", Glyph: "⇄",
+			Tags: []string{"Go", "gRPC", "WebSocket"}, Repo: gh + "GoGRPCBridge",
+			Demo:  "https://monstercameron.github.io/GoGRPCBridge/",
+			Blurb: "gRPC over WebSockets for the browser — no Envoy, no proxy. This site talks to its backend through it.",
+			Long:  "The tunnel that lets a Go/WASM browser client speak real gRPC to a Go server over one same-origin socket. It carries every request on this site."},
+		{Id: "pathtracer", Name: "WebGL Path Tracer", Status: "demo", Glyph: "◐",
+			Tags: []string{"WebGL", "GLSL", "rendering"}, Repo: gh + "pathtracer",
+			Demo:  "https://monstercameron.github.io/pathtracer/",
+			Blurb: "Path tracing live in a browser tab — a dozen material models, rigid-body physics, depth of field, and a repeatable benchmark harness. Open the demo and watch it converge.",
+			Long:  "An extensively rebuilt fork of Evan Wallace's WebGL path tracer. Progressive refinement with temporal AA, glass/PBR/volumetric/spectral/toon materials, Rapier physics, SDF and CSG primitives, OBJ/STL/PLY/glTF/GLB import, an editor with scene tree and inspector, and a benchmark panel with baseline comparison and shareable score cards."},
 		{Id: "semanticscript", Name: "SemanticScript", Status: "research", Glyph: "⧉",
 			Tags: []string{"language", "runtime", "JIT"}, Repo: gh + "SemanticScript",
 			Blurb: "An agent-first programming language — explicit, auditable source designed to be written and read by LLMs.",
@@ -99,19 +117,9 @@ func featured() []*sitepb.Project {
 			Tags: []string{"RISC-V", "assembly", "agents"}, Repo: gh + "SemanticAssembly",
 			Blurb: "Agent-native assembly — a RISC-V-first layer with a soft semantic overlay that advises, never gates.",
 			Long:  "What assembly looks like when agents write it: RV32-first, additive semantics, and checks hardened against real agent mistakes at the metal level."},
-		{Id: "whispertome", Name: "WhisperToMe", Status: "shipping", Glyph: "◍",
-			Tags: []string{"NPU", "Whisper", "desktop"}, Repo: gh + "WhisperToMe",
-			Demo:  "https://monstercameron.github.io/WhisperToMe/",
-			Blurb: "A desktop dictation agent that runs Whisper on the NPU — pinned there for all-day battery, not just speed.",
-			Long:  "On-device speech-to-text on the Hexagon NPU for all-day-battery dictation, wrapped in a clean desktop agent UX."},
 		{Id: "semanticportrait", Name: "SemanticPortrait", Status: "prototype", Glyph: "◮",
 			Tags: []string{"local-LLM", "graph", "journaling"}, Repo: gh + "SemanticPortrait",
 			Blurb: "A journaling app that turns entries into a living self-portrait graph via a local model.",
 			Long:  "A Windows journaling + self-portrait app: entries feed a local-model entry→graph loop, on a security-reviewed local-first store."},
-		{Id: "grpcbridge", Name: "GoGRPCBridge", Status: "v1.1.1", Glyph: "⇄",
-			Tags: []string{"Go", "gRPC", "WebSocket"}, Repo: gh + "GoGRPCBridge",
-			Demo:  "https://monstercameron.github.io/GoGRPCBridge/",
-			Blurb: "gRPC over WebSockets for the browser — no Envoy, no proxy. This site talks to its backend through it.",
-			Long:  "The tunnel that lets a Go/WASM browser client speak real gRPC to a Go server over one same-origin socket. It carries every request on this site."},
 	}
 }

@@ -38,10 +38,12 @@ type Project struct{ Name, Desc string }
 // Data returns Cam's résumé (professional / tech-fit content only).
 func Data() Resume {
 	return Resume{
-		Name:     "Earl Cameron",
-		Title:    "AI-native Systems Engineer",
-		Location: "Lauderhill, FL",
-		Email:    "mr.e.cameron@gmail.com",
+		Name:  "Earl Cameron",
+		Title: "AI-native Systems Engineer",
+		// Availability, not a place — no city on the résumé by Cam's instruction (2026-07-29). The
+		// résumé is downloaded and forwarded by strangers; it is the last document to carry one.
+		Location: "Remote",
+		Email:    "cam@earlcameron.com",
 		GitHub:   "github.com/monstercameron",
 		LinkedIn: "linkedin.com/in/earl-cameron",
 		Summary: "Senior software engineer who ships production systems across the stack — Go and " +

@@ -20,9 +20,17 @@ _(No Claude Code todo tool exists in-session; tracked here per project conventio
 ## 0. Decisions still open (need Cam)
 - [x] **Featured projects** — 9 chosen & wired into the mockup (count is dynamic, N). Order is the
       billing, since sitepb.Project has no featured flag — **headliners first: CashFlux,
-      ArticleFlux, GoWebComponents**, then WASIBrowser, SemanticScript, SemanticAssembly,
-      WhisperToMe, SemanticPortrait, GoGRPCBridge. (Gemma-4 and the Vulkan Path Tracer removed per
-      Cam; ArticleFlux added 2026-07-28. Adjust anytime — but change all three lists, see below.)
+      ArticleFlux, GoWebComponents, GoGRPCBridge**, then WebGL Path Tracer, WASIBrowser,
+      SemanticScript, SemanticAssembly, SemanticPortrait. Nine also fills the desktop grid's three
+      columns exactly: row 1 the shipped apps + their framework, the path tracer's live demo in the
+      centre cell of row 2, the three Semantic\* research projects as row 3. (Gemma-4 and
+      *vkPathTracer* removed per Cam; ArticleFlux added and WhisperToMe dropped 2026-07-28; the
+      *WebGL* path tracer added 2026-07-28 — chosen over vkPathTracer because it has a live GitHub
+      Pages demo a recruiter can click. Adjust anytime — but change all three lists, see below, and
+      re-check the grid rather than appending.)
+      > **Known gap:** with WhisperToMe gone the grid has no on-device-ML card, while the hero copy
+      > claims "on-device ML" and the résumé lists Snapdragon NPU / QNN / ONNX Runtime GenAI / INT4.
+      > `Gemma4-12B-SnapdragonX2Elite` is public and would close it — Cam's call, deliberately open.
       > Three places read the same set and must not drift: `internal/content.featured` (canonical,
       > feeds the SSR grid and gRPC), `client/programs.go termProjects` (terminal `projects`), and
       > `client/vfs.go projectsMD` (`/projects.md`).
@@ -37,7 +45,11 @@ _(No Claude Code todo tool exists in-session; tracked here per project conventio
 - [?] **BYOK run-location** — client-direct vs **proxy-over-gRPC** (recommend proxy).
 - [x] **Résumé-tailor cost/auth** — decided **owner-gated** (ADMIN_PASSWORD + OPENAI_API_KEY).
       Budget cap + optional public demo tracked as §8 follow-ups.
-- [?] **Live-CashFlux level** — L1 host-wasm (recommended first) vs L2 full-backend integration.
+- [x] ~~**Live-CashFlux level** — L1 host-wasm vs L2 full-backend integration.~~ **Resolved
+      2026-07-29: neither.** CashFlux becomes its own service (§13.A).
+- [?] **CashFlux split line** (§13.A) — does the portfolio keep the CashFlux admin panels and
+      activation-code minting, or do those move into CashFlux's own admin?
+- [?] **CashFlux hostname** (§13.A) — `budget.earlcameron.com`, to parallel `feed.earlcameron.com`?
 - [?] **Admin-auth method** — **WebAuthn/passkey** (recommended) vs password + TOTP 2FA.
 - [?] **CI build source** — git submodule GWC pinned to v4.3.0 (recommended) vs `go mod vendor`.
 - [!] **Toolchain** — install `protoc` + `protoc-gen-go`/`-grpc` before the first gRPC service
@@ -137,11 +149,12 @@ _(No Claude Code todo tool exists in-session; tracked here per project conventio
 - [x] Go anime tracker: AniList search/track/untrack + release-check → **`/anime.xml`** (Release
       Radar RSS) and **`/anime/qotd.xml`** (daily-prompt RSS); password-gated config at `/admin`.
       (internal/anime, internal/store/anime.go). Optional Slack post + `anime` terminal command TBD.
-### Live CashFlux instance
-- [ ] **L1**: build CashFlux wasm, serve under `/apps/cashflux`, launch via `budget`/`cashflux`
-      command + project "Launch live demo" (iframe overlay); seed demo data; lazy-load on launch.
-- [ ] Keep CashFlux a separate wasm build (its own pinned GWC); mind wasm build-race/deploy hygiene.
-- [ ] **L2 (deferred)**: integrate CashFlux Go backend for sync/cloud — heavy, couples two codebases.
+### Live CashFlux instance — ⚠️ SUPERSEDED 2026-07-29 by §13.A (decouple into its own service)
+- [x] ~~**L1**: build CashFlux wasm, serve under `/apps/cashflux`~~ — shipped as `/budget/`, and now
+      being undone: the decision flipped from hosting it here to running it as its own service.
+- [ ] ~~Keep CashFlux a separate wasm build~~ — see §13.A; the whole `replace` goes away.
+- [ ] ~~**L2 (deferred)**: integrate CashFlux Go backend~~ — **rejected.** L2 was "couple the two
+      codebases harder"; §13.A goes the other way. Kept here so the reversal is legible.
 
 ## 9. Phasing (ship in order — don't build it all at once)
 - [ ] **P1 · MVP**: standard site + terminal (about/projects/contact/neofetch/theme) + résumé
@@ -215,6 +228,199 @@ Goal: **one-click install, one action to update, no brain-racking.**
 - [ ] i18n all terminal + site copy.
 
 
+
+## 13. Current effort (2026-07-29) — Cam's four asks
+> These supersede the older CashFlux-hosting plan (§8 "Live CashFlux instance" L1/L2 and the
+> 2026-07-21 Goal B block below): the decision has flipped from *bundle it in* to *split it out*.
+
+### A. Decouple CashFlux into its own service
+**What actually couples the two today** — each of these has to be undone, so scope it against this
+list, not against "it's just a mount":
+1. `go.mod` **requires** `github.com/monstercameron/CashFlux` with `replace => ../CashFlux`. CashFlux
+   still pins **GWC /v4 v4.2.0** while this site is on **/v5**, so one build graph carries two GWC
+   majors. Dropping this is the single biggest win of the split.
+2. `internal/budget/` (`gate.go`, `gatepage.go`, `serve.go` + tests) — password gate and static
+   handler, mounted at `internal/server/server.go` → `mux.Handle("/budget/", …)`.
+3. `scripts/build-cashflux.sh` stages the CashFlux wasm into `web/cashflux/` from a **hardcoded
+   `C:/Users/mreca/Desktop/CashFlux`**, and `deploy/install.sh` clones a *third sibling checkout*
+   onto the droplet to build it there.
+4. The **`/grpc` WebSocket tunnel carries CashFlux's `SyncService` inside this server**, with
+   `CASHFLUX_SERVER_TOKEN` in the environment and a matching nginx upgrade block.
+5. The wasm admin console owns CashFlux's control plane — device pairing, activation-code minting,
+   user list, storage stats (`client/admin.go`, `client/adminview.go`, `AdminService` RPCs).
+6. CashFlux is **~120 MB of the release directory** (§11) — it dominates deploy size and build time
+   for a site that is otherwise a single Go binary plus a wasm bundle.
+
+**Target shape:** CashFlux runs as its own service on its own host — the same shape ArticleFlux
+already has at `feed.earlcameron.com` — and this site links out to it instead of hosting it.
+
+- [ ] **Decision (needs Cam, see §0):** does the portfolio keep *any* CashFlux surface — the admin
+      panels and invite/activation minting — or do those move into CashFlux's own admin too?
+- [ ] **Decision (needs Cam, see §0):** hostname. `budget.earlcameron.com` is the obvious parallel to
+      `feed.earlcameron.com`.
+- [ ] Stand up the new host: own systemd unit, own nginx server block, own TLS cert, own data dir.
+- [ ] Move `SyncService` + the `/grpc` tunnel out of this server; CashFlux serves its own tunnel on
+      its own origin (this removes `CASHFLUX_SERVER_TOKEN` from this `.env`).
+- [ ] Move device pairing / activation codes / user list / storage stats out of `client/admin.go`,
+      `client/adminview.go` and `AdminService` into CashFlux's own admin.
+- [ ] Drop the `require` + `replace` from `go.mod` → this module stops carrying GWC v4 entirely.
+      **Verify** afterwards that `go mod graph` has exactly one GWC major.
+- [ ] Delete `internal/budget/`, `scripts/build-cashflux.sh`, and the `web/cashflux/` staging step;
+      remove the third checkout from `deploy/install.sh` and `deploy/update.sh`.
+- [ ] Keep `/budget/` alive as a **301 to the new host** — it's linked from the nav, the `~/elsewhere`
+      card, and anything already bookmarked. Do not let it 404.
+- [ ] Repoint the nav link, the `~/elsewhere` card, and the CashFlux project card at the new host.
+- [ ] Deploy hygiene: separate release dirs per service, so a CashFlux build can never break the
+      portfolio's atomic symlink swap; `/healthz` checked per service, rollback per service.
+- [ ] Docs to update on landing: `documents/DEPLOYMENT.md`, `documents/PROJECT_LAYOUT.md`,
+      `README.md` (architecture diagram lists CashFlux as vendored), `AGENTS.md` "own stack" line.
+
+### B. Links + copy — recruiter-grade
+The audience is a hiring manager who gives the page ~30 seconds. Every link must land somewhere
+that pays that attention back, and every line must earn its space.
+- [ ] **Link audit, every destination on the page**: does it resolve, does it dead-end, does it
+      demand an account? (Precedent: `feed.earlcameron.com/` root put a visitor on a *sign-in form* —
+      fixed 2026-07-29 by pointing at `/home`. Assume the next one is just as silent.)
+- [ ] Automate it: a link-check in CI over every internal + external URL the site renders.
+- [ ] Hero copy pass — the claim density is high ("AI-native", "ship at a pace that used to take a
+      team"); make each claim cash out in something on the page.
+- [ ] Project blurbs: lead with the hardest thing solved and quantify it, not the feature list.
+- [ ] Status chips — audit whether `prototype` / `research` read as range or as *unfinished*.
+- [ ] **Close the on-device-ML gap** (§0): hero and résumé both claim it, no card backs it.
+- [ ] Terminal first-contact copy: the welcome line and `help` are the first things typed — they
+      should sell, not just list.
+- [ ] `neofetch` / `arch` text — architecture as the pitch.
+- [ ] CTA hierarchy: résumé, contact, and the two live apps should be findable without scrolling.
+- [ ] Meta/OG title, description and preview image — the copy that renders when the link is *shared*.
+
+### C. Terminal — fully tested and feature-packed
+**Current state:** 9 files in `client/`, **zero Go tests**, and `e2e/` holds only CashFlux
+`auth-flows` + `sync-flows` — nothing drives the terminal. Programs read from hardcoded slices.
+- [ ] Go unit tests for the pure logic — command parser, pipes/`&&`/`>`, the vfs, tab completion,
+      history. This is ordinary Go; it does not need a browser.
+- [ ] Playwright e2e: boot, run every program, tab-complete, history, fullscreen/shrink, vfs
+      persistence across reload, mobile viewport. **Use a `keyboard.type` delay** — headless renders
+      this page at ~0.4fps and full-speed typing silently drops keystrokes (see DEVLOG 2026-07-29).
+- [ ] Golden-output tests for program rendering, so copy changes are diffs and not surprises.
+- [ ] Wire programs to **real gRPC `ContentService`** instead of faux slices (also §12) — today
+      `client/programs.go termProjects` must be hand-synced with `internal/content.featured`.
+- [ ] Missing programs: `ask` (§4), `stats`, `arch`, `theme`, `login` (§10), `blog` (§8), plus the
+      `writing` / `now` / `guestbook` decisions still open in §0.
+- [ ] Full-screen TUI takeovers — projects browser and contact form (§3).
+- [ ] a11y: keyboard-only path, visible focus, and a screen-reader story for a terminal UI.
+
+### D. CSS refine, responsive, and a real mobile mode
+**Current state:** `internal/theme` is a single `theme.go`; `internal/site/site.go` has **5 `Md()`
+breakpoint uses and 19 `css.Raw` escapes**; `client/*.go` has **zero breakpoints** — the terminal and
+the admin console do not respond to width at all.
+- [ ] Token audit: grow `internal/theme` into a full scale (spacing, type, radius, elevation) so the
+      `css.Raw` escape count drops instead of creeping. Every escape should be a *documented* gap in
+      `css/u`, not a shortcut.
+- [ ] Per-section responsive pass at 390 / 768 / 1024 / 1440: nav, hero, work grid, how-it-works,
+      elsewhere, anime, contact, footer.
+- [ ] **Terminal responsive** — it has no width handling today; it is the centrepiece of the page.
+- [ ] **Mobile mode** (upgrades §1's "mobile tap-view"): command chips instead of typing, large touch
+      input, sensible default view without a hardware keyboard, and a decision on whether the
+      terminal opens fullscreen on small screens.
+- [ ] Admin console responsive (`client/admin.go`, `client/adminview.go` — 0 breakpoints).
+- [ ] Quality floor, enforced not assumed: `prefers-reduced-motion`, `:focus-visible`, tap targets.
+- [ ] Visual-regression screenshots at three widths in CI, so responsive work stays fixed.
+
+## 14. Recruiter refinement (2026-07-29) — translate ambition into evidence
+> Thesis, and the rule for every ticket below: **do not remove ambition to make the site
+> recruiter-friendly — translate the ambition into evidence.** The unusual projects are the
+> advantage. The missing layer is measurable execution, ownership, architectural explanation, and
+> stated professional relevance. Supersedes the looser §13.B copy pass, which folds in here.
+
+### ⚠️ Data reality check — done first, because it kills one of the planned sections
+Measured on the CashFlux repo 2026-07-29, before designing anything around it:
+- **Merged PRs: `0`.** Every one of **2,745 commits** went straight to `main`. The proposed
+  "cumulative merged PRs over time" chart **cannot be built** — there is no PR data to plot.
+- **Commits per week: 1179 · 626 · 227 · 124 · 408 · 181** (W25–W30 2026). The curve is
+  front-loaded and *declining*. Plotted as-is it tells a "big burst, then tapering off" story,
+  which is the opposite of sustained velocity. It also puts ~67 commits/day on screen, which
+  invites the question of how much was agent-generated rather than answering it.
+- **What is real and defensible instead:** **26 dated releases** in `CHANGELOG.md` (1.0.2 on
+  2026-07-07 → 1.5.0 on 2026-07-24), on top of 7 git tags, each release naming shipped capability.
+  Also measured: **221 internal packages · 50 routes · 6,102 non-test Go files · 3,669 test files**.
+- [ ] **Decision (needs Cam):** chart **cumulative releases with annotated feature milestones**
+      (recommended — real data, rising curve, maps directly to "velocity = shipped capability"), or
+      drop the chart and lead with the static metric strip alone.
+
+### A. Information architecture — featured case studies vs Labs
+- [x] Four featured projects, promoted to case-study cards rather than equal portfolio tiles:
+      **CashFlux** (product engineering + sustained execution), **ArticleFlux** (AI orchestration +
+      media pipeline), **GoWebComponents** (framework/platform engineering), **WASIBrowser**
+      (systems vision + architectural ambition).
+- [x] Everything else demoted to a visually quieter **Labs** section — the visitor must be able to
+      tell production-grade work from major bets from experiments from language research.
+      ⚠️ **This drops GoGRPCBridge out of the featured four**, which contradicts the 2026-07-28
+      instruction to bill it fourth. Flagged to Cam; one-line swap if he wants it back.
+- [x] Homepage order: hero → proof strip → featured four → CashFlux velocity → capabilities
+      ("how this site works") → Labs → elsewhere → personal (anime) → contact.
+- [ ] **Still missing from that order: professional experience.** The site has no experience section
+      at all — UKG is one clause in the hero and the rest lives only in `/resume`. A recruiter
+      scanning the page cannot see the work history without opening another document.
+
+### B. Hero — recruiter-efficient first screen
+Within the first viewport: role + specialization, seniority signal, core competencies, résumé,
+contact, and one immediate proof point.
+- [x] Reposition from "AI-native systems engineer" — recruiters read "systems engineer" narrowly as
+      OS/networking/embedded/infra-admin — to **"Senior software engineer building AI-native
+      products, developer platforms, and unconventional systems."** Keep "systems" in support text.
+- [x] Name the employer and the work: currently building agentic systems at UKG.
+- [x] **Proof strip**: "Creator of CashFlux, ArticleFlux, GoWebComponents and WASIBrowser" — faster
+      to process than inferring identity from a nine-card grid.
+- [x] Primary actions visible without scrolling: View work · Résumé · GitHub · Contact.
+
+### C. The terminal — a reward, not a gate
+- [x] Frame the intent so it does not read as the site's navigation.
+      ⚠️ **The critique's own framing was wrong here and was not adopted:** the terminal is not
+      something to do *while the wasm loads* — on the public site the terminal **is** the wasm
+      (`client/main.go` mounts only `Terminal` into `#term-root`; the rest of the page is
+      server-rendered Go). It cannot exist before the binary is up. The shipped copy says so, which
+      is also the stronger claim: "Everything above is server-rendered Go. The terminal below *is*
+      the WebAssembly."
+- [x] Show suggested commands on the surface instead of expecting visitors to guess.
+- [ ] Revisit once §13.D lands: on mobile the terminal should not be the first thing between a
+      recruiter and the content.
+
+### D. CashFlux as primary velocity evidence
+- [ ] "Built at high velocity" section driven by the release timeline (see the data check above).
+- [ ] Metric strip — releases, active development weeks, feature modules, routes, tests, languages.
+      **No lines-of-code headline**: LOC rewards duplication and verbosity and recruiters know it.
+- [ ] Milestone annotations: transaction import · budgets · goals · reports · household ownership ·
+      financial to-do system · local-first assistant · wasm deployment. Verify each against
+      `CHANGELOG.md` before publishing a date next to it.
+
+### E. CashFlux link — own instance, framed
+Linking the real instance beats a sanitized mockup: it proves he uses what he builds.
+- [ ] **Blocked — needs Cam:** does a **guest/demo mode with a separate dataset** exist? The framing
+      copy ("my actual instance; guest mode loads a demo dataset; my personal financial data never
+      enters the guest session") is only publishable if it is *true*. Today `/budget/` is behind a
+      password gate. **Do not ship the claim before the mechanism.**
+- [ ] Two distinct CTAs once it exists: **Explore guest demo** and **View engineering case study**.
+- [ ] Note the interaction with §13.A: CashFlux is moving to its own host, so this copy should land
+      on the new host, not `/budget/`.
+
+### F. The CashFlux case study — the highest-leverage single item
+> A homepage creates interest; a case study creates confidence — and it is the thing a hiring
+> manager can circulate internally.
+- [ ] One page, in this order: product overview · problem and motivation · major capabilities ·
+      architecture diagram · development timeline and velocity · hard engineering problems · key
+      decisions and tradeoffs · screenshots or live demo · what to improve next · repo and live app.
+- [ ] **Needs Cam's own words** for: why he built it, what he personally owned, and the two or three
+      genuinely hard problems. These are judgment and authorship claims — they must not be
+      synthesised. Everything else (capabilities, architecture, metrics, timeline) is sourceable
+      from the repo.
+- [ ] Then repeat the shape for ArticleFlux and GoWebComponents, one at a time.
+
+### G. Per-featured-project answers (each must answer five things fast)
+- [ ] 1 · What is it, in one jargon-free sentence.
+- [ ] 2 · Why he built it — the product-judgment signal.
+- [ ] 3 · What he personally owned — the thing hiring managers actually need.
+- [ ] 4 · What was technically hard — two or three problems, not twelve technologies.
+- [ ] 5 · The evidence — metrics, demo, benchmark, or architecture diagram.
 
 ## Goal (2026-07-21): RSS control panels + CashFlux managed service
 Tracking (Claude Code TodoWrite tool is not exposed in this session; tracked here instead).

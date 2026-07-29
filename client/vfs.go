@@ -69,7 +69,7 @@ func seedTree() *fnode {
 
 // --- recruiter-facing notes (professional, tech-fit content only) ---
 
-const aboutMD = `Earl Cameron — AI-native systems engineer · Lauderhill, FL
+const aboutMD = `Earl Cameron — AI-native systems engineer · Remote
 
 Senior software engineer (UKG, since 2020). I build production systems across the stack — Go,
 C#/.NET on the backend; React, Angular, TypeScript on the front — and I ship fast by pairing deep
@@ -126,8 +126,9 @@ const projectsMD = `SELECTED OPEN-SOURCE WORK   github.com/monstercameron
   CashFlux            Local-first budgeting suite in Go/WASM — 40+ pages, rules engine, AI layer.
   ArticleFlux         Self-hosted feed reader, Go all the way down — FTS5 search, TTS, multi-tenant.
   GoWebComponents     A React-style UI framework in Go→WASM. This site runs on it.
-  GoGRPCBridge        gRPC over WebSockets for the browser — no proxy. Carries this site's traffic.
   WASIBrowser         A no-JavaScript browser that renders WebAssembly apps via a custom ABI.
+  GoGRPCBridge        gRPC over WebSockets for the browser — no proxy. Carries this site's traffic.
+  WebGL Path Tracer   Browser path tracing — materials, physics, benchmarks. Live demo, no install.
   SemanticScript      An agent-first programming language — auditable source designed for LLMs.
   SemanticAssembly    Agent-native RISC-V assembly layer.
   SemanticPortrait    Privacy-first journaling → a living self-portrait graph via a local model.

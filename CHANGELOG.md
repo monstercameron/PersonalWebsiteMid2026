@@ -5,6 +5,84 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **Motion pass — one gesture, used twice, no JavaScript.** DESIGN.md §7 asks for a few earned
+  moments rather than confetti, so the whole site shares a single `rise` gesture (a 10px lift with a
+  fade): staggered at load across the hero, and tied to `animation-timeline: view()` for every
+  section below it. That is native CSS scroll-driven animation — no observer, no JS, and browsers
+  without support simply run it once at load and land on the same final state, so nothing is ever
+  left invisible. Plus card hover-lift, link colour transitions, a `:focus-visible` accent ring
+  (keyboard only), and the terminal's signature expand — scrim fade with the modal arriving from
+  98.5% scale. **Everything collapses to nothing under `prefers-reduced-motion`**, verified by
+  auditing computed opacity in both modes after a full-page scroll.
+- **Copy-to-clipboard on the RSS feeds, plus the URL in a field beside it.** Each feed card now
+  prints its **absolute** address in a readonly, selectable input with a `copy` button next to it;
+  the button reports `copied` / `copy failed` / `select it instead` rather than failing silently.
+  Two affordances on purpose — the Clipboard API is unavailable outside a secure context and the
+  button depends on the wasm having booted, so the field is the fallback that always works.
+  Absolute URLs required threading `config.BaseURL` through `site.RenderHTML` → `Page` →
+  `animeRadar`: a relative `/anime.xml` is useless in the one place these are meant to be pasted.
+  Wiring lives in `client/clipboard.go` as one delegated `data-copy-url` listener, bound in `main`
+  before the terminal mounts, since the buttons belong to the SSR shell and not to any component.
+- **Terminal window chrome behaves like a window.** The traffic lights reveal their glyphs on hover
+  of the cluster (`u.GroupHover`, so all of them light together the way macOS does) — `−` on red,
+  which shrinks the fullscreen modal, and `⤢` on green, which expands it. Yellow is inert decoration
+  and gets no glyph so it never looks clickable. The glyphs describe what these buttons actually do
+  rather than copying the macOS close/minimize/zoom mapping, since nothing here closes.
+- **Escape shrinks the fullscreen terminal.** Bound on `document` rather than the input, so it still
+  works after clicking into the scrollback to select text — losing input focus can no longer trap a
+  visitor in the overlay. Bound only while expanded. The title bar now says "esc or red to shrink".
+- **Project tiers: four featured case studies, everything else in Labs.** `site.splitTiers` takes
+  the first `featuredCount` (4) of `content.featured` — CashFlux, ArticleFlux, GoWebComponents,
+  WASIBrowser — and renders them as wide two-up cards carrying both the blurb *and* the long
+  description; the remainder renders as a quieter ruled list under a new `~/labs` section. The tier
+  difference is carried by form, not just size, so a visitor can tell billed work from experiments.
+- **Hero proof strip** — "creator of CashFlux · ArticleFlux · GoWebComponents · WASIBrowser", built
+  from the featured slice so it cannot drift out of sync with the grid below it.
+- **"Built at high velocity" evidence section** — CashFlux measured, not described: 26 documented
+  releases, 221 internal packages, 50 routes, 2,998 tests, six weeks from first commit. Counted from
+  tracked files with `git ls-files`. No lines-of-code figure, deliberately.
+
+### Changed
+- **Hero repositioned for recruiters.** "AI-native systems engineer. I ship ambitious things, fast."
+  → "Senior software engineer building AI-native products, developer platforms, and unconventional
+  systems", with the employer named ("currently building agentic systems at UKG"). "Systems
+  engineer" reads narrowly to a recruiter — OS, networking, embedded, infra admin — and undersold
+  the product and platform work. The first screen now carries role, specialization, employer, proof
+  strip, and **View the work · Read the résumé · Contact** above the fold at 390px.
+- **The terminal is a reward, not a gate.** It no longer owns the loud primary button; the work
+  does. Its suggested commands (`projects`, `open cashflux`, `neofetch`) are shown as chips instead
+  of guessed at, with "open it fullscreen" as a quiet inline control. The copy states what the
+  terminal actually is — "Everything above is server-rendered Go. The terminal below **is** the
+  WebAssembly" — because on the public site the wasm binary mounts nothing else.
+- **The hero's "Launch the live terminal" CTA now launches the terminal.** It was a `<div>` with
+  `cursor:pointer` and no handler — pure decoration. It is now a `<button id="term-launch">` that the
+  wasm terminal binds on mount (`client/terminal.go`): one click expands the terminal to fullscreen
+  **and focuses its input**, so a visitor can type immediately. Expanding by any route now focuses
+  the input, and the button is keyboard-reachable.
+
+### Changed
+- **No city anywhere on the site.** "LAUDERHILL, FL" → "REMOTE" in the hero eyebrow, the terminal's
+  `notes/about.md`, and the résumé's `Location`. Contact address is now `cam@earlcameron.com`
+  (5 call sites: hero social link, contact section, terminal `links` + `contact`, résumé).
+- **Footer redesigned.** It was a full 1px box — `Border()` sets four sides — floating under the
+  page, reading as a stray rectangle rather than an ending. Now a single hairline rule above the
+  content, a real `<footer>` element, with the credit line rewritten to close the page's argument:
+  GoWebComponents and GoGRPCBridge are links to Cam's own repos, "zero npm" is the only accent down
+  there, and `admin` drops to Faint so it stops competing with the copyright.
+- **ArticleFlux is a first-class destination**, matching CashFlux exactly: a top-nav entry
+  (`articleflux`, opens in its own tab) and an `~/elsewhere` card. Both point at
+  `https://feed.earlcameron.com/home`, **not** the host root — the root resolves to the reader, which
+  requires an account, so an unauthenticated visitor would land on a sign-in form. `/home` is the
+  public front door. The target lives in one constant, `site.articleFluxURL`.
+- **WebGL Path Tracer joins the featured grid** (`pathtracer`) — browser path tracing with a dozen
+  material models, Rapier physics, SDF/CSG primitives, mesh import and a benchmark harness, with a
+  live GitHub Pages demo. Picked over the native `vkPathTracer` specifically because a recruiter can
+  click it; the card's `Long` credits the Evan Wallace original it was forked from and rebuilt on.
+- **A GitHub link in the projects section eyebrow** — `github.com/monstercameron ↗`, right-aligned
+  on the `~/projects · featured` line so the full repo list is reachable without scrolling past nine
+  cards. Wraps below the path on narrow viewports.
+- **CashFlux card now links its GitHub Pages demo** (verified 200), so the site's flagship project is
+  clickable from the grid and not only through the nav's embedded `/budget/` instance.
 - **Deploy: the droplet story is real.** `deploy/` now holds `install.sh` (one-shot fresh-droplet
   setup), `update.sh` (pull → build → stage → atomic symlink swap → `/healthz` → **auto-rollback**),
   `rollback.sh` (manual undo, symlink-only, `--list`/by-name/back-one), a shared `lib.sh`, a hardened
@@ -18,6 +96,15 @@ Semantic Versioning once released.
   reach Ubuntu with a CRLF shebang.
 
 ### Changed
+- **Featured projects re-cut and re-ordered.** WhisperToMe is out; the order is now CashFlux,
+  ArticleFlux, GoWebComponents, GoGRPCBridge, WebGL Path Tracer, WASIBrowser, SemanticScript,
+  SemanticAssembly, SemanticPortrait. Nine entries fill the desktop grid's three columns exactly, so
+  the order is now a layout decision as well as a billing one — row 1 the shipped apps plus the
+  framework they run on, the path tracer's live demo in the centre cell, the three `Semantic*`
+  research projects as one bottom row. All three lists that must not drift were updated together:
+  `internal/content.featured`, `client/programs.go termProjects`, `client/vfs.go projectsMD`.
+  **Note:** dropping WhisperToMe leaves no on-device-ML card behind the hero's "on-device ML" claim
+  and the résumé's Snapdragon/QNN/ONNX line — tracked in `TODOS.md` §0.
 - **Frontend moved to GoWebComponents v5** (`/v4` → `/v5`, `replace` retargeted). The repo did not
   build before this: the local GWC checkout had moved to the `v5` module path while `go.mod` still
   required `/v4`. Migration was import-path-only — v5 is additive — except for one genuine API
