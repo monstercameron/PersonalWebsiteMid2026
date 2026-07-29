@@ -72,12 +72,18 @@ func Data() Resume {
 			{"Infra", "Docker · IIS · WSL2 · GCP · DigitalOcean · Nginx"},
 			{"AI / ML", "OpenAI & Anthropic APIs · LangChain · FAISS · Whisper · on-device inference (Snapdragon NPU, QNN, ONNX Runtime GenAI, INT4)"},
 		},
+		// Ordered and quantified to match the site's featured four, so a reader who arrives from
+		// either direction meets the same story. Every figure here is counted from the repository
+		// (git ls-files / CHANGELOG), not estimated — see internal/site.velocityStrip. The projects
+		// are the one part of this résumé that can carry hard numbers today; the employment bullets
+		// above still need Cam's own scope and outcome figures (TODOS §14.H).
 		Projects: []Project{
-			{"GoWebComponents", "A React-style UI framework in Go→WASM. My portfolio runs on it."},
-			{"GoGRPCBridge", "gRPC over WebSockets for the browser — no proxy."},
-			{"CashFlux", "Local-first budgeting suite in Go/WASM — rules engine, AI layer."},
-			{"WASIBrowser", "A no-JavaScript browser that renders WebAssembly apps via a custom ABI."},
-			{"On-device LLMs", "Running 12–27B models on the Snapdragon X2 NPU/GPU (QNN / ONNX)."},
+			{"CashFlux", "Local-first budgeting platform in Go/WASM — transactions, budgets, goals, reports, household ownership, rules engine and an on-device assistant. 221 internal packages behind 2,998 tests and 26 documented releases, six weeks from first commit."},
+			{"ArticleFlux", "Self-hosted feed reader, Go all the way down — real gRPC in the browser, SQLite FTS5 search and text-to-speech, running 151 subscriptions and 3,621 items. Multi-tenant and deduplicated: a popular feed is polled once regardless of subscriber count."},
+			{"GoWebComponents", "A React-style UI framework in Go→WASM — hooks, a fiber runtime, SSR/hydration and typed HTML. Benchmarked head-to-head with React and faster on overall geomean; my portfolio runs on it."},
+			{"WASIBrowser", "A browser runtime where applications ship as WebAssembly components instead of JavaScript bundles — a custom component ABI over a Go host."},
+			{"GoGRPCBridge", "gRPC over WebSockets for the browser — no Envoy, no proxy. Carries every request on my site."},
+			{"On-device LLMs", "Running 12–27B models on the Snapdragon X2 NPU/GPU (QNN / ONNX Runtime GenAI, INT4)."},
 		},
 		Edu: []string{
 			"B.S. Information Technology — Florida International University",

@@ -4,6 +4,18 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Changed
+- **Project card actions are now `code · benchmarks · live demo`.** The evidence link moved ahead of
+  the demo — it is the receipt for a claim the card makes in its own text, and last place read as an
+  afterthought next to the thing people actually click. "demo" became "live demo" in both tiers so a
+  visitor does not have to guess whether it runs.
+- **Résumé projects carry the numbers now**, ordered to match the site's featured four so a reader
+  arriving from either direction meets the same story: CashFlux with 221 packages / 2,998 tests / 26
+  releases in six weeks, ArticleFlux with 151 subscriptions and 3,621 items, GoWebComponents with the
+  React comparison. Every figure is counted from the repositories, not estimated. The **employment**
+  bullets are still task-shaped and still need Cam's own scope and outcome figures — the one part of
+  the résumé that cannot be sourced from a repo (TODOS §14.H).
+
 ### Fixed
 - **The RSS feeds were advertising a raw IP to their own subscribers.** Both public feeds printed
   `http://167.99.232.99:8080` as the channel `<link>`, the `atom:self` href and every item guid —

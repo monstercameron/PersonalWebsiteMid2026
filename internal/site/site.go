@@ -434,13 +434,17 @@ func card(p *sitepb.Project) ui.Node {
 	for _, t := range p.GetTags() {
 		tags = append(tags, Span(Class(TextSize(TextSm), Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2)), t))
 	}
+	// Order is code · benchmarks · live demo. The evidence link sits directly after the repo and
+	// *before* the demo, because it is the receipt for a claim made in the card's own text; pushed
+	// to last it reads as an afterthought next to the thing a visitor is most likely to click.
+	// "live demo" rather than "demo": a recruiter should not have to guess whether it runs.
 	links := []any{Class(Flex, Gap(Spacing4), TextSize(TextSm), css.Raw("flex-wrap", "wrap")),
 		A(Class(Fg(theme.Accent2)), Props{Href: p.GetRepo(), Target: "_blank", Rel: "noopener"}, "code ↗")}
-	if p.GetDemo() != "" {
-		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "demo ↗"))
-	}
 	if e, ok := evidenceLinks[p.GetId()]; ok {
 		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: e.href, Target: "_blank", Rel: "noopener"}, e.label))
+	}
+	if p.GetDemo() != "" {
+		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "live demo ↗"))
 	}
 	return Div(Class(append([]any{Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing5), Flex, FlexCol, Gap(Spacing3),
 		Hover(Border(theme.Accent))}, lift()...)...),
@@ -471,7 +475,8 @@ func labsShelf(projects []*sitepb.Project) ui.Node {
 		links := []any{Class(Flex, Gap(Spacing3), TextSize(TextSm)),
 			A(Class(Fg(theme.Accent2)), Props{Href: p.GetRepo(), Target: "_blank", Rel: "noopener"}, "code ↗")}
 		if p.GetDemo() != "" {
-			links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "demo ↗"))
+			// Same label as the featured cards — one word for one thing, across both tiers.
+			links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "live demo ↗"))
 		}
 		rows = append(rows, Div(Class(Flex, FlexCol, Gap(Spacing2), Md(FlexRow, ItemsCenter, Gap(Spacing4)),
 			PadY(Spacing3), PadX(Spacing2), Rounded(RadiusLg), css.BorderTop(css.Px(1), theme.Border),

@@ -423,6 +423,14 @@ Linking the real instance beats a sanitized mockup: it proves he uses what he bu
 
 ### H. Résumé — accomplishment-oriented, not task-oriented (2026-07-29 review)
 - [x] Title aligned with the site's positioning.
+- [x] Projects section quantified and reordered to match the site's featured four (2026-07-29).
+      Numbers counted from the repos, never estimated.
+- [ ] **External, but it undercuts a link this site promotes:** the GoWebComponents demo at
+      `monstercameron.github.io/GoWebComponents/` serves only "booting Go…" to anything that does not
+      run wasm — crawlers, unfurlers, screen readers, and any failed boot. That is an awkward look
+      for a framework whose card here claims SSR/hydration support. Fix belongs in the GWC repo: ship
+      initial HTML naming what it is, its features, the benchmark headline, the repo link, and a
+      loading state for the interactive demo. This portfolio already demonstrates the pattern.
 - [ ] **Needs Cam's numbers.** The experience bullets read as tasks: "Built a Unified Search
       micro-frontend", "Prototyped Bryte ChangeJob". Each needs scope, adoption, performance or
       delivery outcome — users served, latency moved, teams onboarded, ship date held. These are
