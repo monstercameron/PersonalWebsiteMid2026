@@ -30,9 +30,25 @@ GO_ROOT="/usr/local/go"
 # this is a disk-space decision as much as a rollback-depth one.
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
 
-# Upstream refs. GWC is pinned to a TAG by default: v5.0.1 is the first v5 release in
-# which css/u stops shadowing html/shorthand, which this site's five dot-importing files
-# require to compile at all.
+# Upstream refs, and the asymmetry between them is a POLICY rather than an accident — it
+# decides which promotions reach visitors and which do not.
+#
+#   SITE_REF      main        promoting this repo deploys, and the webhook does it
+#   CASHFLUX_REF  main        promoting CashFlux is picked up by the NEXT deploy of this
+#                             site — see the note below, it does not trigger one itself
+#   GWC_REF       a TAG       promoting GoWebComponents deploys NOTHING, deliberately
+#
+# GWC is pinned because it is a library with a major-version contract that this site and
+# CashFlux both resolve through relative `replace` directives; tracking its `main` would
+# let an unrelated library commit change what is served without anybody promoting
+# anything. v5.0.1 specifically is the first v5 release in which css/u stops shadowing
+# html/shorthand, which this site's five dot-importing files require to compile at all.
+# Moving it is a deliberate edit here, and that is the right amount of friction.
+#
+# CashFlux tracking `main` means this site always builds the latest promoted CashFlux —
+# but only when a deploy runs. A CashFlux promotion does not currently start one, because
+# no deployhook target names that repository. The full topology, and the one-line fix, is
+# in ArticleFlux/deploy/README.md → "What deploys what".
 SITE_REPO="${SITE_REPO:-https://github.com/monstercameron/PersonalWebsiteMid2026.git}"
 SITE_REF="${SITE_REF:-main}"
 GWC_REPO="${GWC_REPO:-https://github.com/monstercameron/GoWebComponents.git}"

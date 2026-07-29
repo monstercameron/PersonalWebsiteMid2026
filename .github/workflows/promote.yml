@@ -7,6 +7,12 @@ name: Promote dev to main
 # this deliberately does not run on push — a green dev is a precondition for releasing, not
 # a decision to release. Because the droplet builds from source with SITE_REF=main, running
 # this is the act that puts code in front of visitors.
+#
+# It is also the last manual step. `deployhook` (which lives in the ArticleFlux repo,
+# under deploy/deployhook, and serves both sites) watches for CI going green on `main`
+# and runs `earlcameron-deploy` — so promotion IS the deploy, and there is nothing to
+# run on the box afterwards. The full topology, including which promotions deploy what,
+# is documented once in ArticleFlux/deploy/README.md rather than restated here.
 
 on:
   workflow_dispatch:
@@ -98,5 +104,12 @@ jobs:
           {
             echo "### Promoted \`dev\` → \`main\`"
             echo ""
-            echo "The next \`sudo deploy/update.sh\` on the droplet will build and serve this."
+            echo "CI now runs on \`main\`. **When it goes green, deployhook redeploys the box** —"
+            echo "nothing further to run by hand. It rebuilds from all three checkouts:"
+            echo "this repo at \`SITE_REF\`, CashFlux at \`CASHFLUX_REF\`, GoWebComponents at the"
+            echo "pinned \`GWC_REF\`, then health-checks the new release and rolls back if it"
+            echo "does not answer."
+            echo ""
+            echo "If it did not deploy, the hook is the place to look:"
+            echo "\`journalctl -u deployhook\` and \`/var/log/deployhook\` on the droplet."
           } >> "$GITHUB_STEP_SUMMARY"
