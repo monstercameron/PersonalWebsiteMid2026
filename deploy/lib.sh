@@ -15,7 +15,20 @@
 #   /opt/earlcameron/.env                                secrets, chmod 600
 APP_USER="${APP_USER:-earlcameron}"
 APP_ROOT="${APP_ROOT:-/opt/earlcameron}"
-SRC_DIR="$APP_ROOT/src"
+
+# SRC_DIR tolerates the older FLAT layout as well as the src/ one.
+#
+# Boxes installed before this file existed keep their checkouts directly under
+# $APP_ROOT rather than under $APP_ROOT/src, and on 2026-07-29 that mismatch
+# stopped a deploy dead with `fatal: cannot change to '…/src/PersonalWebsiteMid2026'`
+# — a message that describes the symptom and not one word of the cause. Detecting
+# it costs one test and turns a confusing outage into a non-event; the src/ layout
+# stays the default for anything new.
+if [ -d "$APP_ROOT/src/PersonalWebsiteMid2026/.git" ] || [ ! -d "$APP_ROOT/PersonalWebsiteMid2026/.git" ]; then
+	SRC_DIR="$APP_ROOT/src"
+else
+	SRC_DIR="$APP_ROOT"
+fi
 SITE_DIR="$SRC_DIR/PersonalWebsiteMid2026"
 GWC_DIR="$SRC_DIR/GoWebComponents"
 CASHFLUX_DIR="$SRC_DIR/CashFlux"

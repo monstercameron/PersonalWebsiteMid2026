@@ -16,6 +16,40 @@ source "$SELF_DIR/lib.sh"
 
 require_root
 
+# --- preflight: fail with a sentence, not with a git error ---------------------
+#
+# Every check here corresponds to a real failure from 2026-07-29, and each one
+# originally surfaced as a message that named the symptom and not the cause:
+# a missing checkout as `fatal: cannot change to …`, root-owned checkouts as
+# `error: cannot open '.git/FETCH_HEAD': Permission denied` forty milliseconds
+# in, and a mis-pinned sibling as forty lines of `missing go.sum entry`. Each
+# took longer to diagnose than it did to fix.
+preflight() {
+	local bad=0
+	for d in "$SITE_DIR" "$GWC_DIR" "$CASHFLUX_DIR"; do
+		if [ ! -d "$d/.git" ]; then
+			warn "no git checkout at $d"
+			bad=1
+			continue
+		fi
+		# git refuses to operate on a repository it does not own, and the deploy
+		# runs git as $APP_USER. A root-owned checkout is the normal state after
+		# a hand-installed box, so this is a likely failure and not an exotic one.
+		local owner
+		owner=$(stat -c %U "$d/.git" 2>/dev/null || echo unknown)
+		if [ "$owner" != "$APP_USER" ]; then
+			warn "$d is owned by $owner, but the deploy runs git as $APP_USER"
+			warn "   fix: chown -R $APP_USER:$APP_USER $d"
+			bad=1
+		fi
+	done
+	if [ "$bad" = "1" ]; then
+		die "preflight failed — nothing has been changed. Fix the above and re-run."
+	fi
+	log "preflight ok — checkouts under $SRC_DIR, owned by $APP_USER"
+}
+preflight
+
 SKIP_PULL=0
 [ "${1:-}" = "--skip-pull" ] && SKIP_PULL=1
 
