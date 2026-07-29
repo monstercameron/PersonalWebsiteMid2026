@@ -16,6 +16,15 @@ Semantic Versioning once released.
   scheme comes from `X-Forwarded-Proto`, not the client. Covered by table tests. The droplet's
   `BASE_URL` was also corrected to the real origin, which is what the homepage's feed field renders
   from — it had been showing the IP too.
+- **Security: Host-header injection in that same fix.** The first version accepted any DNS-name
+  `Host`, so `curl -H 'Host: evil.example' …/anime.xml` would have produced a feed advertising
+  `evil.example` as its permanent home — and a feed is exactly the cacheable, long-lived GET that
+  reaches a shared cache. The request host is now echoed **only when it matches the configured
+  origin's host** (case-insensitively); anything else falls back to `BASE_URL`, so injection is
+  impossible whenever `BASE_URL` names a real domain. The permissive path survives only when
+  `BASE_URL` has no usable hostname — the misconfiguration this function exists to rescue — and is
+  documented as such. Thirteen table cases, including forged `Host`, forged `X-Forwarded-Host`, and
+  a subdomain of the real host.
 - **The page title, description and OG tags still carried the old positioning.** The hero had moved
   to "Senior software engineer building AI-native products…" while `<title>` still said "AI-native
   systems engineer", so every crawler, search snippet and pasted-link preview reported the narrower

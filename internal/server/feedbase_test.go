@@ -45,6 +45,35 @@ func TestFeedBaseURL(t *testing.T) {
 			host: "internal.local", fwdHost: "www.earlcameron.com, inner.svc", fwdProto: "https, http",
 			configured: configured, want: "https://www.earlcameron.com",
 		},
+
+		// --- Host-header injection: the request host is echoed ONLY when it matches the configured
+		// origin. These are the cases a background security review raised against the first version,
+		// which accepted any DNS name and would have let a forged Host name the feed's permanent home.
+		{
+			name: "forged Host is ignored when BASE_URL names a real domain",
+			host: "evil.example", configured: "https://www.earlcameron.com",
+			want: "https://www.earlcameron.com",
+		},
+		{
+			name: "forged X-Forwarded-Host is ignored too",
+			host: "www.earlcameron.com", fwdHost: "evil.example", fwdProto: "https",
+			configured: "https://www.earlcameron.com", want: "https://www.earlcameron.com",
+		},
+		{
+			name: "a subdomain of the configured host is not the configured host",
+			host: "evil.www.earlcameron.com", configured: "https://www.earlcameron.com",
+			want: "https://www.earlcameron.com",
+		},
+		{
+			name: "the match is case-insensitive, as DNS is",
+			host: "WWW.EarlCameron.com", fwdProto: "https", configured: "https://www.earlcameron.com",
+			want: "https://WWW.EarlCameron.com",
+		},
+		{
+			name: "an empty BASE_URL still cannot be exploited into a wrong scheme, only a host",
+			host: "feeds.example.org", fwdProto: "https", configured: "",
+			want: "https://feeds.example.org",
+		},
 		{
 			name: "a configured value keeps no trailing slash",
 			host: "10.0.0.5", configured: "https://example.com/", want: "https://example.com",

@@ -18,6 +18,21 @@ added to the homepage renders from the same `BASE_URL`, so production was offeri
 through without ever checking what it held in production; the field was verified locally, where it
 read `127.0.0.1:8096` and looked perfectly correct.
 
+**The first version of the fix introduced a vulnerability, and a security review caught it.** It
+accepted *any* DNS-name Host, reasoning that rejecting IP literals was the point. That is not enough:
+`curl -H 'Host: evil.example' https://www.earlcameron.com/anime.xml` reaches the handler, and the
+response would have advertised `evil.example` as the feed's permanent home. On its own that only
+poisons the attacker's own response — but a feed is precisely the cacheable, long-lived, public GET
+that ends up in a shared cache, and its entire output is URLs other people are invited to follow.
+The instinct to reject IPs was right and the conclusion was too narrow. The request host is now
+echoed only when it *matches* the configured origin's host, so with `BASE_URL` set to a real domain
+the header cannot move the origin at all; the permissive path survives only when `BASE_URL` has no
+usable hostname, which is the exact misconfiguration this function exists to rescue.
+
+The general lesson, worth more than the specific bug: "reject the obviously bad value" is a weaker
+test than "accept only the known-good value", and reaching for the first is the easy mistake when
+the bug you set out to fix was a *wrong* value rather than a *hostile* one.
+
 `feedBaseURL` now prefers the host the request actually arrived on, falling back to the configured
 value. The reasoning: a request that arrived on a name proves that name resolves here, while a
 configured string proves nothing. The `Host` header is attacker-controlled, so the acceptance test

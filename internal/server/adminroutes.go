@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -23,26 +24,61 @@ import (
 // the configured BASE_URL otherwise. A request that came in on a name proves that name resolves
 // here; the configured value proves nothing.
 //
-// The Host header is attacker-controlled, so this deliberately cannot be pointed at another origin:
-// a candidate is accepted only if it is a DNS name (an IP literal is rejected, which is the whole
-// point), and only the host is taken — never a path or a scheme from the client. The scheme comes
-// from X-Forwarded-Proto, which nginx sets and which a direct client cannot forge past it.
+// SECURITY — the Host header is attacker-controlled, and "is it a DNS name?" is NOT a sufficient
+// test on its own. `curl -H 'Host: evil.example' https://www.earlcameron.com/anime.xml` reaches this
+// handler, and the first version of this function would have answered with a feed advertising
+// evil.example as its permanent home. On its own that only poisons the attacker's own response, but
+// feeds are exactly the kind of cacheable, long-lived GET that ends up in a shared cache, and the
+// output is a URL other people are invited to follow for months. So the request host is honoured
+// only when it MATCHES the configured origin's host:
+//
+//   - BASE_URL is a real domain (the correct configuration): only that host is ever echoed, and a
+//     forged Host falls back to BASE_URL. Injection is impossible.
+//   - BASE_URL is an IP, a port, or empty (the misconfiguration this function exists to survive):
+//     any DNS-name host is accepted, because there is no trustworthy configured value to prefer and
+//     an advertised IP is a certain failure versus a hypothetical one. Fix BASE_URL to close this.
+//
+// Only the host is ever taken — never a path or a scheme from the client — and the scheme comes
+// from X-Forwarded-Proto, which nginx sets.
 func feedBaseURL(r *http.Request, configured string) string {
 	host := r.Host
 	if fwd := r.Header.Get("X-Forwarded-Host"); fwd != "" {
 		// A comma-joined list means several proxies appended; the first is the client-facing one.
 		host = strings.TrimSpace(strings.Split(fwd, ",")[0])
 	}
-	if isDNSName(hostOnly(host)) {
-		scheme := "https"
-		if p := r.Header.Get("X-Forwarded-Proto"); p != "" {
-			scheme = strings.TrimSpace(strings.Split(p, ",")[0])
-		} else if r.TLS == nil {
-			scheme = "http"
-		}
-		return scheme + "://" + host
+	configured = strings.TrimRight(configured, "/")
+	if !isDNSName(hostOnly(host)) || !hostAllowed(hostOnly(host), configured) {
+		return configured
 	}
-	return strings.TrimRight(configured, "/")
+	scheme := "https"
+	if p := r.Header.Get("X-Forwarded-Proto"); p != "" {
+		scheme = strings.TrimSpace(strings.Split(p, ",")[0])
+	} else if r.TLS == nil {
+		scheme = "http"
+	}
+	return scheme + "://" + host
+}
+
+// hostAllowed reports whether a request host may be echoed into generated URLs. It matches the
+// configured origin's host case-insensitively; when the configured origin has no usable hostname it
+// allows any DNS name, which is the degraded mode described on feedBaseURL.
+func hostAllowed(host, configured string) bool {
+	cfgHost := configuredHost(configured)
+	if !isDNSName(cfgHost) {
+		return true // nothing trustworthy to compare against — see feedBaseURL.
+	}
+	return strings.EqualFold(host, cfgHost)
+}
+
+// configuredHost extracts the hostname from a configured base URL, tolerating a missing scheme.
+func configuredHost(configured string) string {
+	if configured == "" {
+		return ""
+	}
+	if u, err := url.Parse(configured); err == nil && u.Host != "" {
+		return hostOnly(u.Host)
+	}
+	return hostOnly(configured)
 }
 
 // hostOnly strips a :port suffix, tolerating IPv6 literals in brackets.
