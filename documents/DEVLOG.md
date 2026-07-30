@@ -911,3 +911,9 @@ The site owns one `cashFluxURL` constant for its two structural links, while the
 stores the same public demo URL on the CashFlux project record. Rendering and content tests pin all
 three anchors and reject both retired targets. The project description no longer claims CashFlux
 runs inside the portfolio.
+
+The first release attempt stopped safely in the promotion workflow before `main` moved: CI selected
+Go 1.26.4 from this repository while its pinned CashFlux `main` requires Go 1.26.5. Regenerating the
+module metadata with Go 1.26.5 also aligned the declared GoWebComponents version with the v5.0.1
+deployment pin and removed stale checksums. This is dependency metadata only; the homepage change
+itself did not need revision.

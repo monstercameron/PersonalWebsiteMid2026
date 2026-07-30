@@ -5,6 +5,9 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Changed
+- **Release metadata now matches the pinned build inputs.** The site requires Go 1.26.5 and
+  GoWebComponents v5.0.1, matching the CashFlux and framework revisions checked out by CI and
+  deployment.
 - **Project card actions are now `code · benchmarks · live demo`.** The evidence link moved ahead of
   the demo — it is the receipt for a claim the card makes in its own text, and last place read as an
   afterthought next to the thing people actually click. "demo" became "live demo" in both tiers so a

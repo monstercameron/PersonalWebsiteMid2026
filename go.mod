@@ -1,12 +1,13 @@
 module github.com/monstercameron/earlcameron
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/monstercameron/CashFlux v0.0.0-00010101000000-000000000000
 	github.com/monstercameron/GoGRPCBridge v1.1.1
-	github.com/monstercameron/GoWebComponents/v5 v5.0.0
+	github.com/monstercameron/GoWebComponents/v5 v5.0.1
+	golang.org/x/crypto v0.54.0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.54.0
@@ -43,7 +44,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
