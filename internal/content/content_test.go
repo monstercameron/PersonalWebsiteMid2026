@@ -37,6 +37,18 @@ func TestGetProjectFound(t *testing.T) {
 	}
 }
 
+// TestCashFluxDemoUsesDedicatedService guards the homepage project card against falling back to
+// the retired GitHub Pages demo or the portfolio's legacy /budget/ mount.
+func TestCashFluxDemoUsesDedicatedService(t *testing.T) {
+	p, err := New().GetProject(context.Background(), &sitepb.ProjectRequest{Id: "cashflux"})
+	if err != nil {
+		t.Fatalf("GetProject cashflux: %v", err)
+	}
+	if got, want := p.GetDemo(), "https://budget.earlcameron.com"; got != want {
+		t.Errorf("CashFlux demo = %q, want %q", got, want)
+	}
+}
+
 // TestGetProjectNotFound maps an unknown id to a NotFound status.
 func TestGetProjectNotFound(t *testing.T) {
 	_, err := New().GetProject(context.Background(), &sitepb.ProjectRequest{Id: "does-not-exist"})

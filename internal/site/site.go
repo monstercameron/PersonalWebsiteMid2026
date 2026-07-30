@@ -216,6 +216,10 @@ var monoFont = css.Raw("font-family", `ui-monospace,"SF Mono",SFMono-Regular,Men
 // form. /home is the public front door that explains the project and links its demo.
 const articleFluxURL = "https://feed.earlcameron.com/home"
 
+// cashFluxURL is the canonical CashFlux deployment. CashFlux is now a separate service rather
+// than an app mounted under this site's /budget/ path.
+const cashFluxURL = "https://budget.earlcameron.com"
+
 // topNav renders the site navigation so the single home page indexes every visitor-facing page:
 // the on-page sections (work, anime, contact) plus the standalone pages (résumé, CashFlux,
 // ArticleFlux). The admin console is owner-only, so its entry lives in the footer, not here.
@@ -233,7 +237,7 @@ func topNav() ui.Node {
 			// CashFlux and ArticleFlux are separate full apps — open them in their own tab so the
 			// portfolio stays put (matches the elsewhere() cards).
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
-				Props{Href: "/budget/", Target: "_blank", Rel: "noopener"}, "cashflux"),
+				Props{Href: cashFluxURL, Target: "_blank", Rel: "noopener"}, "cashflux"),
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
 				Props{Href: articleFluxURL, Target: "_blank", Rel: "noopener"}, "articleflux"),
 			link("#anime", "anime"),
@@ -561,7 +565,7 @@ func elsewhere() ui.Node {
 	grid := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(230px,1fr))"))}
 	grid = append(grid,
 		card("/resume", "⬇", "Résumé", "read it, save as PDF"),
-		card("/budget/", "◱", "CashFlux", "my budgeting app — try it live"),
+		card(cashFluxURL, "◱", "CashFlux", "my budgeting app — try it live"),
 		card(articleFluxURL, "◨", "ArticleFlux", "my feed reader — running live"),
 		card("https://github.com/monstercameron", "◆", "GitHub", "open-source work"),
 		card("https://www.linkedin.com/in/earl-cameron/", "in", "LinkedIn", "experience & network"),

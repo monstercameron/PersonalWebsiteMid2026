@@ -49,7 +49,7 @@ _(No Claude Code todo tool exists in-session; tracked here per project conventio
       2026-07-29: neither.** CashFlux becomes its own service (§13.A).
 - [?] **CashFlux split line** (§13.A) — does the portfolio keep the CashFlux admin panels and
       activation-code minting, or do those move into CashFlux's own admin?
-- [?] **CashFlux hostname** (§13.A) — `budget.earlcameron.com`, to parallel `feed.earlcameron.com`?
+- [x] **CashFlux hostname** (§13.A) — `budget.earlcameron.com`, live as the standalone service.
 - [?] **Admin-auth method** — **WebAuthn/passkey** (recommended) vs password + TOTP 2FA.
 - [?] **CI build source** — git submodule GWC pinned to v4.3.0 (recommended) vs `go mod vendor`.
 - [!] **Toolchain** — install `protoc` + `protoc-gen-go`/`-grpc` before the first gRPC service
@@ -256,8 +256,7 @@ already has at `feed.earlcameron.com` — and this site links out to it instead 
 
 - [ ] **Decision (needs Cam, see §0):** does the portfolio keep *any* CashFlux surface — the admin
       panels and invite/activation minting — or do those move into CashFlux's own admin too?
-- [ ] **Decision (needs Cam, see §0):** hostname. `budget.earlcameron.com` is the obvious parallel to
-      `feed.earlcameron.com`.
+- [x] **Hostname:** `budget.earlcameron.com`, live as the parallel to `feed.earlcameron.com`.
 - [ ] Stand up the new host: own systemd unit, own nginx server block, own TLS cert, own data dir.
 - [ ] Move `SyncService` + the `/grpc` tunnel out of this server; CashFlux serves its own tunnel on
       its own origin (this removes `CASHFLUX_SERVER_TOKEN` from this `.env`).
@@ -269,7 +268,7 @@ already has at `feed.earlcameron.com` — and this site links out to it instead 
       remove the third checkout from `deploy/install.sh` and `deploy/update.sh`.
 - [ ] Keep `/budget/` alive as a **301 to the new host** — it's linked from the nav, the `~/elsewhere`
       card, and anything already bookmarked. Do not let it 404.
-- [ ] Repoint the nav link, the `~/elsewhere` card, and the CashFlux project card at the new host.
+- [x] Repoint the nav link, the `~/elsewhere` card, and the CashFlux project card at the new host.
 - [ ] Deploy hygiene: separate release dirs per service, so a CashFlux build can never break the
       portfolio's atomic symlink swap; `/healthz` checked per service, rollback per service.
 - [ ] Docs to update on landing: `documents/DEPLOYMENT.md`, `documents/PROJECT_LAYOUT.md`,

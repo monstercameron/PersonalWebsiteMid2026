@@ -82,11 +82,11 @@ func featured() []*sitepb.Project {
 	return []*sitepb.Project{
 		{Id: "cashflux", Name: "CashFlux", Status: "shipping", Glyph: "◈",
 			Tags: []string{"Go", "WASM", "gRPC", "SQLite"}, Repo: gh + "CashFlux",
-			Demo:  "https://monstercameron.github.io/CashFlux/",
+			Demo:  "https://budget.earlcameron.com",
 			Blurb: "Local-first budgeting suite — 50 routes, live charts, a rules engine, an AI layer. All Go/WASM, no JS framework.",
 			// "Enterprise-grade test suite" was doing the work a number should do: it reads as a
 			// claim about ambition rather than a fact, next to a velocity strip that prints 2,998.
-			Long: "A full personal-finance app built entirely in Go compiled to WebAssembly on my own framework — transactions, budgets, goals, reports, household ownership, a financial to-do system and an on-device assistant. Offline-first, 221 internal packages behind 2,998 tests, with a motion system and i18n. Runs live on this site — try `budget`."},
+			Long: "A full personal-finance app built entirely in Go compiled to WebAssembly on my own framework — transactions, budgets, goals, reports, household ownership, a financial to-do system and an on-device assistant. Offline-first, 221 internal packages behind 2,998 tests, with a motion system and i18n. Runs live at budget.earlcameron.com — try `budget`."},
 		{Id: "articleflux", Name: "ArticleFlux", Status: "shipping", Glyph: "◨",
 			Tags: []string{"Go", "WASM", "gRPC", "FTS5"}, Repo: gh + "ArticleFlux",
 			Demo:  "https://monstercameron.github.io/ArticleFlux/",

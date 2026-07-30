@@ -17,6 +17,9 @@ Semantic Versioning once released.
   the résumé that cannot be sourced from a repo (TODOS §14.H).
 
 ### Fixed
+- **Every CashFlux homepage link now opens the standalone service.** The top navigation,
+  `~/elsewhere` card, and project-card live demo all point to `https://budget.earlcameron.com`
+  instead of the portfolio's legacy `/budget/` mount or the retired GitHub Pages demo.
 - **The RSS feeds were advertising a raw IP to their own subscribers.** Both public feeds printed
   `http://167.99.232.99:8080` as the channel `<link>`, the `atom:self` href and every item guid —
   *including when served from `https://www.earlcameron.com`* — because that is what `BASE_URL` was

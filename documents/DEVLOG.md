@@ -899,3 +899,15 @@ spends its credibility fast, and these had already earned some by catching two r
 Reaching a second IDENTITY requires the device-initiated pairing flow, which did not cooperate
 in the harness. That enforcement is covered by Go tests driving SyncService directly — the
 authoritative level for it — but the end-to-end gap is real.
+
+## 2026-07-30 — CashFlux homepage links follow the standalone service
+
+The homepage had three separate CashFlux destinations and they had drifted in two different
+directions: the navigation and `~/elsewhere` card still opened the portfolio's embedded `/budget/`
+mount, while the project card still opened the old GitHub Pages demo. All three now open the
+canonical standalone deployment at `https://budget.earlcameron.com` in a new tab.
+
+The site owns one `cashFluxURL` constant for its two structural links, while the content service
+stores the same public demo URL on the CashFlux project record. Rendering and content tests pin all
+three anchors and reject both retired targets. The project description no longer claims CashFlux
+runs inside the portfolio.
