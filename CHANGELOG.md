@@ -4,7 +4,37 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Added
+- **A dedicated page for each of the five Flux products**, at `/projects/<slug>` — CashFlux,
+  ArticleFlux, PixelFlux, CodeFlux and SchemaFlux. Server-rendered, so they are crawlable, unfurl
+  with their own poster as the social card, and work with no WebAssembly. Each answers TODOS §14.G in
+  order: what it is in one jargon-free sentence, what it does, what it is built on, what was hard,
+  the countable evidence, and an honest-status section that states the maturity and says plainly that
+  these are spare-time projects built with AI agents in the loop.
+- **Brand artwork, web-sized** (`web/static/brand/`): a poster, a mark and a social card per product,
+  derived from the commissioned art. The poster is framed inside the site's macOS terminal chrome on
+  a light plate and captioned as a design exercise, so a marketing image is never mistaken for
+  evidence.
+- **Per-product colour tokens** (`theme.Brands`, `theme.Plate`). One accent and one ambient glow per
+  product, sampled from its own poster and brightened until it clears 4.5:1 on the aubergine ground.
+  Everything else in the design language is unchanged.
+
 ### Changed
+- **The home page showcase is now the five Flux products** instead of the previous four, and each
+  card carries its product's mark, its brand accent, and a `case study →` link to the new page.
+  `site.featuredCount` moved 4 → 5. The trade, recorded in `internal/content.featured`:
+  **GoWebComponents and GoGRPCBridge dropped to the Labs shelf.** They remain named in "how this site
+  works", in the footer, and in every Flux page's "built on" section, where they are marked as Cam's
+  own work.
+- **SchemaFlux is reported as v1.1.0**, not v1.0.0. Its README's status line had gone stale after the
+  release was tagged; corrected here and in that repository.
+
+### Fixed
+- **A typed CSS rule was rendering as page text.** `css.BorderTop(...)` was appended to a `Div`'s
+  child list rather than its class list, which GWC treats as content — so the "built on" table
+  printed its own border rule as a string and collapsed to a single narrow column. Styling belongs in
+  `Class(...)`.
+
 - **Release metadata now matches the pinned build inputs.** The site requires Go 1.26.5 and
   GoWebComponents v5.0.1, matching the CashFlux and framework revisions checked out by CI and
   deployment.

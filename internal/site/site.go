@@ -113,7 +113,11 @@ func focusRing() []css.Rule {
 // strip and the "Selected work" grid. The remainder falls through to the quieter Labs shelf. The
 // split is positional because sitepb.Project has no tier field — see internal/content.featured,
 // which is ordered for exactly this.
-const featuredCount = 4
+//
+// Five since 2026-08-09: the showcase is the five Flux products, each of which has a real
+// case-study page behind its card. Changing this number without reordering content.featured() to
+// match will silently promote or demote whatever happens to sit at the boundary.
+const featuredCount = 5
 
 // Page renders the full standard site for the given content. baseURL is the public origin
 // (config.BaseURL) and is used to print absolute feed URLs — a relative "/anime.xml" is useless in
@@ -412,8 +416,10 @@ func work(projects []*sitepb.Project) ui.Node {
 				"github.com/monstercameron ↗"),
 		),
 		headed("Selected work.",
-			"Four projects I'd want to be judged on — a product, an AI pipeline, a framework, and a "+
-				"systems bet. The smaller experiments are further down, in Labs."),
+			"Five products under one name — a budgeting app, a feed reader, an offline photo search, "+
+				"a coding agent and a typed LLM library. Each card opens a case study: what it does, "+
+				"what it is built on, what was hard, and how finished it honestly is. The framework and "+
+				"the transport underneath them are in Labs."),
 		Div(cards...),
 	)
 }
@@ -433,8 +439,20 @@ var evidenceLinks = map[string]struct{ label, href string }{
 }
 
 // card renders one project.
+//
+// A Flux project (one with a theme.Brands entry) additionally gets its own mark, its own accent
+// colour, and a "case study →" link to /projects/<slug>. That is the point of the re-tier: the
+// showcase cards now lead somewhere that answers the questions a card can only raise, and the
+// artwork does the work of telling five products apart at a glance. Non-Flux projects render
+// exactly as before, so the Labs shelf and any future entry are unaffected.
 func card(p *sitepb.Project) ui.Node {
-	tags := []any{Class(Flex, Gap(Spacing2))}
+	accent, mark, hasPage := theme.Accent, ui.Node(nil), false
+	if b, ok := theme.Brands[p.GetId()]; ok {
+		accent, hasPage = b.Accent, true
+		mark = Img(Class(css.Raw("width", "40px"), css.Raw("height", "auto"), css.Raw("flex", "0 0 auto")),
+			Props{Src: "/static/brand/" + p.GetId() + "-mark.webp", Alt: "", Width: "40", Loading: "lazy"})
+	}
+	tags := []any{Class(Flex, Gap(Spacing2), css.Raw("flex-wrap", "wrap"))}
 	for _, t := range p.GetTags() {
 		tags = append(tags, Span(Class(TextSize(TextSm), Fg(theme.Dim), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2)), t))
 	}
@@ -442,19 +460,34 @@ func card(p *sitepb.Project) ui.Node {
 	// *before* the demo, because it is the receipt for a claim made in the card's own text; pushed
 	// to last it reads as an afterthought next to the thing a visitor is most likely to click.
 	// "live demo" rather than "demo": a recruiter should not have to guess whether it runs.
-	links := []any{Class(Flex, Gap(Spacing4), TextSize(TextSm), css.Raw("flex-wrap", "wrap")),
-		A(Class(Fg(theme.Accent2)), Props{Href: p.GetRepo(), Target: "_blank", Rel: "noopener"}, "code ↗")}
+	links := []any{Class(Flex, Gap(Spacing4), TextSize(TextSm), css.Raw("flex-wrap", "wrap"))}
+	if hasPage {
+		// First, and not an external link: the case study is the thing this card wants a visitor
+		// to open, and it keeps them on the site instead of handing them to GitHub.
+		links = append(links, A(Class(Fg(accent), FontSemibold, focusRing()),
+			Props{Href: "/projects/" + p.GetId()}, "case study →"))
+	}
+	links = append(links,
+		A(Class(Fg(theme.Accent2)), Props{Href: p.GetRepo(), Target: "_blank", Rel: "noopener"}, "code ↗"))
 	if e, ok := evidenceLinks[p.GetId()]; ok {
 		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: e.href, Target: "_blank", Rel: "noopener"}, e.label))
 	}
 	if p.GetDemo() != "" {
 		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "live demo ↗"))
 	}
+	// The mark replaces the glyph when there is one — a 40px piece of the product's own artwork
+	// says more than a geometric character, and it is what makes five cards read as five products
+	// rather than five rows of the same template.
+	title := ui.Node(Span(Class(FontSemibold, Fg(accent), FontSize(Rem(1.1))), p.GetGlyph()+"  "+p.GetName()))
+	if mark != nil {
+		title = Div(Class(Flex, ItemsCenter, Gap(Spacing3), css.Raw("min-width", "0")),
+			mark, Span(Class(FontSemibold, Fg(accent), FontSize(Rem(1.1))), p.GetName()))
+	}
 	return Div(Class(append([]any{Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusXl), Pad(Spacing5), Flex, FlexCol, Gap(Spacing3),
-		Hover(Border(theme.Accent))}, lift()...)...),
+		Hover(Border(accent))}, lift()...)...),
 		Div(Class(Flex, JustifyBetween, ItemsCenter, Gap(Spacing3)),
-			Span(Class(FontSemibold, Fg(theme.Accent), FontSize(Rem(1.1))), p.GetGlyph()+"  "+p.GetName()),
-			Span(Class(TextSize(TextSm), Fg(theme.Green)), p.GetStatus()),
+			title,
+			Span(Class(TextSize(TextSm), Fg(theme.Green), css.Raw("white-space", "nowrap")), p.GetStatus()),
 		),
 		P(Class(Fg(theme.Fg), TextSize(TextSm)), p.GetBlurb()),
 		// A featured card gets the long description too — the blurb says what it is, this says what

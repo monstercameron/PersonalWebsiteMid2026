@@ -411,6 +411,13 @@ Linking the real instance beats a sanitized mockup: it proves he uses what he bu
 ### F. The CashFlux case study — the highest-leverage single item
 > A homepage creates interest; a case study creates confidence — and it is the thing a hiring
 > manager can circulate internally.
+
+**2026-08-09 — largely done, and done five times.** `/projects/<slug>` now exists for all five Flux
+products (`internal/site/project.go`, content in `internal/content/flux.go`), each answering §G in
+order and carrying its own brand artwork. What is **still open** is the part below that was always
+reserved for Cam: the motivation, the ownership claim, and an architecture diagram. The pages are
+built with a slot for those paragraphs — nothing was synthesised to fill it.
+
 - [ ] One page, in this order: product overview · problem and motivation · major capabilities ·
       architecture diagram · development timeline and velocity · hard engineering problems · key
       decisions and tradeoffs · screenshots or live demo · what to improve next · repo and live app.
@@ -418,7 +425,11 @@ Linking the real instance beats a sanitized mockup: it proves he uses what he bu
       genuinely hard problems. These are judgment and authorship claims — they must not be
       synthesised. Everything else (capabilities, architecture, metrics, timeline) is sourceable
       from the repo.
-- [ ] Then repeat the shape for ArticleFlux and GoWebComponents, one at a time.
+- [x] ~~Then repeat the shape for ArticleFlux and GoWebComponents, one at a time.~~ Done for
+      ArticleFlux, and extended to PixelFlux, CodeFlux and SchemaFlux (2026-08-09). **GoWebComponents
+      still has no page** — it was dropped to the Labs shelf when the showcase became the five Flux
+      products, and it is the strongest argument on the site, so a page for it is the obvious next
+      one to write.
 
 ### H. Résumé — accomplishment-oriented, not task-oriented (2026-07-29 review)
 - [x] Title aligned with the site's positioning.
@@ -439,11 +450,15 @@ Linking the real instance beats a sanitized mockup: it proves he uses what he bu
       `resume.Data()`, so a code edit silently does nothing while an override is applied.
 
 ### G. Per-featured-project answers (each must answer five things fast)
-- [ ] 1 · What is it, in one jargon-free sentence.
-- [ ] 2 · Why he built it — the product-judgment signal.
-- [ ] 3 · What he personally owned — the thing hiring managers actually need.
-- [ ] 4 · What was technically hard — two or three problems, not twelve technologies.
-- [ ] 5 · The evidence — metrics, demo, benchmark, or architecture diagram.
+> **2026-08-09:** questions 1, 4 and 5 are answered on every Flux page; 2 and 3 are deliberately
+> blank, because they are Cam's to write. Everything else on those pages is sourced from the repos.
+- [x] 1 · What is it, in one jargon-free sentence. — the `Lede` field on every Flux project.
+- [ ] 2 · Why he built it — the product-judgment signal. **Needs Cam's words.**
+- [ ] 3 · What he personally owned — the thing hiring managers actually need. **Needs Cam's words.**
+- [x] 4 · What was technically hard — two or three problems, not twelve technologies. — the
+      "hard parts" section, sourced from each repo's own measurements.
+- [x] 5 · The evidence — metrics, demo, benchmark, or architecture diagram. — the "evidence" strip.
+      No architecture diagram yet; that is the weakest part of the five pages.
 
 ## Goal (2026-07-21): RSS control panels + CashFlux managed service
 Tracking (Claude Code TodoWrite tool is not exposed in this session; tracked here instead).

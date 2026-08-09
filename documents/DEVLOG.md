@@ -2,6 +2,67 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-08-09 — Five Flux products get real pages, and the showcase changes hands
+
+Cam had a zip of commissioned brand art for the five Flux products — a poster, a logo lockup and a
+browser-tab icon each — and asked for a dedicated page per product using it, aimed at recruiters and
+hiring managers: sales-forward copy, the underlying libraries named, and honest about the fact that
+most of these are early alphas built in spare time with AI in the loop.
+
+**The design problem was a collision, and naming it was most of the work.** The artwork is bright,
+white, and unmistakably SaaS-marketing. This site is dark aubergine and reads as a terminal. Three
+options: bleach the art into the background, re-skin the site per product, or find a frame that makes
+both true at once. The first wastes the art, the second means a recruiter clicking a project card no
+longer knows whose portfolio they are on. So: the page stays Aubergine, and the poster is presented
+as what it actually *is* — a marketing sheet — mounted inside the macOS terminal chrome the site
+already owns, on its own light plate, captioned "the poster is a design exercise, not a claim." That
+frame is the whole site's argument in one image, and it reuses an existing vocabulary rather than
+inventing a second one.
+
+What varies per product is exactly two things: one accent colour sampled from that product's poster
+and brightened until it clears 4.5:1 on the aubergine ground, and the ambient page glow. Ground,
+surfaces, borders, both type voices and the single `rise` gesture are unchanged. Five products, one
+design language.
+
+**The section order is TODOS §14.G, in order** — what it is, what it does, what it is built on, what
+was hard, the evidence, and how honest the whole thing is. The honesty section is a full section
+rather than a footnote on purpose: a recruiter who works out on their own that a "platform" is an
+alpha discounts everything else on the page, and one who is told plainly reads the rest as credible.
+Deliberately *not* included: first-person motivation and authorship claims, which §14.F reserves for
+Cam's own words. Those paragraphs have a slot waiting.
+
+**What broke.** Three things, all caught by screenshots rather than by the compiler:
+
+1. A `css.BorderTop(...)` appended to a `Div`'s *child* list instead of its class list rendered as
+   literal text on the page — `{[{border-top 1px solid #3a1b2e}] { []} []  1404770308650521748}` —
+   and squeezed the whole "built on" table into a column. GWC's variadic element signature takes
+   anything that is not a Node or a PropOption as content, so this compiles cleanly and fails
+   visually. Worth remembering: styling goes in `Class(...)`, always.
+2. The first full-page captures came back with everything below the hero at opacity 0. That was the
+   screenshot, not the page: `riseOnScroll` drives the reveal from `animation-timeline: view()`, and
+   a full-page capture never scrolls, so the timeline never advances. Capturing with
+   `reducedMotion: 'reduce'` fixes it *and* exercises the accessibility path, which is strictly
+   better than the workaround I first reached for.
+3. SchemaFlux's README still said "Status: v1.0.0" while the repository had tagged and released
+   **v1.1.0**. The page would have shipped a stale version as a fact. Fixed in both places, and the
+   "twelve of thirty-two acceptance criteria" line moved to the past tense, which is true regardless
+   of what has since been closed.
+
+**The showcase changed hands mid-session.** Cam then asked for the home page's featured area to be
+the five Flux products instead of the previous four. That is a real trade and it is written down in
+`internal/content.featured`: **GoWebComponents and GoGRPCBridge dropped to Labs**, and those are the
+two pieces the site's entire argument rests on. They are not hidden — "how this site works" names
+both, the footer credits both, and every Flux page's "built on" section links them and marks them
+`mine` — but if the framework should be billed as a headliner again, the fix is to move it back above
+`site.featuredCount`, not to add a second mechanism.
+
+**Next.** The pages are on `dev`, so `www.earlcameron.com/projects/<slug>` still resolves to the home
+page via the catch-all until `dev` is promoted — Cam's call, never an agent's. The five repository
+READMEs already link those URLs and are pushed, so the link goes live the moment he promotes. Also
+still open: the ArticleFlux README change is on that repo's `dev` branch, and GitHub renders `main`,
+so it is invisible there until that repo is promoted too.
+
+
 ## 2026-07-29 — The feeds were telling subscribers to visit an IP address
 
 Cam noticed `http://167.99.232.99:8080/anime.xml` and asked why the feeds use the IP instead of the

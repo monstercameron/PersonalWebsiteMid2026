@@ -67,16 +67,23 @@ func aboutCopy() *sitepb.About {
 
 // featured returns the curated set of projects, in display order.
 //
-// Order IS the billing, and since 2026-07-29 it is also the *tier*: there is no featured flag on
-// sitepb.Project, so site.splitTiers takes the first site.featuredCount (4) as the billed case
-// studies — CashFlux (product engineering), ArticleFlux (AI orchestration), GoWebComponents
-// (framework/platform), WASIBrowser (systems ambition) — and everything after them renders in the
-// quieter Labs shelf. The SSR page, the terminal's `projects`, and /projects.md all read this one
-// slice in this one order.
+// Order IS the billing, and it is also the *tier*: there is no featured flag on sitepb.Project,
+// so site.splitTiers takes the first site.featuredCount as the billed case studies and everything
+// after them renders in the quieter Labs shelf. The SSR page, the terminal's `projects`, and
+// /projects.md all read this one slice in this one order. Reordering therefore re-tiers the site.
 //
-// Reordering therefore re-tiers the site. Moving a project above index 4 promotes it to a case
-// study; pushing one below demotes it to Labs. GoGRPCBridge sits at index 4 — first in Labs — as
-// the nearest thing to a fifth headliner.
+// **Re-tiered 2026-08-09 (Cam's instruction):** the showcase is now the five Flux products —
+// CashFlux, ArticleFlux, PixelFlux, CodeFlux, SchemaFlux — because those five have dedicated
+// case-study pages at /projects/<slug> and commissioned brand art, so a card can lead somewhere
+// that answers the questions the card raises. Each carries a product story rather than a
+// technology, which is what a hiring manager can actually evaluate.
+//
+// The cost of that decision, stated so nobody re-discovers it as a bug: **GoWebComponents and
+// GoGRPCBridge dropped to Labs**, and they are the two pieces of the stack this site's whole
+// argument rests on. They are not hidden — the "how this site works" strip names both, the footer
+// credits both, and every Flux page's "built on" section links them and marks them as Cam's own
+// work. But if the framework should be billed as a headliner again, move it back above
+// site.featuredCount rather than adding a second mechanism.
 func featured() []*sitepb.Project {
 	const gh = "https://github.com/monstercameron/"
 	return []*sitepb.Project{
@@ -92,6 +99,18 @@ func featured() []*sitepb.Project {
 			Demo:  "https://monstercameron.github.io/ArticleFlux/",
 			Blurb: "A self-hosted feed reader that is Go all the way down — the server, the client, and the CSS. Real gRPC in the browser; the only JavaScript that ships is a boot shim.",
 			Long:  "Google Reader's key map over a virtualised list at firehose scale — 151 subscriptions, 3,621 items — with SQLite FTS5 search, tags, notes, per-source hues and text-to-speech. Multi-tenant and deduplicated: a popular feed is polled once no matter how many people subscribe. The live demo is the shipping client with only the transport swapped."},
+		{Id: "pixelflux", Name: "PixelFlux", Status: "prototype", Glyph: "◉",
+			Tags: []string{".NET 10", "ONNX", "local AI", "arm64"}, Repo: gh + "PixelFlux",
+			Blurb: "Search your photographs by what is in them, on a laptop, with nothing leaving the machine.",
+			Long:  "A vision model describes every photograph, a segmenter outlines it, a detector finds the faces, and all of it folds into one searchable vector — offline, on a Snapdragon X2. Blending the caption's text embedding with the image embedding took \"red car\" from 0.80 to 1.00 precision-at-five; fixing JPEG decode, not the model, took the face stage from 82 s to 25 s."},
+		{Id: "codeflux", Name: "CodeFlux", Status: "prototype", Glyph: "⬢",
+			Tags: []string{"Go", "agents", "gRPC"}, Repo: gh + "codeflux",
+			Blurb: "A coding agent that assembles programs out of separately verified atoms instead of writing them in one pass.",
+			Long:  "An atom has a typed signature, a contract, declared effects and the evidence that it works; atoms compose into molecules and molecules into programs, each layer naming what discharges its guarantees. Authority comes from what an action is rather than what the model claims it needs, so a poisoned file can propose but never authorize. Written as an explicit bet, with a kill criterion."},
+		{Id: "schemaflux", Name: "SchemaFlux", Status: "v1.1.0", Glyph: "▣",
+			Tags: []string{"Go", "generics", "LLM"}, Repo: gh + "SchemaFlux",
+			Blurb: "Typed LLM operations for Go — fluent builders that return the Go type you asked for, not a wall of text.",
+			Long:  "One public API over one execution path, with retries, structured-output contracts, logging, metrics and cost tracking centralized instead of re-implemented per call site. The result envelope keeps model claims separate from measured facts, and a snapshot test over the public API surface fails the build if it drifts."},
 		{Id: "gwc", Name: "GoWebComponents", Status: "v5.0.1", Glyph: "⟠",
 			Tags: []string{"Go", "WASM", "framework"}, Repo: gh + "GoWebComponents",
 			Demo:  "https://monstercameron.github.io/GoWebComponents/",
