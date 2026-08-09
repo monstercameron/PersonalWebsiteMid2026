@@ -33,18 +33,18 @@ import (
 
 // Server owns the ingress lifecycle.
 type Server struct {
-	cfg      config.Config
-	log      *slog.Logger
-	grpc     *grpc.Server
-	tunnel   http.Handler
-	store    *store.Store
-	page     []byte // the standard site, server-rendered once at startup
+	cfg    config.Config
+	log    *slog.Logger
+	grpc   *grpc.Server
+	tunnel http.Handler
+	store  *store.Store
+	page   []byte // the standard site, server-rendered once at startup
 	// projectPages holds the Flux case-study pages (/projects/<slug>), keyed by slug and
 	// server-rendered once at startup for the same reason as page.
 	projectPages map[string][]byte
-	anime    *anime.Service
-	sessions *admin.Sessions
-	adminSvc *admin.Service // for the scheduled daily Slack post
+	anime        *anime.Service
+	sessions     *admin.Sessions
+	adminSvc     *admin.Service // for the scheduled daily Slack post
 	// budgetGate is the password door in front of the CashFlux app at /budget/ (guest bypass grants a
 	// local-only session). Disabled (pass-through) when no BudgetPassword is configured.
 	budgetGate *budget.Gate
