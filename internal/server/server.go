@@ -39,6 +39,9 @@ type Server struct {
 	tunnel   http.Handler
 	store    *store.Store
 	page     []byte // the standard site, server-rendered once at startup
+	// projectPages holds the Flux case-study pages (/projects/<slug>), keyed by slug and
+	// server-rendered once at startup for the same reason as page.
+	projectPages map[string][]byte
 	anime    *anime.Service
 	sessions *admin.Sessions
 	adminSvc *admin.Service // for the scheduled daily Slack post
@@ -155,6 +158,13 @@ func New(cfg config.Config) (*Server, error) {
 		_ = st.Close()
 		return nil, err
 	}
+	// The Flux case-study pages are static for the same reason and are rendered here too. A
+	// failure is fatal at boot rather than a blank page discovered by a visitor.
+	projectPages, err := buildProjectPages(cfg.BaseURL)
+	if err != nil {
+		_ = st.Close()
+		return nil, err
+	}
 	gate := budget.NewGate(cfg.BudgetPassword, cfg.AdminSecret)
 	// Let the gate recognise a visitor arriving with a live activation code — one
 	// the admin console minted for them moments earlier, from an authenticated
@@ -163,7 +173,7 @@ func New(cfg config.Config) (*Server, error) {
 	if cashfluxAdmin != nil {
 		gate.SetActivationChecker(cashfluxAdmin.ActivationCodeIsValid)
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), anime: animeSvc, sessions: sessions, adminSvc: adminSvc, budgetGate: gate, cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose, cashfluxAdmin: cashfluxAdmin}, nil
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), projectPages: projectPages, anime: animeSvc, sessions: sessions, adminSvc: adminSvc, budgetGate: gate, cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose, cashfluxAdmin: cashfluxAdmin}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
@@ -233,6 +243,7 @@ func (s *Server) routes() *http.ServeMux {
 	mux.HandleFunc("/healthz", s.healthz)
 	s.registerAdminRoutes(mux)
 	s.registerResumeRoutes(mux)
+	s.registerProjectRoutes(mux)
 	mux.HandleFunc("/", s.ssrShell)
 	return mux
 }

@@ -371,6 +371,31 @@ palette change is then one edit.
 | `Yellow` | `#F2B840` | warning |
 | `Cyan` | `#4DD0E1` | info |
 
+### Per-product brand tokens (`theme.Brands`, `theme.Plate`) — 2026-08-09
+
+The five Flux products have their own commissioned artwork, and the `/projects/<slug>` pages tie to
+it. Two things vary per product and nothing else does:
+
+| Slug | `Accent` | `Tint` | Sampled from |
+|---|---|---|---|
+| `articleflux` | `#4D84FF` | `#9AB6FF` | poster blue |
+| `cashflux` | `#3FBE86` | `#8BDCBA` | poster green |
+| `codeflux` | `#7D6BFF` | `#B3A8FF` | poster indigo |
+| `pixelflux` | `#A86BF0` | `#E56FC8` | poster purple→magenta |
+| `schemaflux` | `#3FC9C0` | `#8EE2DC` | poster teal |
+
+Plus `Glow`, an `rgba()` string for the page's ambient background wash, and `theme.Plate`
+(`#F6F4FA`) — the light surface the artwork sits on, because the posters are drawn for a near-white
+ground with a dark navy wordmark and would lose half of each lockup on the aubergine page.
+
+**The rule this does not break.** The palette stays Aubergine: ground, raised surfaces, borders, both
+type voices and the single `rise` gesture are identical on every page. A product page must still read
+as earlcameron.com — a visitor who clicked a project card should never wonder whose site they are on.
+Accent values are brightened from the poster samples until they clear 4.5:1 against `Bg`; the poster
+values are tuned for white and go muddy on aubergine. Never introduce a sixth brand without adding
+its `theme.Brands` entry — `buildProjectPages` fails at boot rather than rendering a transparent
+accent, which is invisible text rather than a visible error.
+
 Spacing, radii, and font sizes are **not** re-tokenized — use `css/u` defaults directly
 (`Spacing2..10`, `RadiusLg`/`RadiusXl`, `TextSm`, `FontSize(Rem(n))`, and `Md(...)` for the 768px
 breakpoint).
