@@ -172,6 +172,7 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project, baseURL string)
 		`<meta property="og:type" content="website">` +
 		`<meta property="og:url" content="https://www.earlcameron.com/">` +
 		`<meta name="twitter:card" content="summary">` +
+		FaviconLinks() +
 		// Minimal bootstrap glue (permitted): reset, base color, mono font-family, and the ambient
 		// glow background. Everything else is typed css/u.
 		`<style>*{box-sizing:border-box}html,body{margin:0}body{color:#f3e9e6;` +
@@ -193,6 +194,27 @@ func RenderHTML(about *sitepb.About, projects []*sitepb.Project, baseURL string)
 		`.then(function(r){go.run(r.instance);})` +
 		`.catch(function(e){console.error("wasm boot failed",e);});</script>`
 	return head + markup + boot + `</body></html>`, nil
+}
+
+// FaviconLinks is the <head> icon block, shared by every page this site serves.
+//
+// Until 2026-08-09 the site shipped no favicon at all, so every tab, bookmark and history entry
+// showed a generic globe — on a portfolio whose entire argument is craft. The embedded CashFlux app
+// had one; the site around it did not.
+//
+// The mark is the hexagonal EC monogram from Cam's identity lockup. Honest limitation, recorded so
+// nobody re-discovers it: the monogram is an intricate outline drawing and it does not resolve at
+// 16px, where it reads as a cyan glow on a dark tile rather than as a legible mark. That is
+// acceptable — 16px is the legacy size and browsers pick 32 or larger for tabs — but if a crisp
+// small icon is ever wanted it needs a redrawn, simplified mark, not more processing of this one.
+//
+// Exported because internal/resume renders its own document and needs the same block; a résumé that
+// opens in its own tab with a globe beside it undoes the point.
+func FaviconLinks() string {
+	return `<link rel="icon" href="/static/brand/favicon.ico" sizes="any">` +
+		`<link rel="icon" type="image/png" sizes="32x32" href="/static/brand/earlcameron-icon-32.png">` +
+		`<link rel="icon" type="image/png" sizes="16x16" href="/static/brand/earlcameron-icon-16.png">` +
+		`<link rel="apple-touch-icon" href="/static/brand/earlcameron-apple-touch-icon.png">`
 }
 
 // center wraps children in a max-width column, horizontally centered by a flex parent.
@@ -268,13 +290,32 @@ func topNav() ui.Node {
 // and the launch CTA — matching the mockup. The terminal mounts immediately below (see Page).
 func hero(featured []*sitepb.Project) ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
-		Div(Class(append([]any{Flex, ItemsCenter, Gap(Spacing3), TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.18))},
-			riseOnLoad(0)...)...),
-			Span(Class(css.Raw("width", "26px"), css.Raw("height", "1px"),
-				css.Raw("background", "#e95420"), css.Raw("display", "inline-block"))),
-			// No city, by Cam's instruction (2026-07-29): the eyebrow states availability, not a
-			// location. Keep it that way — a street-level identifier here is not worth the reach.
-			Span("EARL CAMERON · REMOTE"),
+		// The identity mark replaces what used to be the text eyebrow "EARL CAMERON · REMOTE".
+		//
+		// It earns the position because it says the same thing better: the mark carries the name,
+		// so the line beneath it is free to carry only the fact a recruiter actually needs, which
+		// is availability. Nothing was lost in the trade — "REMOTE" survives, the name is now brand
+		// rather than a caption, and the H1 below still opens on the positioning statement.
+		//
+		// Deliberately capped narrow (340px, 420px at Md) rather than run to the column width. The
+		// H1 is what a recruiter came for and DESIGN.md §5 already worried about it being pushed
+		// past the fold on a 390px screen; a full-width plate here would do exactly that.
+		//
+		// The mark's cyan is not a new colour on this site — theme.Cyan (#4DD0E1) is already in the
+		// ANSI row of the Aubergine palette (DESIGN.md §6), which is why a blue lockup sits on an
+		// aubergine ground without reading as a foreign object.
+		Div(Class(append([]any{Flex, FlexCol, Gap(Spacing3), ItemsStart}, riseOnLoad(0)...)...),
+			Img(Class(WFull, MaxWidth(Px(340)), Md(MaxWidth(Px(420))), Rounded(RadiusLg),
+				css.Raw("height", "auto"), css.Raw("display", "block")),
+				Props{Src: "/static/brand/earlcameron-logo.webp", Alt: "Earl Cameron",
+					Width: "880", Height: "360", Loading: "eager"}),
+			Div(Class(Flex, ItemsCenter, Gap(Spacing3), TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.18))),
+				Span(Class(css.Raw("width", "26px"), css.Raw("height", "1px"),
+					css.Raw("background", "#e95420"), css.Raw("display", "inline-block"))),
+				// No city, by Cam's instruction (2026-07-29): this line states availability, not a
+				// location. Keep it that way — a street-level identifier here is not worth the reach.
+				Span("AVAILABLE · REMOTE"),
+			),
 		),
 		// "AI-native systems engineer" was the old headline. "Systems engineer" reads narrowly to a
 		// recruiter — OS, networking, embedded, infra administration — and undersells product and

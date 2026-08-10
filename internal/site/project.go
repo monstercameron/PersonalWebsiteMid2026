@@ -94,6 +94,7 @@ func RenderProjectHTML(p content.FluxProject, brand theme.Brand, siblings []cont
 		`<meta property="og:image" content="` + esc(base+"/static/brand/"+p.Slug+"-og.jpg") + `">` +
 		`<meta name="twitter:card" content="summary_large_image">` +
 		`<link rel="canonical" href="` + esc(url) + `">` +
+		FaviconLinks() +
 		`<style>*{box-sizing:border-box}html,body{margin:0}body{color:#f3e9e6;` +
 		`font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code","JetBrains Mono",monospace;` +
 		`background:radial-gradient(62vw 52vw at 10% -10%,` + brand.Glow + `,transparent 62%),` +

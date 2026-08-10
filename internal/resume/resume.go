@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"html"
 	"strings"
+
+	"github.com/monstercameron/earlcameron/internal/site"
 )
 
 // Resume is the structured résumé content.
@@ -99,6 +101,9 @@ func RenderHTML(r Resume, tailoredNote string) string {
 	b.WriteString(`<!doctype html><html lang="en"><head><meta charset="utf-8">`)
 	b.WriteString(`<meta name="viewport" content="width=device-width,initial-scale=1">`)
 	fmt.Fprintf(&b, `<title>%s — Résumé</title>`, esc(r.Name))
+	// Same icon block as the rest of the site. A résumé opens in its own tab, often the one a
+	// recruiter leaves parked for days, so it is the last page that should show a generic globe.
+	b.WriteString(site.FaviconLinks())
 	b.WriteString(`<style>` + resumeCSS + `</style></head><body>`)
 	if tailoredNote != "" {
 		fmt.Fprintf(&b, `<div class="banner no-print">%s</div>`, esc(tailoredNote))

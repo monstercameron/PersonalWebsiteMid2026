@@ -4,6 +4,17 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Added
+- **The site has an identity mark, and a favicon.** Cam's "Earl Cameron" lockup now opens the
+  hero, replacing the text eyebrow that said the same words — so the line beneath it is free to
+  carry only availability. The hexagonal EC monogram becomes the favicon across the home page,
+  every project page and the résumé. **Until now the site shipped no favicon at all**: every tab,
+  bookmark and history entry showed a generic globe, on a portfolio whose whole argument is craft.
+  The embedded CashFlux app had one; the site around it did not.
+  Known limit, written down so it is not re-discovered: the monogram is an intricate outline
+  drawing and does not resolve at 16px, where it reads as a cyan glow rather than a legible mark.
+  32px and above are fine. A crisp small icon would need a redrawn, simplified mark.
+
 ### Changed
 - **Every public CashFlux link now opens the public build, not Cam's own instance.** The top
   navigation, the `~/elsewhere` card, the home-page card's demo link and the CashFlux page's
