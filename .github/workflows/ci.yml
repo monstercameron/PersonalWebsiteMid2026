@@ -116,6 +116,13 @@ jobs:
         working-directory: PersonalWebsiteMid2026
         run: GOOS=js GOARCH=wasm go build -o /dev/null ./client
 
+      # `go test ./...` above cannot see client/ at all — the package is js/wasm-only, so its
+      # tests are not in the native build. The terminal's parser, history, line editor and virtual
+      # filesystem are all tested there; without this step none of it is gated.
+      - name: Test the client under js/wasm
+        working-directory: PersonalWebsiteMid2026
+        run: bash scripts/test-wasm.sh
+
   deploy-assets:
     name: Deploy — scripts, nginx, unit
     runs-on: ubuntu-latest

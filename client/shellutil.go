@@ -292,7 +292,18 @@ var allCommands = []string{
 	"help", "about", "whoami", "projects", "open", "neofetch", "links", "contact", "clear",
 	"pwd", "ls", "cd", "mkdir", "touch", "cp", "mv", "rm", "cat", "less", "head", "tail", "nano",
 	"echo", "grep", "find", "sort", "uniq", "cut", "sed", "awk", "wc", "du", "df", "history",
-	"curl", "ssh", "tar", "man",
+	"curl", "ssh", "tar", "man", "reset",
+	// Added by the 2026-08-09 pass. The easter eggs are deliberately absent — they complete on
+	// Tab only if you already know the name, which is the whole point of an easter egg.
+	"resume", "anime", "tour", "share", "theme", "stats", "uptime", "bench",
+	// The second tier: the commands people reach for when they are testing whether a terminal is
+	// real. `uname` earned this list its existence — a visitor typed it, the shell did not have
+	// it, and the did-you-mean suggested `anime`.
+	"uname", "arch", "hostname", "id", "groups", "users", "who", "w", "date", "cal", "free",
+	"lscpu", "ps", "env", "printenv", "which", "whereis", "type", "tree", "seq", "rev", "tac",
+	"nl", "tr", "base64", "sha256sum", "md5sum", "xxd", "hexdump", "basename", "dirname",
+	"realpath", "stat", "file", "diff", "factor", "expr", "shuf", "yes", "banner", "figlet",
+	"alias", "sleep", "wget", "chmod", "chown", "exit", "logout", "quit", "ping",
 }
 
 // complete performs Ubuntu-style Tab completion of the last token: a command name for the first
@@ -438,11 +449,42 @@ func (v *vfs) rm(p string, recursive bool) error {
 	return nil
 }
 
-// cp copies a node.
+// destFor resolves the real destination path for cp/mv.
+//
+// When dst names an existing directory, the source goes INSIDE it under its own base name, which is
+// what cp and mv actually do. Without this, `cp notes/README.md notes` resolved to parent=/home/cam,
+// name="notes" and replaced the whole notes/ directory with a single file — silently destroying
+// every recruiter-facing document in one command, with no error and no way back short of `reset`.
+func (v *vfs) destFor(src, dst string) string {
+	if n := v.get(v.resolve(dst)); n != nil && n.Dir {
+		return strings.TrimSuffix(dst, "/") + "/" + baseName(src)
+	}
+	return dst
+}
+
+// baseName returns the final element of a path.
+func baseName(p string) string {
+	p = strings.TrimSuffix(p, "/")
+	if i := strings.LastIndex(p, "/"); i >= 0 {
+		return p[i+1:]
+	}
+	return p
+}
+
+// samePath reports whether two paths resolve to the same node.
+func (v *vfs) samePath(a, b string) bool {
+	return strings.Join(v.resolve(a), "/") == strings.Join(v.resolve(b), "/")
+}
+
+// cp copies a node. Copying onto an existing directory places the copy inside it.
 func (v *vfs) cp(src, dst string) error {
 	sn := v.get(v.resolve(src))
 	if sn == nil {
 		return fmt.Errorf("cp: %s: not found", src)
+	}
+	dst = v.destFor(src, dst)
+	if v.samePath(src, dst) {
+		return fmt.Errorf("cp: %s and %s are the same file", src, dst)
 	}
 	parent, name := v.parentOf(dst)
 	if parent == nil || !parent.Dir {
@@ -457,7 +499,14 @@ func (v *vfs) cp(src, dst string) error {
 }
 
 // mv moves/renames a node.
+//
+// The same-path guard is not a nicety: mv was implemented as copy-then-remove, so `mv x x` copied a
+// node over itself and then deleted it — losing the file entirely, where the real mv does nothing.
 func (v *vfs) mv(src, dst string) error {
+	dst = v.destFor(src, dst)
+	if v.samePath(src, dst) {
+		return nil // real mv treats this as a no-op, not as a delete
+	}
 	if err := v.cp(src, dst); err != nil {
 		return err
 	}

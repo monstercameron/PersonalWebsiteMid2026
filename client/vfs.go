@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"syscall/js"
+
+	"github.com/monstercameron/earlcameron/internal/notes"
 )
 
 // fnode is a virtual filesystem node: a directory (Children) or a file (Content).
@@ -28,11 +30,55 @@ const vfsKey = "earlcameron.vfs.v2"
 // newVFS loads the cached filesystem, or seeds a fresh one, and starts in the home directory.
 func newVFS() *vfs {
 	v := &vfs{cwd: []string{"home", "cam"}}
-	if !v.load() {
+	// A cached tree whose root is not a directory cannot be healed by repairSeed — it only patches
+	// inside directories — and would leave the terminal permanently empty for that visitor, with
+	// `reset` as the only way out and nothing on screen suggesting it. Treat it as no cache at all.
+	if !v.load() || v.root == nil || !v.root.Dir {
 		v.root = seedTree()
+		v.save()
+		return v
+	}
+	// The cached tree is the visitor's sandbox and is kept as they left it — except that a
+	// visitor who ran `rm -rf ~/notes` would otherwise have destroyed the recruiter-facing
+	// content permanently, for every later visit, with nothing on screen saying so. Anything
+	// seeded and now missing comes back; anything they created or edited is left alone.
+	if repairSeed(v.root, seedTree()) {
 		v.save()
 	}
 	return v
+}
+
+// reset restores the seeded filesystem and returns to the home directory, discarding whatever the
+// visitor did to it. This is the in-session escape hatch that `repairSeed` is for across reloads.
+func (v *vfs) reset() {
+	v.root = seedTree()
+	v.cwd = []string{"home", "cam"}
+	v.save()
+}
+
+// repairSeed re-adds nodes present in seed but missing from cached, recursively, and reports
+// whether it changed anything. Existing nodes are never overwritten: an edited seed file keeps the
+// visitor's edit, and a seeded path they replaced with a different node kind is left as theirs.
+func repairSeed(cached, seed *fnode) bool {
+	if cached == nil || seed == nil || !cached.Dir || !seed.Dir {
+		return false
+	}
+	changed := false
+	for name, seedChild := range seed.Children {
+		existing, ok := cached.Children[name]
+		if !ok {
+			if cached.Children == nil {
+				cached.Children = map[string]*fnode{}
+			}
+			cached.Children[name] = cloneNode(seedChild)
+			changed = true
+			continue
+		}
+		if repairSeed(existing, seedChild) {
+			changed = true
+		}
+	}
+	return changed
 }
 
 // dir makes a directory node from the given children.
@@ -46,7 +92,7 @@ func seedTree() *fnode {
 	return dir(map[string]*fnode{
 		"home": dir(map[string]*fnode{
 			"cam": dir(map[string]*fnode{
-				"about.md":   file(aboutMD),
+				"about.md":   file(notes.About),
 				"resume.pdf": file("%PDF-1.4 (faux) — run `resume` on the site to download the real one.\n"),
 				// The three headliners, matching internal/content.featured's leading entries.
 				"projects": dir(map[string]*fnode{
@@ -55,94 +101,17 @@ func seedTree() *fnode {
 					"gwc.md":         file("GoWebComponents — a React-style UI framework in Go→WASM. This site runs on it.\n"),
 				}),
 				"notes": dir(map[string]*fnode{
-					"README.md":        file(notesReadme),
-					"experience.md":    file(experienceMD),
-					"skills.md":        file(skillsMD),
-					"projects.md":      file(projectsMD),
-					"working-style.md": file(workingStyleMD),
+					"README.md":        file(notes.README),
+					"experience.md":    file(notes.Experience),
+					"skills.md":        file(notes.Skills),
+					"projects.md":      file(notes.Projects),
+					"working-style.md": file(notes.WorkingStyle),
 				}),
 				".secrets": file("nice try 😏\n"),
 			}),
 		}),
 	})
 }
-
-// --- recruiter-facing notes (professional, tech-fit content only) ---
-
-const aboutMD = `Earl Cameron — AI-native systems engineer · Remote
-
-Senior software engineer (UKG, since 2020). I build production systems across the stack — Go,
-C#/.NET on the backend; React, Angular, TypeScript on the front — and I ship fast by pairing deep
-systems judgment with LLMs in the loop. Recently focused on agentic systems and AI infrastructure.
-
-Curious recruiter? ` + "`ls notes`" + ` and read on.
-`
-
-const notesReadme = `notes/ — a quick briefing for recruiters.
-
-  cat notes/experience.md      roles, impact, education
-  cat notes/skills.md          languages, frameworks, infra, AI/ML
-  cat notes/projects.md        open-source work (github.com/monstercameron)
-  cat notes/working-style.md   how I operate
-
-Everything here is public and professional. The rest of the terminal is a playground —
-type ` + "`help`" + ` or ` + "`projects`" + `.
-`
-
-const experienceMD = `EXPERIENCE
-
-UKG — Software Engineer (P3 / Senior)                                    2020 – present
-  HCM domain, and more recently an agentic-systems / AI-infrastructure org (agents & AI tooling).
-  Selected work:
-    · Angular → React modernization (React, Tremor, Node, MS SQL Server)
-    · Unified Search micro-frontend
-    · "48 Hours" ChatAssistant
-    · Bryte ChangeJob proof-of-concept
-    · HCM Pillar Dashboard
-    · Go store/send benchmarks; client-per-core capacity experiments
-    · Provider registries; authentication & session systems
-    · SQL performance work (CXPACKET / SOS_SCHEDULER_YIELD); throughput & priority stored procs
-
-EDUCATION
-  B.S. Information Technology — Florida International University (FIU)
-  A.S. Information Technology — Miami Dade College
-`
-
-const skillsMD = `SKILLS
-
-  Languages   Go · C# · TypeScript / JavaScript · Python   (Rust, C — exploratory)
-  Frontend    React · Angular · Blazor / Razor · Tailwind · WebAssembly (Go→WASM)
-  Backend     .NET · Node · Flask · gRPC · REST
-  Data        MS SQL Server · MySQL · MongoDB · SQLite
-  Infra       Docker · IIS · WSL2 · GCP · DigitalOcean · Nginx
-  AI / ML     OpenAI & Anthropic APIs · LangChain · FAISS · Whisper · Stable Diffusion ·
-              local LLM runtimes · on-device inference (Snapdragon NPU, QNN, ONNX Runtime GenAI,
-              INT4 quantization)
-  Workflow    AI-native — Claude Code, Copilot, Cursor; heavy but measured LLM use
-`
-
-const projectsMD = `SELECTED OPEN-SOURCE WORK   github.com/monstercameron
-
-  CashFlux            Local-first budgeting suite in Go/WASM — 40+ pages, rules engine, AI layer.
-  ArticleFlux         Self-hosted feed reader, Go all the way down — FTS5 search, TTS, multi-tenant.
-  GoWebComponents     A React-style UI framework in Go→WASM. This site runs on it.
-  WASIBrowser         A no-JavaScript browser that renders WebAssembly apps via a custom ABI.
-  GoGRPCBridge        gRPC over WebSockets for the browser — no proxy. Carries this site's traffic.
-  WebGL Path Tracer   Browser path tracing — materials, physics, benchmarks. Live demo, no install.
-  SemanticScript      An agent-first programming language — auditable source designed for LLMs.
-  SemanticAssembly    Agent-native RISC-V assembly layer.
-  SemanticPortrait    Privacy-first journaling → a living self-portrait graph via a local model.
-  Snapdragon LLMs     Running 12–27B models on the Snapdragon X2 NPU/GPU (QNN / ONNX pipelines).
-`
-
-const workingStyleMD = `HOW I WORK
-
-  · Establish the mechanism first, challenge weak assumptions, refine the architecture, then spec.
-  · Direct and technically substantive — comfortable down at low-level architecture.
-  · Honest about feasibility and toolchain limits.
-  · Design sense: dark, polished, engineered-intentional UIs; clean information hierarchy;
-    privacy-first; explainable, reversible operations.
-`
 
 // load restores the filesystem from localStorage. It returns false if nothing was cached.
 func (v *vfs) load() bool {

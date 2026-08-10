@@ -10,8 +10,11 @@ import (
 // shell is a faux Unix shell over the virtual filesystem. It supports pipes (|), sequential
 // chaining (&&), and output redirection (>), plus ~30 common commands.
 type shell struct {
-	fs      *vfs
-	history []string
+	fs *vfs
+	// nav is the command history plus the Up/Down browsing cursor. It records every command the
+	// terminal runs, portfolio programs included — recording it inside run() would have missed
+	// them, since those never reach the shell.
+	nav histNav
 }
 
 // newShell builds a shell backed by the (localStorage-cached) virtual filesystem.
@@ -28,7 +31,6 @@ func (s *shell) prompt() string {
 
 // run executes a full command line and returns rendered output nodes.
 func (s *shell) run(line string) []outLine {
-	s.history = append(s.history, line)
 	var out []outLine
 	for _, seg := range splitTop(line, "&&") {
 		text, err := s.pipeline(strings.TrimSpace(seg))
@@ -142,7 +144,25 @@ func (s *shell) exec(name string, args []string, stdin string) (string, error) {
 		return "tar: archived (faux) — the virtual fs doesn't leave your browser\n", nil
 	case "man":
 		return manPage(first(ops)), nil
+	case "reset":
+		s.fs.reset()
+		return "filesystem restored to its original state.\n", nil
 	default:
+		// The second tier of coreutils (uname, date, cal, tree, base64, …) lives in coreutils.go
+		// to keep this switch readable. It reports whether it handled the name.
+		if out, handled, err := s.coreutil(name, args, stdin); handled {
+			return out, err
+		}
+		// A portfolio program reached through the shell — i.e. inside a pipeline or a redirect —
+		// renders as plain text from the same row definitions the styled version uses. This is what
+		// makes `projects | grep Go` and `about > notes/cam.md` work instead of quietly doing
+		// nothing.
+		if isPortfolio(name) {
+			return rowsText(programOutput(name, args)), nil
+		}
+		if guess := didYouMean(name); guess != "" {
+			return "", fmt.Errorf("%s: command not found — did you mean `%s`?", name, guess)
+		}
 		return "", fmt.Errorf("%s: command not found — try `help`", name)
 	}
 }
@@ -331,7 +351,7 @@ func (s *shell) du(flags map[string]bool, ops []string) string {
 // hist prints the command history.
 func (s *shell) hist() string {
 	var b strings.Builder
-	for i, h := range s.history {
+	for i, h := range s.nav.entries {
 		fmt.Fprintf(&b, "%4d  %s\n", i+1, h)
 	}
 	return b.String()
