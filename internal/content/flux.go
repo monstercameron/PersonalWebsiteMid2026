@@ -2,7 +2,7 @@ package content
 
 // The Flux project pages.
 //
-// These are the five products that carry the "Flux" brand and their own commissioned artwork
+// These are the six products that carry the "Flux" brand, each with its own commissioned artwork
 // (web/static/brand). Each gets a dedicated page at /projects/<slug> — the case-study surface
 // TODOS §14.F asks for, in the shape §14.G specifies: what it is in one jargon-free sentence,
 // what it does, what it is built on, what was hard, and where the evidence is.
@@ -12,10 +12,10 @@ package content
 //  1. **Every factual claim is sourced from the project's own repository** — its README, its
 //     tests, its measurements. Numbers are quoted, never estimated. If a project's README does
 //     not support a sentence here, the sentence does not ship.
-//  2. **Maturity is stated, not implied.** Four of the five are alpha or prototype, they are
-//     built in spare time with AI agents in the loop, and the page says so in its own section
-//     rather than burying it. A recruiter who discovers that themselves discounts everything
-//     else on the page; a recruiter who is told it up front reads the rest as credible.
+//  2. **Maturity is stated, not implied.** Most are alpha, prototype or (for AnimeFeedFlux) not
+//     yet written; they are built in spare time with AI agents in the loop, and each page says
+//     so in its own section rather than burying it. A recruiter who discovers that themselves
+//     discounts everything else on the page; one who is told it up front reads the rest as credible.
 //
 // What is deliberately NOT here: first-person motivation ("why I built it") and authorship
 // claims. TODOS §14.F reserves those for Cam's own words — they are judgment claims and must
@@ -53,6 +53,23 @@ type FluxProject struct {
 	Evidence []Fact
 	// Maturity is this project's honest status paragraph — what works, what does not.
 	Maturity string
+	// Art reports whether this project has the commissioned brand set in web/static/brand
+	// (`<slug>-mark.webp`, `-poster.webp`, `-og.jpg`). The page hard-references those files by
+	// slug, so a project without them would render broken images here, on every other Flux page's
+	// "more projects" strip, and in the card a link unfurler builds. When false the page falls back
+	// to a typographic identity instead — see site.projectHero and site.brandPoster.
+	//
+	// It is a field rather than a lookup against the filesystem because the pages are rendered once
+	// at startup and a missing asset must be a compile-time-visible decision, not a runtime 404.
+	// TestFluxArtAssetsExist holds it to the filesystem so it cannot become a claim.
+	Art bool
+	// PosterDark marks a brand sheet drawn on a dark ground rather than the near-white the other
+	// posters assume. It selects the plate the poster is mounted on — see site.brandPlate.
+	PosterDark bool
+	// PosterNote overrides the caption under the brand sheet. The default asserts that the product
+	// is real and the code is linked above, which is not true of a project that is still only a
+	// specification — see site.posterNote.
+	PosterNote string
 }
 
 // Capability is one thing the product does, in the user's vocabulary.
@@ -89,12 +106,13 @@ const disclosure = "These are personal projects, built on nights and weekends wi
 // Disclosure returns the shared spare-time / AI-assisted / maturity statement.
 func Disclosure() string { return disclosure }
 
-// FluxProjects returns the five Flux project pages in display order.
+// FluxProjects returns the Flux project pages in display order.
 func FluxProjects() []FluxProject {
 	const gh = "https://github.com/monstercameron/"
 	return []FluxProject{
 		{
 			Slug: "cashflux", Name: "CashFlux", Head: "Cash", Tail: "Flux",
+			Art:     true,
 			Tagline: "See where your money moves.",
 			Status:  "alpha · live",
 			Lede:    "A budgeting app that runs entirely inside your browser tab and keeps your financial data on your device.",
@@ -131,6 +149,7 @@ func FluxProjects() []FluxProject {
 		},
 		{
 			Slug: "articleflux", Name: "ArticleFlux", Head: "Article", Tail: "Flux",
+			Art:     true,
 			Tagline: "Signal, ranked for you.",
 			Status:  "shipping · self-hosted",
 			Lede:    "A feed reader you host yourself, with the three-pane layout and keyboard shortcuts Google Reader taught everyone.",
@@ -167,6 +186,7 @@ func FluxProjects() []FluxProject {
 		},
 		{
 			Slug: "pixelflux", Name: "PixelFlux", Head: "Pixel", Tail: "Flux",
+			Art:     true,
 			Tagline: "Find meaning in every photo.",
 			Status:  "prototype · Windows",
 			Lede:    "Search your own photographs by what is in them, on a laptop, with nothing leaving the machine.",
@@ -205,6 +225,7 @@ func FluxProjects() []FluxProject {
 		},
 		{
 			Slug: "codeflux", Name: "CodeFlux", Head: "Code", Tail: "Flux",
+			Art:     true,
 			Tagline: "Verified atoms. Better software.",
 			Status:  "prototype · experimental",
 			Lede:    "A coding agent that assembles a program out of small, separately verified pieces instead of writing it in one pass and hoping.",
@@ -242,6 +263,7 @@ func FluxProjects() []FluxProject {
 		},
 		{
 			Slug: "schemaflux", Name: "SchemaFlux", Head: "Schema", Tail: "Flux",
+			Art:     true,
 			Tagline: "Structured AI that ships.",
 			Status:  "v1.1.0 · stable API",
 			Lede:    "A Go library that makes a language model return a typed Go value instead of a wall of text you have to parse.",
@@ -273,6 +295,55 @@ func FluxProjects() []FluxProject {
 			Maturity: "The exception on this page: a library at a released 1.1.0 with an API-surface test guarding " +
 				"it, and every behaviour claim in its README backed by a test. It is still honest about the " +
 				"gaps — read \"What 1.0 does not include\" before depending on it for anything load-bearing.",
+		},
+		{
+			// The newest of the six, and the only one with no product behind it yet. Its page is
+			// built from its specification rather than its code, and says so in every place a
+			// reader might otherwise assume otherwise — the status chip, the evidence figures and
+			// the maturity paragraph.
+			//
+			// Its sheet is the one drawn on a dark ground rather than near-white, so PosterDark
+			// swaps the plate underneath it. The wordmark splits "Anime" / "FeedFlux" to match the
+			// lockup, where "Anime" is white and "Feed"+"Flux" carry the blue-to-violet gradient.
+			Slug: "animefeedflux", Name: "AnimeFeedFlux", Head: "Anime", Tail: "FeedFlux",
+			Art: true, PosterDark: true,
+			Tagline: "Feeds that write themselves.",
+			Status:  "planning · spec of record",
+			Lede:    "A feed generator: describe the feed you want in a sentence, and it publishes on a schedule to any reader you already use.",
+			Pitch: "A recipe carries a prompt, a schedule, a model and a budget. It runs on time, writes the " +
+				"items, and publishes them at a stable address as RSS, Atom and JSON Feed — so the thing " +
+				"you subscribe to is an ordinary feed, and nothing downstream has to know a model wrote " +
+				"it. The whole product surface is one sentence: a URL that returns valid XML and never lies.",
+			Repo: gh + "AnimeFeedFlux", DemoLabel: "",
+			PosterNote: "The specification is real and linked above; the poster is a design exercise, not a claim.",
+			Capabilities: []Capability{
+				{"Describe a feed, get a URL", "A recipe is a prompt, a schedule, a model and a spend cap. What comes out is an ordinary feed address that Slack, or any reader, can subscribe to without knowing a model wrote it."},
+				{"Two kinds of item, separated by design", "Generative items — trivia, on-this-day — are written by the model, which is the source. Grounded items — news, releases — are only edited by it; the facts and the links come from the publisher. Conflating the two is named in the plan as the main way the project fails, so they are split at the architecture level rather than by convention."},
+				{"Corrections, not silent edits", "A reader that has already seen an item never re-fetches it, so editing one reaches nobody. Corrections are published as new items instead, which is the only version a subscriber will actually receive."},
+				{"Anime-native, not a general feed bot", "The recipes it ships with are the ones an anime audience actually wants: a daily trivia question, the day's news ranked by impact, and a seasonal roundup of what is worth watching."},
+			},
+			Stack: []StackItem{
+				{"SchemaFlux", gh + "SchemaFlux", true, "My typed-LLM library — the model returns a Go value, so a malformed generation is a type error rather than a parsing bug in the feed."},
+				{"GoWebComponents", gh + "GoWebComponents", true, "The admin UI, Go compiled to WebAssembly — and deliberately the last phase, after the engine is already serving feeds."},
+				{"GoGRPCBridge", gh + "GoGRPCBridge", true, "Real gRPC from the browser for the control plane; there is no REST/JSON API at all."},
+				{"Go · SQLite with FTS5 · nginx", "", false, "One droplet, one writer. Scaling out means a second instance with its own database, not a cluster — which the plan states rather than discovers."},
+			},
+			Hard: []Problem{
+				{"Making a hallucinated link unpublishable rather than unlikely", "The obvious failure of an AI-written news feed is a confident link to a page that does not exist, and prompting is not a defence against it. Sources are fetched first, their URLs normalised once, and only that candidate set is ever shown to the model; a link may be published only if it is byte-equal to a URL that was actually retrieved. An invented URL is not improbable — there is no code path that can emit one."},
+				{"Slack's RSS app is stricter than the specification, and fails silently", "It does not error on a feed it dislikes; it simply stops posting. It needs a date on every item, items in sequence, and no duplicate timestamps — so a news run publishing three items at once would have had two dropped with no signal. It also bookmarks the newest date it has seen, which makes a backdated item invisible forever. That produced real constraints: strictly increasing timestamps enforced by a database constraint, a no-backdating rule, plain-text descriptions with the rich HTML in content:encoded, and trivia answers kept out of the description so a channel preview cannot spoil the question."},
+				{"Putting the security boundary between two planes instead of inside one", "The publish plane is plain HTTPS, GET and HEAD only, unauthenticated, and holds a read-only database handle — a bug in the code path serving the public internet has no writer available to corrupt anything with. Every mutation is a gRPC call on a separate, authenticated, IP-allowlisted control plane. The split is the defence; the authentication is only the lock on the half that can write."},
+			},
+			Evidence: []Fact{
+				{"3", "feed formats from one recipe — RSS, Atom, JSON Feed"},
+				{"0", "invented links publishable, by construction"},
+				{"2", "planes — the public one cannot write to the database"},
+			},
+			Maturity: "The newest of the six and the earliest: designed, not yet running. The architecture, the " +
+				"compliance rules and the failure modes are settled; the engine that executes them is being " +
+				"built engine-first, so it is delivering feeds to Slack before a single screen exists. What " +
+				"makes it more than a plan is that the idea already runs in miniature on this very site, " +
+				"which generates /anime.xml and /anime/qotd.xml and posts them on a schedule. AnimeFeedFlux " +
+				"is that, generalised.",
 		},
 	}
 }

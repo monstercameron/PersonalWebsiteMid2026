@@ -62,9 +62,14 @@ type Brand struct {
 // Brands maps a project slug to its colour identity. Slugs match internal/content's project IDs
 // and the /projects/<slug> route, so a page, a card and a palette can never drift apart.
 var Brands = map[string]Brand{
-	"articleflux": {Accent: u.Hex("#4d84ff"), Tint: u.Hex("#9ab6ff"), Glow: "rgba(77,132,255,.20)"},
-	"cashflux":    {Accent: u.Hex("#3fbe86"), Tint: u.Hex("#8bdcba"), Glow: "rgba(63,190,134,.18)"},
-	"codeflux":    {Accent: u.Hex("#7d6bff"), Tint: u.Hex("#b3a8ff"), Glow: "rgba(125,107,255,.20)"},
-	"pixelflux":   {Accent: u.Hex("#a86bf0"), Tint: u.Hex("#e56fc8"), Glow: "rgba(168,107,240,.20)"},
-	"schemaflux":  {Accent: u.Hex("#3fc9c0"), Tint: u.Hex("#8ee2dc"), Glow: "rgba(63,201,192,.18)"},
+	// Sampled from the AnimeFeedFlux sheet, whose two saturated hues measure #0090f0 and #6018f0 —
+	// a blue-to-violet gradient. The blue is taken and lifted toward cyan: it is the dominant one
+	// and the emblem's glow, and the violet end sits almost on top of CodeFlux's indigo, which
+	// would make two products indistinguishable in the sibling strip.
+	"animefeedflux": {Accent: u.Hex("#2fb3ff"), Tint: u.Hex("#9ad5ff"), Glow: "rgba(47,179,255,.18)"},
+	"articleflux":   {Accent: u.Hex("#4d84ff"), Tint: u.Hex("#9ab6ff"), Glow: "rgba(77,132,255,.20)"},
+	"cashflux":      {Accent: u.Hex("#3fbe86"), Tint: u.Hex("#8bdcba"), Glow: "rgba(63,190,134,.18)"},
+	"codeflux":      {Accent: u.Hex("#7d6bff"), Tint: u.Hex("#b3a8ff"), Glow: "rgba(125,107,255,.20)"},
+	"pixelflux":     {Accent: u.Hex("#a86bf0"), Tint: u.Hex("#e56fc8"), Glow: "rgba(168,107,240,.20)"},
+	"schemaflux":    {Accent: u.Hex("#3fc9c0"), Tint: u.Hex("#8ee2dc"), Glow: "rgba(63,201,192,.18)"},
 }

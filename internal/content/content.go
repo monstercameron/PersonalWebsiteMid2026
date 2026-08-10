@@ -72,7 +72,7 @@ func aboutCopy() *sitepb.About {
 // after them renders in the quieter Labs shelf. The SSR page, the terminal's `projects`, and
 // /projects.md all read this one slice in this one order. Reordering therefore re-tiers the site.
 //
-// **Re-tiered 2026-08-09 (Cam's instruction):** the showcase is now the five Flux products —
+// **Re-tiered 2026-08-09 (Cam's instruction):** the showcase is now the six Flux products —
 // CashFlux, ArticleFlux, PixelFlux, CodeFlux, SchemaFlux — because those five have dedicated
 // case-study pages at /projects/<slug> and commissioned brand art, so a card can lead somewhere
 // that answers the questions the card raises. Each carries a product story rather than a
@@ -111,6 +111,12 @@ func featured() []*sitepb.Project {
 			Tags: []string{"Go", "generics", "LLM"}, Repo: gh + "SchemaFlux",
 			Blurb: "Typed LLM operations for Go — fluent builders that return the Go type you asked for, not a wall of text.",
 			Long:  "One public API over one execution path, with retries, structured-output contracts, logging, metrics and cost tracking centralized instead of re-implemented per call site. The result envelope keeps model claims separate from measured facts, and a snapshot test over the public API surface fails the build if it drifts."},
+		// Sixth of the featured six. The "planning" status chip carries the stage, so the copy leads
+		// with the substance — the design decisions already made — rather than with what is absent.
+		{Id: "animefeedflux", Name: "AnimeFeedFlux", Status: "planning", Glyph: "◍",
+			Tags: []string{"Go", "RSS", "LLM", "spec"}, Repo: gh + "AnimeFeedFlux",
+			Blurb: "AI-written anime feeds — daily trivia, ranked news, seasonal roundups — published on a schedule as RSS, Atom and JSON Feed.",
+			Long:  "Describe the feed you want — \"a daily anime trivia question\", \"today's anime news, ranked\" — and it runs on your schedule, writes the items and publishes them at a stable URL that Slack or any reader can subscribe to. Trivia is written by the model; news only summarises and links out, and a link can be published only if it is byte-equal to a URL that was actually fetched, so an invented URL has no code path to a reader. Built against Slack's RSS app, which is stricter than the spec and fails silently. The idea already runs in miniature on this site, which generates and posts /anime.xml and /anime/qotd.xml today."},
 		{Id: "gwc", Name: "GoWebComponents", Status: "v5.0.1", Glyph: "⟠",
 			Tags: []string{"Go", "WASM", "framework"}, Repo: gh + "GoWebComponents",
 			Demo:  "https://monstercameron.github.io/GoWebComponents/",

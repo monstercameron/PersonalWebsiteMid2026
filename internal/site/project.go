@@ -4,7 +4,7 @@ package site
 //
 // # The design problem, and the decision
 //
-// The five Flux products have their own commissioned artwork, and that artwork is bright, white
+// The Flux products have their own commissioned artwork. Five are drawn on a near-white ground —
 // and unmistakably SaaS-marketing. This site is dark aubergine and deliberately reads as a
 // terminal (DESIGN.md §6). Dropping a white poster onto that page would either shatter the site's
 // identity or bleach the artwork into the background, and re-skinning the site per product would
@@ -24,7 +24,7 @@ package site
 // different products before a word is read.
 //
 // Does not change: the ground, the surfaces, the borders, the two type voices, and the single
-// `rise` motion gesture. Five products, one design language — which is the difference between a
+// `rise` motion gesture. Six products, one design language — which is the difference between a
 // system and five one-off pages.
 //
 // # Structure
@@ -37,6 +37,7 @@ package site
 // does not have.
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/monstercameron/GoWebComponents/v5/css"
@@ -91,8 +92,11 @@ func RenderProjectHTML(p content.FluxProject, brand theme.Brand, siblings []cont
 		`<meta property="og:description" content="` + esc(p.Lede) + `">` +
 		`<meta property="og:type" content="article">` +
 		`<meta property="og:url" content="` + esc(url) + `">` +
-		`<meta property="og:image" content="` + esc(base+"/static/brand/"+p.Slug+"-og.jpg") + `">` +
-		`<meta name="twitter:card" content="summary_large_image">` +
+		// A project without commissioned art has no og image either, and pointing at a file that
+		// 404s produces a worse unfurl than pointing at nothing — Slack and LinkedIn render a
+		// broken card rather than falling back. The site icon is used instead, with the small
+		// card type that suits a square image.
+		ogImage(base, p) +
 		`<link rel="canonical" href="` + esc(url) + `">` +
 		FaviconLinks() +
 		`<style>*{box-sizing:border-box}html,body{margin:0}body{color:#f3e9e6;` +
@@ -142,6 +146,69 @@ func projectNav(name string) ui.Node {
 	)
 }
 
+// posterNote is the caption under a brand sheet: the sentence that stops a marketing poster from
+// being read as evidence.
+//
+// The default says the product is real and the code is linked above — which is true of five of the
+// six and false of the one that is still a specification. A page that draws a polished sheet for
+// software that does not exist and then asserts the software is real is the exact failure the whole
+// honesty apparatus on these pages is built to avoid, so a project can override the sentence.
+func posterNote(p content.FluxProject) string {
+	if p.PosterNote != "" {
+		return p.PosterNote
+	}
+	return "The product is real and the code is linked above; the poster is a design exercise, not a claim."
+}
+
+// plateColor returns the ground a project's brand sheet is mounted on.
+func plateColor(p content.FluxProject) Color {
+	if p.PosterDark {
+		return theme.TermBg
+	}
+	return theme.Plate
+}
+
+// ogImage returns the OpenGraph image tags for a project page, with the matching Twitter card
+// type: the commissioned 1200×630 sheet when the project has one, the square site icon otherwise.
+func ogImage(base string, p content.FluxProject) string {
+	if p.Art {
+		return `<meta property="og:image" content="` + esc(base+"/static/brand/"+p.Slug+"-og.jpg") + `">` +
+			`<meta name="twitter:card" content="summary_large_image">`
+	}
+	return `<meta property="og:image" content="` + esc(base+"/static/brand/earlcameron-icon-512.png") + `">` +
+		`<meta name="twitter:card" content="summary">`
+}
+
+// projectMark renders a project's identity glyph at the given pixel size: the commissioned mark
+// when the project has one, and a drawn monogram when it does not.
+//
+// The fallback is a deliberate design object rather than a missing-image placeholder — a ring in the
+// product's hue carrying the initial of its name. It has to look like a decision, because the
+// alternative a visitor sees is a broken-image icon, which reads as a site that was not finished
+// rather than as a product whose art has not been commissioned yet.
+func projectMark(p content.FluxProject, brand theme.Brand, size int) ui.Node {
+	px := strconv.Itoa(size) + "px"
+	if p.Art {
+		return Img(Class(css.Raw("width", px), css.Raw("height", "auto"), css.Raw("flex", "0 0 auto")),
+			Props{Src: "/static/brand/" + p.Slug + "-mark.webp", Alt: p.Name + " mark",
+				Width: strconv.Itoa(size), Loading: "eager"})
+	}
+	initial := ""
+	if p.Name != "" {
+		initial = string([]rune(p.Name)[:1])
+	}
+	return Div(Class(css.Raw("width", px), css.Raw("height", px), css.Raw("flex", "0 0 auto"),
+		css.Raw("border-radius", "50%"), css.Raw("display", "flex"),
+		css.Raw("align-items", "center"), css.Raw("justify-content", "center"),
+		css.Raw("border", "2px solid "+brand.Accent.String()),
+		css.Raw("background", brand.Glow), Fg(brand.Accent), FontBold,
+		css.Raw("font-size", strconv.Itoa(size/2)+"px"), css.Raw("line-height", "1")),
+		// Decorative: the product name is stated beside it as a heading, so a screen reader that
+		// also announced this would just say the letter twice.
+		FromProps(Props{Aria: map[string]string{"hidden": "true"}}),
+		initial)
+}
+
 // projectHero is the identity block: the product's mark, its wordmark, its own tagline, the
 // one-sentence lede, and the two links that matter.
 //
@@ -152,9 +219,7 @@ func projectNav(name string) ui.Node {
 func projectHero(p content.FluxProject, brand theme.Brand) ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing5)),
 		Div(Class(append([]any{Flex, ItemsCenter, Gap(Spacing4), css.Raw("flex-wrap", "wrap")}, riseOnLoad(0)...)...),
-			Img(Class(css.Raw("width", "64px"), css.Raw("height", "auto"), css.Raw("flex", "0 0 auto")),
-				Props{Src: "/static/brand/" + p.Slug + "-mark.webp", Alt: p.Name + " mark",
-					Width: "64", Loading: "eager"}),
+			projectMark(p, brand, 64),
 			H1(Class(FontSize(Rem(2)), Md(FontSize(Rem(3))), FontBold, LineHeight(Num(1)),
 				Tracking(Ems(-0.02)), css.Raw("margin", "0")),
 				Span(p.Head), Span(Class(Fg(brand.Accent)), p.Tail),
@@ -230,6 +295,12 @@ func statusChip(status string, brand theme.Brand) ui.Node {
 // for a real repository — which keeps the page honest about the fact that a marketing poster is
 // not itself evidence of anything.
 func brandPlate(p content.FluxProject, brand theme.Brand) ui.Node {
+	// No commissioned artwork, no brand sheet. The section is dropped entirely rather than filled
+	// with a placeholder: this block exists to frame real artwork as marketing rather than as
+	// evidence, and a stand-in would be framing nothing as something.
+	if !p.Art {
+		return Div()
+	}
 	dot := func(hex string) ui.Node {
 		return Span(Class(css.Raw("width", "11px"), css.Raw("height", "11px"),
 			css.Raw("border-radius", "50%"), css.Raw("background", hex),
@@ -245,7 +316,12 @@ func brandPlate(p content.FluxProject, brand theme.Brand) ui.Node {
 					css.Raw("white-space", "nowrap")),
 					"monstercameron/"+p.Name+" — brand sheet"),
 			),
-			Div(Class(Bg(theme.Plate)),
+			// The plate exists to keep LIGHT artwork legible — the five commissioned sheets are
+			// drawn for a near-white ground, and dropping one straight onto the aubergine page
+			// would erase half of each lockup. A dark sheet needs the opposite: on a white plate
+			// it reads as a dark rectangle someone forgot to crop, so it gets the terminal's own
+			// ground and the frame stays the same.
+			Div(Class(Bg(plateColor(p))),
 				Img(Class(css.Raw("display", "block"), css.Raw("width", "100%"), css.Raw("height", "auto")),
 					Props{Src: "/static/brand/" + p.Slug + "-poster.webp",
 						Alt:   p.Name + " brand poster — " + p.Tagline,
@@ -254,8 +330,7 @@ func brandPlate(p content.FluxProject, brand theme.Brand) ui.Node {
 			),
 		),
 		P(Class(sansFont, TextSize(TextSm), Fg(theme.Faint), LineHeight(Num(1.6)), css.Raw("margin", "0")),
-			"Brand artwork for ", Span(Class(Fg(brand.Tint)), p.Name),
-			". The product is real and the code is linked above; the poster is a design exercise, not a claim."),
+			"Brand artwork for ", Span(Class(Fg(brand.Tint)), p.Name), ". ", posterNote(p)),
 	)
 }
 
@@ -399,8 +474,7 @@ func siblingNav(p content.FluxProject, siblings []content.FluxProject) ui.Node {
 			Border(theme.Border), Rounded(RadiusLg), Pad(Spacing4), css.Raw("text-decoration", "none"),
 			Hover(Border(b.Accent))}, append(lift(), focusRing())...)...),
 			Props{Href: "/projects/" + s.Slug},
-			Img(Class(css.Raw("width", "34px"), css.Raw("height", "auto"), css.Raw("flex", "0 0 auto")),
-				Props{Src: "/static/brand/" + s.Slug + "-mark.webp", Alt: "", Width: "34", Loading: "lazy"}),
+			projectMark(s, b, 34),
 			Div(Class(Flex, FlexCol),
 				Span(Class(FontSemibold, Fg(theme.Fg)), Span(s.Head), Span(Class(Fg(b.Accent)), s.Tail)),
 				Span(Class(sansFont, TextSize(TextSm), Fg(theme.Dim)), s.Status),
