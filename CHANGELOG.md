@@ -4,6 +4,16 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Changed
+- **Every public CashFlux link now opens the public build, not Cam's own instance.** The top
+  navigation, the `~/elsewhere` card, the home-page card's demo link and the CashFlux page's
+  primary call to action all pointed at `budget.earlcameron.com` — a personal, password-gated
+  deployment holding real financial data. A portfolio read by recruiters and crawlers should
+  not advertise it, so they now point at the GitHub Pages build, which starts empty and keeps
+  everything in the visitor's own browser. **This reverses the 2026-07-29 decision** that moved
+  these links onto the standalone service and listed the Pages demo as retired; the guard test
+  is inverted rather than deleted, so the links still cannot drift apart.
+
 ### Fixed
 - **The CodeFlux page overstated two things, and a review of that repository caught both.**
   The evidence strip read "11 — stages establish one atom"; 11 is the number of stages a

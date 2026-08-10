@@ -39,12 +39,15 @@ func TestGetProjectFound(t *testing.T) {
 
 // TestCashFluxDemoUsesDedicatedService guards the homepage project card against falling back to
 // the retired GitHub Pages demo or the portfolio's legacy /budget/ mount.
-func TestCashFluxDemoUsesDedicatedService(t *testing.T) {
+// TestCashFluxDemoIsThePublicBuild guards a privacy decision, not a URL preference: the demo
+// link must never point at budget.earlcameron.com, which is Cam's own password-gated instance
+// holding real financial data. A portfolio links the public build or it links nothing.
+func TestCashFluxDemoIsThePublicBuild(t *testing.T) {
 	p, err := New().GetProject(context.Background(), &sitepb.ProjectRequest{Id: "cashflux"})
 	if err != nil {
 		t.Fatalf("GetProject cashflux: %v", err)
 	}
-	if got, want := p.GetDemo(), "https://budget.earlcameron.com"; got != want {
+	if got, want := p.GetDemo(), "https://monstercameron.github.io/CashFlux/"; got != want {
 		t.Errorf("CashFlux demo = %q, want %q", got, want)
 	}
 }

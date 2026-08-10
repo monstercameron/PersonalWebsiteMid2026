@@ -220,9 +220,15 @@ var monoFont = css.Raw("font-family", `ui-monospace,"SF Mono",SFMono-Regular,Men
 // form. /home is the public front door that explains the project and links its demo.
 const articleFluxURL = "https://feed.earlcameron.com/home"
 
-// cashFluxURL is the canonical CashFlux deployment. CashFlux is now a separate service rather
-// than an app mounted under this site's /budget/ path.
-const cashFluxURL = "https://budget.earlcameron.com"
+// cashFluxURL is the PUBLIC CashFlux demo, and it is deliberately not Cam's own deployment.
+//
+// budget.earlcameron.com is a personal, password-gated instance holding real financial data.
+// Linking it from a portfolio advertised a private service to every recruiter and crawler that
+// read the page, and the only thing standing between them and it was a password prompt. The
+// GitHub Pages build is the same client with no server behind it: it starts empty, stores
+// everything in the visitor's own browser, and is the thing a stranger should be handed.
+// Do not point this back at the personal instance.
+const cashFluxURL = "https://monstercameron.github.io/CashFlux/"
 
 // topNav renders the site navigation so the single home page indexes every visitor-facing page:
 // the on-page sections (work, anime, contact) plus the standalone pages (résumé, CashFlux,

@@ -7,9 +7,16 @@ import (
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
 
-// TestHomepageCashFluxLinksUseDedicatedService verifies every CashFlux anchor rendered by the
-// homepage points to the canonical standalone deployment.
-func TestHomepageCashFluxLinksUseDedicatedService(t *testing.T) {
+// TestHomepageCashFluxLinksUsePublicDemo verifies every CashFlux anchor rendered by the homepage
+// points to one canonical target, and that the target is the PUBLIC build.
+//
+// This reverses an earlier decision, on purpose. The links used to point at
+// budget.earlcameron.com because it was the "canonical standalone deployment" — but that instance
+// is Cam's own, password-gated, and holds real financial data. A portfolio read by recruiters and
+// crawlers should not advertise it. The retired list below is therefore the personal instance and
+// the old in-site /budget/ mount; the canonical target is the GitHub Pages build, which starts
+// empty and keeps everything in the visitor's own browser.
+func TestHomepageCashFluxLinksUsePublicDemo(t *testing.T) {
 	projects := []*sitepb.Project{{
 		Id:   "cashflux",
 		Name: "CashFlux",
@@ -24,7 +31,7 @@ func TestHomepageCashFluxLinksUseDedicatedService(t *testing.T) {
 	if got, want := strings.Count(html, `href="`+cashFluxURL+`"`), 3; got != want {
 		t.Errorf("CashFlux link count = %d, want %d", got, want)
 	}
-	for _, retired := range []string{`href="/budget/"`, "https://monstercameron.github.io/CashFlux/"} {
+	for _, retired := range []string{`href="/budget/"`, "https://budget.earlcameron.com"} {
 		if strings.Contains(html, retired) {
 			t.Errorf("homepage still contains retired CashFlux target %q", retired)
 		}

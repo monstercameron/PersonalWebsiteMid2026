@@ -102,7 +102,7 @@ func FluxProjects() []FluxProject {
 				"Open it and it works — accounts, transactions, budgets, goals, bills, reports and a " +
 				"financial to-do list — and it keeps working on a plane. The whole application, including " +
 				"a real SQLite database, is a single Go program the browser downloads once and then runs.",
-			Repo: gh + "CashFlux", Demo: "https://budget.earlcameron.com", DemoLabel: "Open the live app",
+			Repo: gh + "CashFlux", Demo: "https://monstercameron.github.io/CashFlux/", DemoLabel: "Try it in your browser",
 			Capabilities: []Capability{
 				{"Your data stays yours", "It runs local-first against a SQLite database inside the tab. The one network call is an AI insight, and only when you click it, with your own key."},
 				{"Budgeting that fits how you already think", "Zero-based or envelope budgeting, snowball or avalanche debt payoff, cash-flow forecasting, and cleared-versus-uncleared reconciliation."},
