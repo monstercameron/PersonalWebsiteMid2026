@@ -12,6 +12,7 @@ import (
 	. "github.com/monstercameron/GoWebComponents/v5/html/shorthand"
 	"github.com/monstercameron/GoWebComponents/v5/ui"
 
+	"github.com/monstercameron/earlcameron/internal/notes"
 	"github.com/monstercameron/earlcameron/internal/theme"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 )
@@ -114,10 +115,14 @@ func focusRing() []css.Rule {
 // split is positional because sitepb.Project has no tier field — see internal/content.featured,
 // which is ordered for exactly this.
 //
-// Five since 2026-08-09: the showcase is the five Flux products, each of which has a real
-// case-study page behind its card. Changing this number without reordering content.featured() to
-// match will silently promote or demote whatever happens to sit at the boundary.
-const featuredCount = 5
+// Six since 2026-08-09: the showcase is the six Flux products, each of which has a real case-study
+// page behind its card. Changing this number without reordering content.featured() to match will
+// silently promote or demote whatever happens to sit at the boundary.
+//
+// The sixth, AnimeFeedFlux, is a specification rather than software — Cam's call to bill it beside
+// the shipped ones. Its card and its page both lead with "planning" so the promotion costs the
+// other five nothing: the honesty is what keeps them credible.
+const featuredCount = 6
 
 // Page renders the full standard site for the given content. baseURL is the public origin
 // (config.BaseURL) and is used to print absolute feed URLs — a relative "/anime.xml" is useless in
@@ -129,6 +134,7 @@ func Page(_ *sitepb.About, projects []*sitepb.Project, baseURL string) ui.Node {
 			topNav(),
 			hero(featured),
 			termMount(),
+			briefing(),
 			work(featured),
 			velocityStrip(),
 			how(),
@@ -490,10 +496,12 @@ func work(projects []*sitepb.Project) ui.Node {
 				"github.com/monstercameron ↗"),
 		),
 		headed("Selected work.",
-			"Five products under one name — a budgeting app, a feed reader, an offline photo search, "+
-				"a coding agent and a typed LLM library. Each card opens a case study: what it does, "+
-				"what it is built on, what was hard, and how finished it honestly is. The framework and "+
-				"the transport underneath them are in Labs."),
+			// Keep this list in step with content.featured — it names the products one by one, so
+			// adding a card without touching this sentence leaves the page contradicting itself.
+			"Six products under one name — a budgeting app, a feed reader, an offline photo search, "+
+				"a coding agent, a typed LLM library and a feed generator. Each card opens a case "+
+				"study: what it does, what it is built on, what was hard, and how finished it honestly "+
+				"is. The framework and the transport underneath them are in Labs."),
 		Div(cards...),
 	)
 }
@@ -517,7 +525,7 @@ var evidenceLinks = map[string]struct{ label, href string }{
 // A Flux project (one with a theme.Brands entry) additionally gets its own mark, its own accent
 // colour, and a "case study →" link to /projects/<slug>. That is the point of the re-tier: the
 // showcase cards now lead somewhere that answers the questions a card can only raise, and the
-// artwork does the work of telling five products apart at a glance. Non-Flux projects render
+// artwork does the work of telling the products apart at a glance. Non-Flux projects render
 // exactly as before, so the Labs shelf and any future entry are unaffected.
 func card(p *sitepb.Project) ui.Node {
 	accent, mark, hasPage := theme.Accent, ui.Node(nil), false
@@ -550,7 +558,7 @@ func card(p *sitepb.Project) ui.Node {
 		links = append(links, A(Class(Fg(theme.Accent2)), Props{Href: p.GetDemo(), Target: "_blank", Rel: "noopener"}, "live demo ↗"))
 	}
 	// The mark replaces the glyph when there is one — a 40px piece of the product's own artwork
-	// says more than a geometric character, and it is what makes five cards read as five products
+	// says more than a geometric character, and it is what makes the cards read as distinct products
 	// rather than five rows of the same template.
 	title := ui.Node(Span(Class(FontSemibold, Fg(accent), FontSize(Rem(1.1))), p.GetGlyph()+"  "+p.GetName()))
 	if mark != nil {
@@ -789,6 +797,102 @@ func footer() ui.Node {
 			A(Class(Fg(theme.Faint), Hover(Fg(theme.Accent2)), css.Raw("text-decoration", "none")),
 				Props{Href: "/admin"}, "admin"),
 		),
+	)
+}
+
+// briefing server-renders the same ~/notes documents the terminal serves.
+//
+// Until now this text existed only inside the wasm binary, which meant the most recruiter-relevant
+// prose on the site was invisible to search engines, to link unfurlers, to a screen-reader user
+// who never opens the terminal, and to anyone whose wasm boot failed. It also closes the gap
+// tracked in TODOS §14.A — the page had no professional-experience section at all, with UKG
+// appearing only as one clause in the hero.
+//
+// Rendered from internal/notes, the same constants the terminal reads, so the two can never
+// disagree. The monospace <pre> is deliberate: this is the terminal's content, it is formatted in
+// columns, and reflowing it into prose would break the alignment it was written for.
+// It is collapsed by default. Four monospace documents open on the page is a wall of text between
+// the terminal and the work, and most visitors want one of them or none. Collapsed, the section
+// states what it holds in one line and costs one click.
+//
+// A native <details> rather than a wasm component or a JS toggle, because this section's whole
+// reason to exist is the visitor who has no working wasm: a disclosure that needs the thing it is
+// a fallback for is not a fallback. It also keeps the content in the DOM — collapsed is a rendering
+// state, not an absence — so crawlers, link unfurlers and screen readers still reach every word.
+func briefing() ui.Node {
+	blocks := []ui.Node{
+		P(Class(sansFont, Fg(theme.Dim), TextSize(TextSm), MaxWidth(Px(640)), LineHeight(Num(1.55))),
+			"The same notes the terminal serves from ~/notes — readable here without it."),
+	}
+	for _, d := range notes.Docs {
+		blocks = append(blocks, briefingDoc(d))
+	}
+	blocks = append(blocks,
+		P(Class(sansFont, Fg(theme.Faint), TextSize(TextSm)),
+			"In the terminal above: ",
+			Span(Class(monoFont, Fg(theme.Accent2)), "cat notes/experience.md"),
+			"."),
+	)
+	return Section(Class(sectionRules(Gap(Spacing5))...), FromProps(Props{ID: "briefing"}),
+		Details(Class(Flex, FlexCol, Gap(Spacing5)),
+			briefingSummary(),
+			// The body is its own column so the gap between the summary and the first document
+			// matches the rhythm every other section uses.
+			Div(Class(Flex, FlexCol, Gap(Spacing5), css.Raw("padding-top", "0.5rem")), blocks),
+		),
+	)
+}
+
+// briefingSummary is the clickable header of the collapsed section.
+//
+// The <h2> lives inside the <summary>, which the HTML spec allows (summary takes phrasing content
+// or a single heading) and which matters here: this is the only professional-experience heading on
+// the page, and demoting it to a styled <span> to make the disclosure simpler would take it out of
+// the document outline that screen readers and crawlers navigate by.
+//
+// The browser's own marker is kept rather than replaced with a custom chevron — it already rotates
+// on open, it inherits the text colour, and it is the affordance people recognise. Padding gives it
+// a comfortable tap target on a phone.
+func briefingSummary() ui.Node {
+	// The marker stays INSIDE the box. `outside` puts it in the left margin, and this section has no
+	// left padding, so the triangle rendered off the edge of the screen — leaving a heading with no
+	// visible affordance at all, which is the one thing a collapsed section cannot afford.
+	return Summary(Class(css.Raw("cursor", "pointer"), css.Raw("list-style-position", "inside"),
+		PadY(Spacing2), Rounded(RadiusLg), focusRing(),
+		Fg(theme.Fg), Hover(Fg(theme.Accent)), Transition(PropColors, Ms(150), EaseOut),
+		ReducedMotion(css.Raw("transition-duration", "0ms"))),
+		H2(Class(FontSize(Rem(1.35)), Md(FontSize(Rem(1.6))), FontSemibold,
+			css.Raw("display", "inline")),
+			"The briefing",
+			// Named while collapsed, so the one line on screen says what is behind the click
+			// instead of making the visitor open it to find out.
+			Span(Class(sansFont, Fg(theme.Dim), FontSize(Rem(0.95)), css.Raw("font-weight", "400")),
+				"  ·  experience, skills, open-source work, how I work"),
+		),
+	)
+}
+
+// briefingDoc renders one ~/notes document as a headed, scrollable monospace block. The horizontal
+// scroll is on the block rather than the page: these are fixed-width columns, and on a phone the
+// alternative is either an unreadable reflow or a page that scrolls sideways as a whole.
+func briefingDoc(d notes.Doc) ui.Node {
+	return Div(Class(Flex, FlexCol, Gap(Spacing2)),
+		Div(Class(Flex, ItemsCenter, Gap(Spacing3), css.Raw("flex-wrap", "wrap")),
+			H3(Class(FontSize(Rem(1.05)), FontSemibold), d.Title),
+			Span(Class(monoFont, Fg(theme.Faint), TextSize(TextSm)), "~/notes/"+d.File),
+		),
+		Pre(Class(monoFont, Fg(theme.Dim), TextSize(TextSm), Bg(theme.BgRaised),
+			css.Border(css.Px(1), theme.Border), Rounded(RadiusLg), Pad(Spacing4),
+			// These are fixed-width columns, so on a phone the block is wider than the viewport and
+			// scrolls sideways inside its own box — which is the point: the page itself never
+			// scrolls sideways, and the alignment the text was written for survives.
+			//
+			// A fade at the scrolling edge would signal "there is more this way" better than a hard
+			// clip does, but GWC's CSS emitter drops mask-image, so it cannot be expressed through
+			// the typed layer and is not worth a raw-CSS exception. Horizontal swipe is discoverable
+			// on touch, which is the only width where the overflow actually happens.
+			LineHeight(Num(1.5)), css.Raw("overflow-x", "auto"), css.Raw("margin", "0")),
+			d.Body),
 	)
 }
 
