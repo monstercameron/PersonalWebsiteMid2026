@@ -129,8 +129,8 @@ func brandLabel(text string, brand theme.Brand) ui.Node {
 // page's topNav — a project page has one parent and does not need the full site index.
 func projectNav(name string) ui.Node {
 	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), PadY(Spacing4), css.Raw("flex-wrap", "wrap")),
-		A(Class(FontSemibold, Fg(theme.Accent), css.Raw("text-decoration", "none"), focusRing()),
-			Props{Href: "/"}, "~/earlcameron"),
+		// Same masthead mark as the home page — see site.homeMark for why it is sized by height.
+		homeMark(),
 		Div(Class(Flex, Gap(Spacing4), ItemsCenter, TextSize(TextSm), css.Raw("flex-wrap", "wrap")),
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), Transition(PropColors, Ms(150), EaseOut),
 				ReducedMotion(css.Raw("transition-duration", "0ms")), focusRing()),

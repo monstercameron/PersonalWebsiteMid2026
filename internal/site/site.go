@@ -260,6 +260,36 @@ const (
 	cashFluxOwnerURL = "https://budget.earlcameron.com"
 )
 
+// homeMark is the site's identity lockup, and the link home. It sits in the masthead on every
+// page this site renders.
+//
+// **Sized by height, not width, and that is the whole design note.** The lockup is 2.57:1 — a badge
+// ratio, not a wordmark strip. Wordmarks are 4:1 or wider and survive being set at the height of a
+// line of nav text; this one does not. Crammed to ~32px tall the script inside falls to about eight
+// pixels and stops being readable, which is exactly what went wrong when the mark was first tried
+// at the top of the hero. So the masthead gives it real height — 52px on mobile, 64px at Md — and
+// the nav row grows to meet it rather than the mark shrinking to fit the row.
+//
+// It replaces the `~/earlcameron` text that used to sit here. That text carried the site's shell
+// conceit, so losing it would have cost something real — except the lockup has a `>_` prompt built
+// into its own badge. The idea survives in the artwork instead of in a caption.
+//
+// Height is set on the element and width left auto so the intrinsic ratio drives the box; the
+// width/height attributes are the source pixels, which reserves the right space before the image
+// arrives and keeps the masthead from reflowing on load.
+func homeMark() ui.Node {
+	return A(Class(Flex, ItemsCenter, css.Raw("text-decoration", "none"), focusRing(),
+		Transition(PropAll, Ms(180), EaseOut),
+		Hover(css.Raw("filter", "brightness(1.12)")),
+		ReducedMotion(css.Raw("transition-duration", "0ms"))),
+		Props{Href: "/", Aria: map[string]string{"label": "Earl Cameron — home"}},
+		Img(Class(css.Raw("height", "52px"), Md(css.Raw("height", "64px")),
+			css.Raw("width", "auto"), css.Raw("display", "block")),
+			Props{Src: "/static/brand/earlcameron-nav.webp", Alt: "Earl Cameron",
+				Width: "350", Height: "136", Loading: "eager"}),
+	)
+}
+
 // topNav renders the site navigation so the single home page indexes every visitor-facing page:
 // the on-page sections (work, anime, contact) plus the standalone pages (résumé, CashFlux,
 // ArticleFlux). The admin console is owner-only, so its entry lives in the footer, not here.
@@ -270,7 +300,7 @@ func topNav() ui.Node {
 			ReducedMotion(css.Raw("transition-duration", "0ms"))), Props{Href: href}, text)
 	}
 	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), PadY(Spacing4), css.Raw("flex-wrap", "wrap")),
-		A(Class(FontSemibold, Fg(theme.Accent)), Props{Href: "/"}, "~/earlcameron"),
+		homeMark(),
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
 			link("#work", "work"),
 			link("/resume", "résumé"),
@@ -290,32 +320,21 @@ func topNav() ui.Node {
 // and the launch CTA — matching the mockup. The terminal mounts immediately below (see Page).
 func hero(featured []*sitepb.Project) ui.Node {
 	return Div(Class(Flex, FlexCol, Gap(Spacing5), PadY(Spacing6)),
-		// The identity mark replaces what used to be the text eyebrow "EARL CAMERON · REMOTE".
-		//
-		// It earns the position because it says the same thing better: the mark carries the name,
-		// so the line beneath it is free to carry only the fact a recruiter actually needs, which
-		// is availability. Nothing was lost in the trade — "REMOTE" survives, the name is now brand
-		// rather than a caption, and the H1 below still opens on the positioning statement.
-		//
-		// Deliberately capped narrow (340px, 420px at Md) rather than run to the column width. The
-		// H1 is what a recruiter came for and DESIGN.md §5 already worried about it being pushed
-		// past the fold on a 390px screen; a full-width plate here would do exactly that.
-		//
-		// The mark's cyan is not a new colour on this site — theme.Cyan (#4DD0E1) is already in the
-		// ANSI row of the Aubergine palette (DESIGN.md §6), which is why a blue lockup sits on an
-		// aubergine ground without reading as a foreign object.
-		Div(Class(append([]any{Flex, FlexCol, Gap(Spacing3), ItemsStart}, riseOnLoad(0)...)...),
-			Img(Class(WFull, MaxWidth(Px(340)), Md(MaxWidth(Px(420))), Rounded(RadiusLg),
-				css.Raw("height", "auto"), css.Raw("display", "block")),
-				Props{Src: "/static/brand/earlcameron-logo.webp", Alt: "Earl Cameron",
-					Width: "880", Height: "360", Loading: "eager"}),
-			Div(Class(Flex, ItemsCenter, Gap(Spacing3), TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.18))),
-				Span(Class(css.Raw("width", "26px"), css.Raw("height", "1px"),
-					css.Raw("background", "#e95420"), css.Raw("display", "inline-block"))),
-				// No city, by Cam's instruction (2026-07-29): this line states availability, not a
-				// location. Keep it that way — a street-level identifier here is not worth the reach.
-				Span("AVAILABLE · REMOTE"),
-			),
+		Div(Class(append([]any{Flex, ItemsCenter, Gap(Spacing3), TextSize(TextSm), Fg(theme.Accent), Tracking(Ems(0.18))},
+			riseOnLoad(0)...)...),
+			Span(Class(css.Raw("width", "26px"), css.Raw("height", "1px"),
+				css.Raw("background", "#e95420"), css.Raw("display", "inline-block"))),
+			// No city, by Cam's instruction (2026-07-29): the eyebrow states availability, not a
+			// location. Keep it that way — a street-level identifier here is not worth the reach.
+			//
+			// The identity mark lives in the masthead (topNav), not here. It was tried in the hero
+			// on 2026-08-09 and taken out: two statements of the name, a mark and this line, one
+			// above the other, with the actual positioning statement pushed below both.
+			//
+			// This line therefore no longer says the name either — the masthead says it on every
+			// page, directly above. It states availability and nothing else, which is the one fact
+			// on this line a recruiter is actually looking for.
+			Span("AVAILABLE · REMOTE"),
 		),
 		// "AI-native systems engineer" was the old headline. "Systems engineer" reads narrowly to a
 		// recruiter — OS, networking, embedded, infra administration — and undersells product and

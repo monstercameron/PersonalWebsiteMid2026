@@ -5,9 +5,13 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
-- **The site has an identity mark, and a favicon.** Cam's "Earl Cameron" lockup now opens the
-  hero, replacing the text eyebrow that said the same words — so the line beneath it is free to
-  carry only availability. The hexagonal EC monogram becomes the favicon across the home page,
+- **The site has an identity mark, and a favicon.** Cam's "Earl Cameron" lockup is now the
+  masthead on every page, replacing the `~/earlcameron` text link. It is **sized by height, not
+  width**: the lockup is 2.57:1, a badge ratio rather than a wordmark strip, so at the height of a
+  line of nav text the script inside falls to about eight pixels and stops being readable. The
+  masthead gives it 52px on mobile and 64px at Md and the row grows to meet it. The hero's eyebrow
+  drops the name in exchange — the mark states it directly above — and now carries only
+  availability. The hexagonal EC monogram becomes the favicon across the home page,
   every project page and the résumé. **Until now the site shipped no favicon at all**: every tab,
   bookmark and history entry showed a generic globe, on a portfolio whose whole argument is craft.
   The embedded CashFlux app had one; the site around it did not.
