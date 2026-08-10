@@ -11,8 +11,11 @@ Semantic Versioning once released.
   deployment holding real financial data. A portfolio read by recruiters and crawlers should
   not advertise it, so they now point at the GitHub Pages build, which starts empty and keeps
   everything in the visitor's own browser. **This reverses the 2026-07-29 decision** that moved
-  these links onto the standalone service and listed the Pages demo as retired; the guard test
-  is inverted rather than deleted, so the links still cannot drift apart.
+  these links onto the standalone service and listed the Pages demo as retired.
+  **The top navigation is the one exception** and still opens `budget.earlcameron.com`: it is
+  Cam's own way in, not an invitation to a visitor. The guard test now asserts both counts —
+  two public links and exactly one owner link — so a visitor-facing surface drifting onto the
+  private instance fails the build.
 
 ### Fixed
 - **The CodeFlux page overstated two things, and a review of that repository caught both.**

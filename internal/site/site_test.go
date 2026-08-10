@@ -28,12 +28,16 @@ func TestHomepageCashFluxLinksUsePublicDemo(t *testing.T) {
 		t.Fatalf("RenderHTML: %v", err)
 	}
 
-	if got, want := strings.Count(html, `href="`+cashFluxURL+`"`), 3; got != want {
-		t.Errorf("CashFlux link count = %d, want %d", got, want)
+	// Two visitor-facing links: the project card's demo and the ~/elsewhere card.
+	if got, want := strings.Count(html, `href="`+cashFluxURL+`"`), 2; got != want {
+		t.Errorf("public CashFlux link count = %d, want %d", got, want)
 	}
-	for _, retired := range []string{`href="/budget/"`, "https://budget.earlcameron.com"} {
-		if strings.Contains(html, retired) {
-			t.Errorf("homepage still contains retired CashFlux target %q", retired)
-		}
+	// Exactly one owner link, in the top navigation. More than one would mean a visitor-facing
+	// surface had drifted onto the private instance, which is the thing this test exists to stop.
+	if got, want := strings.Count(html, `href="`+cashFluxOwnerURL+`"`), 1; got != want {
+		t.Errorf("owner CashFlux link count = %d, want %d", got, want)
+	}
+	if strings.Contains(html, `href="/budget/"`) {
+		t.Error(`homepage still contains the retired in-site /budget/ mount`)
 	}
 }

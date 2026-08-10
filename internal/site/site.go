@@ -220,15 +220,23 @@ var monoFont = css.Raw("font-family", `ui-monospace,"SF Mono",SFMono-Regular,Men
 // form. /home is the public front door that explains the project and links its demo.
 const articleFluxURL = "https://feed.earlcameron.com/home"
 
-// cashFluxURL is the PUBLIC CashFlux demo, and it is deliberately not Cam's own deployment.
+// The site links CashFlux two different ways, and which one a link gets depends on who is
+// expected to click it.
 //
-// budget.earlcameron.com is a personal, password-gated instance holding real financial data.
-// Linking it from a portfolio advertised a private service to every recruiter and crawler that
-// read the page, and the only thing standing between them and it was a password prompt. The
-// GitHub Pages build is the same client with no server behind it: it starts empty, stores
-// everything in the visitor's own browser, and is the thing a stranger should be handed.
-// Do not point this back at the personal instance.
-const cashFluxURL = "https://monstercameron.github.io/CashFlux/"
+// cashFluxURL is the PUBLIC build — the same client with no server behind it. It starts empty and
+// keeps everything in the visitor's own browser. Every link a stranger is expected to follow uses
+// this: the project card's demo link, the `~/elsewhere` card, and the CashFlux page's call to
+// action. A portfolio read by recruiters and crawlers should hand out something they can safely
+// open, and this is it.
+//
+// cashFluxOwnerURL is Cam's own deployment: password-gated, holding real financial data. It is
+// linked from the top navigation only, which is his own quick way in rather than an invitation
+// to a visitor. Do not widen its use — every other surface on this site is written for someone
+// who has never met him.
+const (
+	cashFluxURL      = "https://monstercameron.github.io/CashFlux/"
+	cashFluxOwnerURL = "https://budget.earlcameron.com"
+)
 
 // topNav renders the site navigation so the single home page indexes every visitor-facing page:
 // the on-page sections (work, anime, contact) plus the standalone pages (résumé, CashFlux,
@@ -247,7 +255,7 @@ func topNav() ui.Node {
 			// CashFlux and ArticleFlux are separate full apps — open them in their own tab so the
 			// portfolio stays put (matches the elsewhere() cards).
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
-				Props{Href: cashFluxURL, Target: "_blank", Rel: "noopener"}, "cashflux"),
+				Props{Href: cashFluxOwnerURL, Target: "_blank", Rel: "noopener"}, "cashflux"),
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
 				Props{Href: articleFluxURL, Target: "_blank", Rel: "noopener"}, "articleflux"),
 			link("#anime", "anime"),
