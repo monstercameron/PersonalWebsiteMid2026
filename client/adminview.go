@@ -1043,7 +1043,7 @@ func pendingDeviceRow(d *sitepb.CashFluxPendingDevice, busy bool, onApprove func
 
 // settingsView renders the OpenAI key + model form (a dropdown when models are known). onReload
 // re-fetches the model list from OpenAI using the stored key.
-func settingsView(keySet bool, models []string, model, apiKey ui.State[string], onSave, onReload ui.Handler) ui.Node {
+func settingsView(keySet bool, models []string, model, apiKey ui.State[string], onSave, onReload ui.Handler, usage *sitepb.TerminalUsage) ui.Node {
 	onKey := ui.WrapHandler(func(e ui.Event) { apiKey.Set(e.GetValue()) })
 	onModel := ui.WrapHandler(func(e ui.Event) { model.Set(e.GetValue()) })
 
@@ -1077,7 +1077,44 @@ func settingsView(keySet bool, models []string, model, apiKey ui.State[string], 
 		settingRow("OpenAI API key", "openai key ("+keyStatus(keySet)+")", textInput(apiKey.Get(), onKey, keyPlaceholder, "password", false)),
 		settingRow("OpenAI model", modelHint, modelControl),
 		primaryButton("Save settings", onSave),
+		terminalUsagePanel(usage),
 	)
+}
+
+// terminalUsagePanel shows how often each terminal command has been run.
+//
+// It exists to answer one question — does anyone use the terminal, and what do they reach for —
+// which decides where the next round of terminal work goes. The panel states its own privacy
+// properties on screen, because a counter whose scope is only documented in a proto file is a
+// counter nobody can audit at a glance.
+func terminalUsagePanel(usage *sitepb.TerminalUsage) ui.Node {
+	if usage == nil {
+		return Div()
+	}
+	rows := []ui.Node{
+		Span(Class(FontSemibold, TextSize(TextSm)), "Terminal usage"),
+		Span(Class(Fg(theme.Dim), TextSize(TextSm)),
+			"Command names only, aggregated by day — no visitor, address, session or argument text is recorded."),
+	}
+	if usage.GetTotal() == 0 {
+		rows = append(rows, Span(Class(Fg(theme.Faint), TextSize(TextSm)), "Nothing recorded yet."))
+		return Div(Class(Flex, FlexCol, Gap(Spacing2), PadY(Spacing4),
+			css.BorderTop(css.Px(1), theme.Border)), rows)
+	}
+	rows = append(rows, Span(Class(Fg(theme.Accent), TextSize(TextSm)),
+		strconv.FormatInt(usage.GetTotal(), 10)+" commands run, all time"))
+	// Top 15: the tail of a command histogram is a long list of ones, and the question this panel
+	// answers is about the head of it.
+	for i, c := range usage.GetCommands() {
+		if i >= 15 {
+			break
+		}
+		rows = append(rows, Div(Class(Flex, Gap(Spacing3), TextSize(TextSm)),
+			Span(Class(Fg(theme.Accent2), css.Raw("min-width", "120px")), c.GetName()),
+			Span(Class(Fg(theme.Dim)), strconv.FormatInt(c.GetCount(), 10))))
+	}
+	return Div(Class(Flex, FlexCol, Gap(Spacing2), PadY(Spacing4),
+		css.BorderTop(css.Px(1), theme.Border)), rows)
 }
 
 // settingRow renders a labeled settings field with a hint.

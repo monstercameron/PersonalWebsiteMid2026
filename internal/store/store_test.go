@@ -92,3 +92,36 @@ func TestQOTDLegacyMigration(t *testing.T) {
 		t.Fatalf("legacy setting should be deleted after migration, got %q", v)
 	}
 }
+
+// TestCommandCounters aggregates terminal command runs by name.
+func TestCommandCounters(t *testing.T) {
+	s, err := Open(filepath.Join(t.TempDir(), "cmds.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer s.Close()
+	ctx := context.Background()
+
+	if total, err := s.CommandGrandTotal(ctx); err != nil || total != 0 {
+		t.Fatalf("empty total = %d, %v; want 0, nil", total, err)
+	}
+	for _, name := range []string{"help", "projects", "projects", "projects"} {
+		if err := s.RecordCommand(ctx, name); err != nil {
+			t.Fatalf("record %s: %v", name, err)
+		}
+	}
+	total, err := s.CommandGrandTotal(ctx)
+	if err != nil {
+		t.Fatalf("total: %v", err)
+	}
+	if total != 4 {
+		t.Fatalf("total = %d; want 4", total)
+	}
+	counts, err := s.CommandTotals(ctx, 0)
+	if err != nil {
+		t.Fatalf("totals: %v", err)
+	}
+	if len(counts) != 2 || counts[0].Name != "projects" || counts[0].Count != 3 {
+		t.Fatalf("totals = %+v; want projects=3 first", counts)
+	}
+}

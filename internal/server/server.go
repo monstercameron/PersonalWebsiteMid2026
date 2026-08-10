@@ -27,6 +27,7 @@ import (
 	"github.com/monstercameron/earlcameron/internal/content"
 	"github.com/monstercameron/earlcameron/internal/site"
 	"github.com/monstercameron/earlcameron/internal/store"
+	"github.com/monstercameron/earlcameron/internal/system"
 	"github.com/monstercameron/earlcameron/proto/sitepb"
 	"google.golang.org/grpc"
 )
@@ -56,6 +57,9 @@ type Server struct {
 	cashfluxSync  http.Handler
 	cashfluxClose func() error
 	cashfluxAdmin admin.CashFluxAdmin
+	// system serves the terminal's `stats`/`uptime` and the boot-log latency probe, and counts
+	// served requests via the countRequests middleware.
+	system *system.Service
 }
 
 // New opens the store, builds the gRPC server, registers the services, and wraps them in the
@@ -140,6 +144,8 @@ func New(cfg config.Config) (*Server, error) {
 	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(sessions.UnaryAuthInterceptor()))
 	sitepb.RegisterContentServiceServer(grpcSrv, cs)
 	sitepb.RegisterContactServiceServer(grpcSrv, contact.New(st))
+	sys := system.New(st)
+	sitepb.RegisterSystemServiceServer(grpcSrv, sys)
 	adminSvc := admin.NewService(animeSvc, sessions, st, cfg.BaseURL, resolveOpenAI, cashfluxAdmin)
 	sitepb.RegisterAdminServiceServer(grpcSrv, adminSvc)
 
@@ -173,7 +179,7 @@ func New(cfg config.Config) (*Server, error) {
 	if cashfluxAdmin != nil {
 		gate.SetActivationChecker(cashfluxAdmin.ActivationCodeIsValid)
 	}
-	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), projectPages: projectPages, anime: animeSvc, sessions: sessions, adminSvc: adminSvc, budgetGate: gate, cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose, cashfluxAdmin: cashfluxAdmin}, nil
+	return &Server{cfg: cfg, log: log, grpc: grpcSrv, tunnel: tunnel, store: st, page: []byte(page), projectPages: projectPages, anime: animeSvc, sessions: sessions, adminSvc: adminSvc, budgetGate: gate, cashfluxSync: cashfluxSync, cashfluxClose: cashfluxClose, cashfluxAdmin: cashfluxAdmin, system: sys}, nil
 }
 
 // originChecker returns a WebSocket upgrade origin validator that prevents cross-site WebSocket
@@ -248,6 +254,17 @@ func (s *Server) routes() *http.ServeMux {
 	return mux
 }
 
+// countRequests increments the served-request counter that the terminal's `stats` reports. It
+// records a count and nothing else — no path, no client address, no timing — because the only
+// question it answers is "is this process actually serving traffic", and a visitor watching that
+// number move is the whole point.
+func (s *Server) countRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.system.CountRequest()
+		next.ServeHTTP(w, r)
+	})
+}
+
 // healthz reports liveness for the deploy health check and rollback logic.
 func (s *Server) healthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok"))
@@ -262,7 +279,7 @@ func (s *Server) ssrShell(w http.ResponseWriter, _ *http.Request) {
 
 // Run starts the ingress server and blocks until SIGINT/SIGTERM, then shuts down gracefully.
 func (s *Server) Run() error {
-	srv := &http.Server{Addr: s.cfg.Addr, Handler: s.routes(), ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: s.cfg.Addr, Handler: s.countRequests(s.routes()), ReadHeaderTimeout: 10 * time.Second}
 
 	go func() {
 		s.log.Info("ingress up", "addr", s.cfg.Addr)

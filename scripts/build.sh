@@ -14,7 +14,14 @@ echo "==> building server"
 # The binary name carries the platform's executable suffix — "server.exe" on Windows,
 # plain "server" on the Ubuntu droplet — so deploy/ can reference one predictable path.
 SERVER_BIN="bin/server$(go env GOEXE)"
-go build -o "$SERVER_BIN" ./cmd/server
+# Stamp the build so the terminal's `stats` can report which commit is serving. An unstamped build
+# reports "dev", which is the honest answer for one — the point of the command is that its numbers
+# are real, so a made-up version would defeat it.
+VERSION="$(git rev-parse --short HEAD 2>/dev/null || echo dev)"
+if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+  VERSION="$VERSION-dirty"
+fi
+go build -ldflags "-X github.com/monstercameron/earlcameron/internal/system.Version=$VERSION" -o "$SERVER_BIN" ./cmd/server
 
 echo "==> done."
 echo "    run: LISTEN_ADDR=127.0.0.1:8095 ./$SERVER_BIN   then open http://127.0.0.1:8095"

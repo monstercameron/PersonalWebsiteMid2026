@@ -307,3 +307,201 @@ var ContactService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "site.proto",
 }
+
+const (
+	SystemService_Ping_FullMethodName          = "/site.v1.SystemService/Ping"
+	SystemService_GetStats_FullMethodName      = "/site.v1.SystemService/GetStats"
+	SystemService_RecordCommand_FullMethodName = "/site.v1.SystemService/RecordCommand"
+)
+
+// SystemServiceClient is the client API for SystemService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// System — live facts about the running server, plus the terminal's command counters.
+//
+// This is what makes the terminal's claims checkable: `stats` prints numbers that came off the
+// process answering the request, over the same gRPC tunnel the rest of the data plane uses, so a
+// visitor who doubts the site is really running Go end to end can watch the uptime tick.
+type SystemServiceClient interface {
+	// Ping is the round-trip probe behind the boot log's latency line. It carries no payload
+	// because the number it produces is the payload.
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	// GetStats returns build and runtime facts for the `stats` command.
+	GetStats(ctx context.Context, in *StatsRequest, opts ...grpc.CallOption) (*Stats, error)
+	// RecordCommand counts one terminal command by name. See the privacy note on the message.
+	RecordCommand(ctx context.Context, in *CommandEvent, opts ...grpc.CallOption) (*Ack, error)
+}
+
+type systemServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSystemServiceClient(cc grpc.ClientConnInterface) SystemServiceClient {
+	return &systemServiceClient{cc}
+}
+
+func (c *systemServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, SystemService_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *systemServiceClient) GetStats(ctx context.Context, in *StatsRequest, opts ...grpc.CallOption) (*Stats, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Stats)
+	err := c.cc.Invoke(ctx, SystemService_GetStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *systemServiceClient) RecordCommand(ctx context.Context, in *CommandEvent, opts ...grpc.CallOption) (*Ack, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, SystemService_RecordCommand_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SystemServiceServer is the server API for SystemService service.
+// All implementations must embed UnimplementedSystemServiceServer
+// for forward compatibility.
+//
+// System — live facts about the running server, plus the terminal's command counters.
+//
+// This is what makes the terminal's claims checkable: `stats` prints numbers that came off the
+// process answering the request, over the same gRPC tunnel the rest of the data plane uses, so a
+// visitor who doubts the site is really running Go end to end can watch the uptime tick.
+type SystemServiceServer interface {
+	// Ping is the round-trip probe behind the boot log's latency line. It carries no payload
+	// because the number it produces is the payload.
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	// GetStats returns build and runtime facts for the `stats` command.
+	GetStats(context.Context, *StatsRequest) (*Stats, error)
+	// RecordCommand counts one terminal command by name. See the privacy note on the message.
+	RecordCommand(context.Context, *CommandEvent) (*Ack, error)
+	mustEmbedUnimplementedSystemServiceServer()
+}
+
+// UnimplementedSystemServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedSystemServiceServer struct{}
+
+func (UnimplementedSystemServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedSystemServiceServer) GetStats(context.Context, *StatsRequest) (*Stats, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStats not implemented")
+}
+func (UnimplementedSystemServiceServer) RecordCommand(context.Context, *CommandEvent) (*Ack, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordCommand not implemented")
+}
+func (UnimplementedSystemServiceServer) mustEmbedUnimplementedSystemServiceServer() {}
+func (UnimplementedSystemServiceServer) testEmbeddedByValue()                       {}
+
+// UnsafeSystemServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SystemServiceServer will
+// result in compilation errors.
+type UnsafeSystemServiceServer interface {
+	mustEmbedUnimplementedSystemServiceServer()
+}
+
+func RegisterSystemServiceServer(s grpc.ServiceRegistrar, srv SystemServiceServer) {
+	// If the following call panics, it indicates UnimplementedSystemServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&SystemService_ServiceDesc, srv)
+}
+
+func _SystemService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SystemServiceServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SystemService_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SystemServiceServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SystemService_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SystemServiceServer).GetStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SystemService_GetStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SystemServiceServer).GetStats(ctx, req.(*StatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SystemService_RecordCommand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommandEvent)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SystemServiceServer).RecordCommand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SystemService_RecordCommand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SystemServiceServer).RecordCommand(ctx, req.(*CommandEvent))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// SystemService_ServiceDesc is the grpc.ServiceDesc for SystemService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SystemService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "site.v1.SystemService",
+	HandlerType: (*SystemServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Ping",
+			Handler:    _SystemService_Ping_Handler,
+		},
+		{
+			MethodName: "GetStats",
+			Handler:    _SystemService_GetStats_Handler,
+		},
+		{
+			MethodName: "RecordCommand",
+			Handler:    _SystemService_RecordCommand_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "site.proto",
+}

@@ -91,6 +91,18 @@ func migrate(db *sql.DB) error {
 		// pins it to one row: there is exactly one owner. Password and recovery phrase are stored only
 		// as bcrypt hashes; the hint is plaintext (it is a memory jog the owner chooses, shown on the
 		// reset screen). password_changed_at invalidates sessions minted before the last change.
+		// How often each terminal command is run, aggregated by day.
+		//
+		// PRIVACY: the primary key IS the entire record — a day and a command name from a fixed
+		// allowlist, plus a counter. There is no visitor column, no IP, no session, no argument
+		// text, and no finer timestamp, so there is nothing here to tie a row to a person even
+		// with the whole file in hand. See the CommandEvent note in proto/site.proto.
+		`CREATE TABLE IF NOT EXISTS terminal_commands (
+			day   TEXT    NOT NULL,
+			name  TEXT    NOT NULL,
+			count INTEGER NOT NULL DEFAULT 0,
+			PRIMARY KEY (day, name)
+		)`,
 		`CREATE TABLE IF NOT EXISTS owner_credentials (
 			id                  INTEGER PRIMARY KEY CHECK (id = 1),
 			username            TEXT    NOT NULL,

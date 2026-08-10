@@ -48,6 +48,8 @@ service AdminService {
   rpc SaveSettings(Settings) returns (Ack);
   // ListModels returns the chat models available to the stored OpenAI key.
   rpc ListModels(Empty) returns (ModelList);
+  // GetTerminalUsage returns how often each terminal command has been run. See TerminalUsage.
+  rpc GetTerminalUsage(Empty) returns (TerminalUsage);
   // GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
   rpc GetLastTailoring(Empty) returns (TailorResult);
   // GetBaseResume returns the permanent canonical résumé (the diff baseline; never overwritten).
@@ -185,6 +187,25 @@ message ModelList {
 
 // Empty is a no-argument request.
 message Empty {}
+
+// TerminalUsage answers one question: does anyone actually use the terminal, and what do they run?
+//
+// PRIVACY: this is an aggregate and can be nothing else — the underlying table stores only a day,
+// a command name from a fixed allowlist, and a counter. There is no visitor, session, address or
+// argument text recorded anywhere, so no view of this data can be narrowed to a person. See the
+// CommandEvent note in site.proto.
+message TerminalUsage {
+  // Total is every recorded command run, all time.
+  int64 total = 1;
+  // Commands are per-command totals, most-run first.
+  repeated CommandUsage commands = 2;
+}
+
+// CommandUsage is one command's run count.
+message CommandUsage {
+  string name = 1;
+  int64 count = 2;
+}
 
 // LoginRequest carries the admin username + password.
 message LoginRequest {

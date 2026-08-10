@@ -107,6 +107,27 @@ func (s *Service) ListModels(ctx context.Context, _ *sitepb.Empty) (*sitepb.Mode
 	return &sitepb.ModelList{Models: models}, nil
 }
 
+// GetTerminalUsage returns how often each terminal command has been run, most-run first.
+//
+// This is the only view of the terminal telemetry, and it is an aggregate by construction: the
+// table it reads holds a day, an allowlisted command name and a count, and nothing else. There is
+// no per-visitor data to expose here because none is collected. See the TerminalUsage message.
+func (s *Service) GetTerminalUsage(ctx context.Context, _ *sitepb.Empty) (*sitepb.TerminalUsage, error) {
+	total, err := s.store.CommandGrandTotal(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "couldn't read terminal usage")
+	}
+	counts, err := s.store.CommandTotals(ctx, 0)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "couldn't read terminal usage")
+	}
+	out := &sitepb.TerminalUsage{Total: total, Commands: make([]*sitepb.CommandUsage, 0, len(counts))}
+	for _, c := range counts {
+		out.Commands = append(out.Commands, &sitepb.CommandUsage{Name: c.Name, Count: c.Count})
+	}
+	return out, nil
+}
+
 // authFloor is the minimum wall-clock time every credential-checking RPC takes. Applied uniformly to
 // success AND failure and NOT cancellable, it (a) removes the timing oracle that a fast success vs a
 // slow failure would otherwise leak, and (b) can't be skipped by a client that cancels its context or

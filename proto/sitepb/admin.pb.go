@@ -533,6 +533,119 @@ func (*Empty) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{8}
 }
 
+// TerminalUsage answers one question: does anyone actually use the terminal, and what do they run?
+//
+// PRIVACY: this is an aggregate and can be nothing else — the underlying table stores only a day,
+// a command name from a fixed allowlist, and a counter. There is no visitor, session, address or
+// argument text recorded anywhere, so no view of this data can be narrowed to a person. See the
+// CommandEvent note in site.proto.
+type TerminalUsage struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Total is every recorded command run, all time.
+	Total int64 `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
+	// Commands are per-command totals, most-run first.
+	Commands      []*CommandUsage `protobuf:"bytes,2,rep,name=commands,proto3" json:"commands,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalUsage) Reset() {
+	*x = TerminalUsage{}
+	mi := &file_admin_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalUsage) ProtoMessage() {}
+
+func (x *TerminalUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalUsage.ProtoReflect.Descriptor instead.
+func (*TerminalUsage) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *TerminalUsage) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *TerminalUsage) GetCommands() []*CommandUsage {
+	if x != nil {
+		return x.Commands
+	}
+	return nil
+}
+
+// CommandUsage is one command's run count.
+type CommandUsage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Count         int64                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommandUsage) Reset() {
+	*x = CommandUsage{}
+	mi := &file_admin_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandUsage) ProtoMessage() {}
+
+func (x *CommandUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandUsage.ProtoReflect.Descriptor instead.
+func (*CommandUsage) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CommandUsage) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CommandUsage) GetCount() int64 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
 // LoginRequest carries the admin username + password.
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -544,7 +657,7 @@ type LoginRequest struct {
 
 func (x *LoginRequest) Reset() {
 	*x = LoginRequest{}
-	mi := &file_admin_proto_msgTypes[9]
+	mi := &file_admin_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +669,7 @@ func (x *LoginRequest) String() string {
 func (*LoginRequest) ProtoMessage() {}
 
 func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[9]
+	mi := &file_admin_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +682,7 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{9}
+	return file_admin_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *LoginRequest) GetUsername() string {
@@ -597,7 +710,7 @@ type LoginReply struct {
 
 func (x *LoginReply) Reset() {
 	*x = LoginReply{}
-	mi := &file_admin_proto_msgTypes[10]
+	mi := &file_admin_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -609,7 +722,7 @@ func (x *LoginReply) String() string {
 func (*LoginReply) ProtoMessage() {}
 
 func (x *LoginReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[10]
+	mi := &file_admin_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -622,7 +735,7 @@ func (x *LoginReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginReply.ProtoReflect.Descriptor instead.
 func (*LoginReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{10}
+	return file_admin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *LoginReply) GetOk() bool {
@@ -650,7 +763,7 @@ type AuthStateReply struct {
 
 func (x *AuthStateReply) Reset() {
 	*x = AuthStateReply{}
-	mi := &file_admin_proto_msgTypes[11]
+	mi := &file_admin_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -662,7 +775,7 @@ func (x *AuthStateReply) String() string {
 func (*AuthStateReply) ProtoMessage() {}
 
 func (x *AuthStateReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[11]
+	mi := &file_admin_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -675,7 +788,7 @@ func (x *AuthStateReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthStateReply.ProtoReflect.Descriptor instead.
 func (*AuthStateReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{11}
+	return file_admin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *AuthStateReply) GetNeedsSetup() bool {
@@ -706,7 +819,7 @@ type SetupRequest struct {
 
 func (x *SetupRequest) Reset() {
 	*x = SetupRequest{}
-	mi := &file_admin_proto_msgTypes[12]
+	mi := &file_admin_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -718,7 +831,7 @@ func (x *SetupRequest) String() string {
 func (*SetupRequest) ProtoMessage() {}
 
 func (x *SetupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[12]
+	mi := &file_admin_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -731,7 +844,7 @@ func (x *SetupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupRequest.ProtoReflect.Descriptor instead.
 func (*SetupRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{12}
+	return file_admin_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SetupRequest) GetUsername() string {
@@ -776,7 +889,7 @@ type SetupReply struct {
 
 func (x *SetupReply) Reset() {
 	*x = SetupReply{}
-	mi := &file_admin_proto_msgTypes[13]
+	mi := &file_admin_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -788,7 +901,7 @@ func (x *SetupReply) String() string {
 func (*SetupReply) ProtoMessage() {}
 
 func (x *SetupReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[13]
+	mi := &file_admin_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -801,7 +914,7 @@ func (x *SetupReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupReply.ProtoReflect.Descriptor instead.
 func (*SetupReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{13}
+	return file_admin_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SetupReply) GetOk() bool {
@@ -843,7 +956,7 @@ type ResetRequest struct {
 
 func (x *ResetRequest) Reset() {
 	*x = ResetRequest{}
-	mi := &file_admin_proto_msgTypes[14]
+	mi := &file_admin_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -855,7 +968,7 @@ func (x *ResetRequest) String() string {
 func (*ResetRequest) ProtoMessage() {}
 
 func (x *ResetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[14]
+	mi := &file_admin_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -868,7 +981,7 @@ func (x *ResetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetRequest.ProtoReflect.Descriptor instead.
 func (*ResetRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{14}
+	return file_admin_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ResetRequest) GetRecoveryPhrase() string {
@@ -897,7 +1010,7 @@ type ResetReply struct {
 
 func (x *ResetReply) Reset() {
 	*x = ResetReply{}
-	mi := &file_admin_proto_msgTypes[15]
+	mi := &file_admin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -909,7 +1022,7 @@ func (x *ResetReply) String() string {
 func (*ResetReply) ProtoMessage() {}
 
 func (x *ResetReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[15]
+	mi := &file_admin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -922,7 +1035,7 @@ func (x *ResetReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetReply.ProtoReflect.Descriptor instead.
 func (*ResetReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{15}
+	return file_admin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ResetReply) GetOk() bool {
@@ -956,7 +1069,7 @@ type SearchRequest struct {
 
 func (x *SearchRequest) Reset() {
 	*x = SearchRequest{}
-	mi := &file_admin_proto_msgTypes[16]
+	mi := &file_admin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -968,7 +1081,7 @@ func (x *SearchRequest) String() string {
 func (*SearchRequest) ProtoMessage() {}
 
 func (x *SearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[16]
+	mi := &file_admin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -981,7 +1094,7 @@ func (x *SearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
 func (*SearchRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{16}
+	return file_admin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SearchRequest) GetQuery() string {
@@ -1001,7 +1114,7 @@ type AnimeId struct {
 
 func (x *AnimeId) Reset() {
 	*x = AnimeId{}
-	mi := &file_admin_proto_msgTypes[17]
+	mi := &file_admin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1013,7 +1126,7 @@ func (x *AnimeId) String() string {
 func (*AnimeId) ProtoMessage() {}
 
 func (x *AnimeId) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[17]
+	mi := &file_admin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1026,7 +1139,7 @@ func (x *AnimeId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnimeId.ProtoReflect.Descriptor instead.
 func (*AnimeId) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{17}
+	return file_admin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *AnimeId) GetAnilistId() int32 {
@@ -1046,7 +1159,7 @@ type CheckReply struct {
 
 func (x *CheckReply) Reset() {
 	*x = CheckReply{}
-	mi := &file_admin_proto_msgTypes[18]
+	mi := &file_admin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1058,7 +1171,7 @@ func (x *CheckReply) String() string {
 func (*CheckReply) ProtoMessage() {}
 
 func (x *CheckReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[18]
+	mi := &file_admin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1071,7 +1184,7 @@ func (x *CheckReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckReply.ProtoReflect.Descriptor instead.
 func (*CheckReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{18}
+	return file_admin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CheckReply) GetUpdated() int32 {
@@ -1098,7 +1211,7 @@ type Anime struct {
 
 func (x *Anime) Reset() {
 	*x = Anime{}
-	mi := &file_admin_proto_msgTypes[19]
+	mi := &file_admin_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1110,7 +1223,7 @@ func (x *Anime) String() string {
 func (*Anime) ProtoMessage() {}
 
 func (x *Anime) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[19]
+	mi := &file_admin_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1123,7 +1236,7 @@ func (x *Anime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Anime.ProtoReflect.Descriptor instead.
 func (*Anime) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{19}
+	return file_admin_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Anime) GetAnilistId() int32 {
@@ -1192,7 +1305,7 @@ type AnimeList struct {
 
 func (x *AnimeList) Reset() {
 	*x = AnimeList{}
-	mi := &file_admin_proto_msgTypes[20]
+	mi := &file_admin_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1204,7 +1317,7 @@ func (x *AnimeList) String() string {
 func (*AnimeList) ProtoMessage() {}
 
 func (x *AnimeList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[20]
+	mi := &file_admin_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1217,7 +1330,7 @@ func (x *AnimeList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnimeList.ProtoReflect.Descriptor instead.
 func (*AnimeList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{20}
+	return file_admin_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *AnimeList) GetItems() []*Anime {
@@ -1247,7 +1360,7 @@ type Resume struct {
 
 func (x *Resume) Reset() {
 	*x = Resume{}
-	mi := &file_admin_proto_msgTypes[21]
+	mi := &file_admin_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1259,7 +1372,7 @@ func (x *Resume) String() string {
 func (*Resume) ProtoMessage() {}
 
 func (x *Resume) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[21]
+	mi := &file_admin_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1272,7 +1385,7 @@ func (x *Resume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resume.ProtoReflect.Descriptor instead.
 func (*Resume) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{21}
+	return file_admin_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Resume) GetName() string {
@@ -1365,7 +1478,7 @@ type ResumeJob struct {
 
 func (x *ResumeJob) Reset() {
 	*x = ResumeJob{}
-	mi := &file_admin_proto_msgTypes[22]
+	mi := &file_admin_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1377,7 +1490,7 @@ func (x *ResumeJob) String() string {
 func (*ResumeJob) ProtoMessage() {}
 
 func (x *ResumeJob) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[22]
+	mi := &file_admin_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1390,7 +1503,7 @@ func (x *ResumeJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeJob.ProtoReflect.Descriptor instead.
 func (*ResumeJob) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{22}
+	return file_admin_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ResumeJob) GetRole() string {
@@ -1432,7 +1545,7 @@ type ResumeSkill struct {
 
 func (x *ResumeSkill) Reset() {
 	*x = ResumeSkill{}
-	mi := &file_admin_proto_msgTypes[23]
+	mi := &file_admin_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1444,7 +1557,7 @@ func (x *ResumeSkill) String() string {
 func (*ResumeSkill) ProtoMessage() {}
 
 func (x *ResumeSkill) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[23]
+	mi := &file_admin_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1457,7 +1570,7 @@ func (x *ResumeSkill) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeSkill.ProtoReflect.Descriptor instead.
 func (*ResumeSkill) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{23}
+	return file_admin_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ResumeSkill) GetLabel() string {
@@ -1485,7 +1598,7 @@ type ResumeProject struct {
 
 func (x *ResumeProject) Reset() {
 	*x = ResumeProject{}
-	mi := &file_admin_proto_msgTypes[24]
+	mi := &file_admin_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1497,7 +1610,7 @@ func (x *ResumeProject) String() string {
 func (*ResumeProject) ProtoMessage() {}
 
 func (x *ResumeProject) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[24]
+	mi := &file_admin_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1510,7 +1623,7 @@ func (x *ResumeProject) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeProject.ProtoReflect.Descriptor instead.
 func (*ResumeProject) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{24}
+	return file_admin_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ResumeProject) GetName() string {
@@ -1537,7 +1650,7 @@ type TailorRequest struct {
 
 func (x *TailorRequest) Reset() {
 	*x = TailorRequest{}
-	mi := &file_admin_proto_msgTypes[25]
+	mi := &file_admin_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1549,7 +1662,7 @@ func (x *TailorRequest) String() string {
 func (*TailorRequest) ProtoMessage() {}
 
 func (x *TailorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[25]
+	mi := &file_admin_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1562,7 +1675,7 @@ func (x *TailorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailorRequest.ProtoReflect.Descriptor instead.
 func (*TailorRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{25}
+	return file_admin_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *TailorRequest) GetJobUrl() string {
@@ -1585,7 +1698,7 @@ type TailorResult struct {
 
 func (x *TailorResult) Reset() {
 	*x = TailorResult{}
-	mi := &file_admin_proto_msgTypes[26]
+	mi := &file_admin_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1597,7 +1710,7 @@ func (x *TailorResult) String() string {
 func (*TailorResult) ProtoMessage() {}
 
 func (x *TailorResult) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[26]
+	mi := &file_admin_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1610,7 +1723,7 @@ func (x *TailorResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailorResult.ProtoReflect.Descriptor instead.
 func (*TailorResult) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{26}
+	return file_admin_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *TailorResult) GetResume() *Resume {
@@ -1647,7 +1760,7 @@ type JobAnalysis struct {
 
 func (x *JobAnalysis) Reset() {
 	*x = JobAnalysis{}
-	mi := &file_admin_proto_msgTypes[27]
+	mi := &file_admin_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1659,7 +1772,7 @@ func (x *JobAnalysis) String() string {
 func (*JobAnalysis) ProtoMessage() {}
 
 func (x *JobAnalysis) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[27]
+	mi := &file_admin_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1672,7 +1785,7 @@ func (x *JobAnalysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobAnalysis.ProtoReflect.Descriptor instead.
 func (*JobAnalysis) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{27}
+	return file_admin_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *JobAnalysis) GetTitle() string {
@@ -1714,7 +1827,7 @@ type Rationale struct {
 
 func (x *Rationale) Reset() {
 	*x = Rationale{}
-	mi := &file_admin_proto_msgTypes[28]
+	mi := &file_admin_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1726,7 +1839,7 @@ func (x *Rationale) String() string {
 func (*Rationale) ProtoMessage() {}
 
 func (x *Rationale) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[28]
+	mi := &file_admin_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1739,7 +1852,7 @@ func (x *Rationale) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rationale.ProtoReflect.Descriptor instead.
 func (*Rationale) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{28}
+	return file_admin_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *Rationale) GetFocus() string {
@@ -1769,7 +1882,7 @@ type CashFluxPendingDevice struct {
 
 func (x *CashFluxPendingDevice) Reset() {
 	*x = CashFluxPendingDevice{}
-	mi := &file_admin_proto_msgTypes[29]
+	mi := &file_admin_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1781,7 +1894,7 @@ func (x *CashFluxPendingDevice) String() string {
 func (*CashFluxPendingDevice) ProtoMessage() {}
 
 func (x *CashFluxPendingDevice) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[29]
+	mi := &file_admin_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1794,7 +1907,7 @@ func (x *CashFluxPendingDevice) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxPendingDevice.ProtoReflect.Descriptor instead.
 func (*CashFluxPendingDevice) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{29}
+	return file_admin_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *CashFluxPendingDevice) GetDeviceId() string {
@@ -1835,7 +1948,7 @@ type CashFluxPendingDeviceList struct {
 
 func (x *CashFluxPendingDeviceList) Reset() {
 	*x = CashFluxPendingDeviceList{}
-	mi := &file_admin_proto_msgTypes[30]
+	mi := &file_admin_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1847,7 +1960,7 @@ func (x *CashFluxPendingDeviceList) String() string {
 func (*CashFluxPendingDeviceList) ProtoMessage() {}
 
 func (x *CashFluxPendingDeviceList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[30]
+	mi := &file_admin_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1860,7 +1973,7 @@ func (x *CashFluxPendingDeviceList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxPendingDeviceList.ProtoReflect.Descriptor instead.
 func (*CashFluxPendingDeviceList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{30}
+	return file_admin_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *CashFluxPendingDeviceList) GetItems() []*CashFluxPendingDevice {
@@ -1882,7 +1995,7 @@ type CashFluxActivationCode struct {
 
 func (x *CashFluxActivationCode) Reset() {
 	*x = CashFluxActivationCode{}
-	mi := &file_admin_proto_msgTypes[31]
+	mi := &file_admin_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1894,7 +2007,7 @@ func (x *CashFluxActivationCode) String() string {
 func (*CashFluxActivationCode) ProtoMessage() {}
 
 func (x *CashFluxActivationCode) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[31]
+	mi := &file_admin_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1907,7 +2020,7 @@ func (x *CashFluxActivationCode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxActivationCode.ProtoReflect.Descriptor instead.
 func (*CashFluxActivationCode) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{31}
+	return file_admin_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *CashFluxActivationCode) GetCode() string {
@@ -1934,7 +2047,7 @@ type CashFluxApprovePairingRequest struct {
 
 func (x *CashFluxApprovePairingRequest) Reset() {
 	*x = CashFluxApprovePairingRequest{}
-	mi := &file_admin_proto_msgTypes[32]
+	mi := &file_admin_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1946,7 +2059,7 @@ func (x *CashFluxApprovePairingRequest) String() string {
 func (*CashFluxApprovePairingRequest) ProtoMessage() {}
 
 func (x *CashFluxApprovePairingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[32]
+	mi := &file_admin_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1959,7 +2072,7 @@ func (x *CashFluxApprovePairingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxApprovePairingRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxApprovePairingRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{32}
+	return file_admin_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *CashFluxApprovePairingRequest) GetDeviceId() string {
@@ -1981,7 +2094,7 @@ type CashFluxApprovePairingResponse struct {
 
 func (x *CashFluxApprovePairingResponse) Reset() {
 	*x = CashFluxApprovePairingResponse{}
-	mi := &file_admin_proto_msgTypes[33]
+	mi := &file_admin_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1993,7 +2106,7 @@ func (x *CashFluxApprovePairingResponse) String() string {
 func (*CashFluxApprovePairingResponse) ProtoMessage() {}
 
 func (x *CashFluxApprovePairingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[33]
+	mi := &file_admin_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2006,7 +2119,7 @@ func (x *CashFluxApprovePairingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxApprovePairingResponse.ProtoReflect.Descriptor instead.
 func (*CashFluxApprovePairingResponse) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{33}
+	return file_admin_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *CashFluxApprovePairingResponse) GetApproved() bool {
@@ -2033,7 +2146,7 @@ type CashFluxRejectPairingRequest struct {
 
 func (x *CashFluxRejectPairingRequest) Reset() {
 	*x = CashFluxRejectPairingRequest{}
-	mi := &file_admin_proto_msgTypes[34]
+	mi := &file_admin_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2045,7 +2158,7 @@ func (x *CashFluxRejectPairingRequest) String() string {
 func (*CashFluxRejectPairingRequest) ProtoMessage() {}
 
 func (x *CashFluxRejectPairingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[34]
+	mi := &file_admin_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2058,7 +2171,7 @@ func (x *CashFluxRejectPairingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxRejectPairingRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxRejectPairingRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{34}
+	return file_admin_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *CashFluxRejectPairingRequest) GetDeviceId() string {
@@ -2078,7 +2191,7 @@ type CashFluxRejectPairingResponse struct {
 
 func (x *CashFluxRejectPairingResponse) Reset() {
 	*x = CashFluxRejectPairingResponse{}
-	mi := &file_admin_proto_msgTypes[35]
+	mi := &file_admin_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2090,7 +2203,7 @@ func (x *CashFluxRejectPairingResponse) String() string {
 func (*CashFluxRejectPairingResponse) ProtoMessage() {}
 
 func (x *CashFluxRejectPairingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[35]
+	mi := &file_admin_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2103,7 +2216,7 @@ func (x *CashFluxRejectPairingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxRejectPairingResponse.ProtoReflect.Descriptor instead.
 func (*CashFluxRejectPairingResponse) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{35}
+	return file_admin_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *CashFluxRejectPairingResponse) GetRejected() bool {
@@ -2125,7 +2238,7 @@ type CashFluxListUsersRequest struct {
 
 func (x *CashFluxListUsersRequest) Reset() {
 	*x = CashFluxListUsersRequest{}
-	mi := &file_admin_proto_msgTypes[36]
+	mi := &file_admin_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2137,7 +2250,7 @@ func (x *CashFluxListUsersRequest) String() string {
 func (*CashFluxListUsersRequest) ProtoMessage() {}
 
 func (x *CashFluxListUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[36]
+	mi := &file_admin_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2150,7 +2263,7 @@ func (x *CashFluxListUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxListUsersRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxListUsersRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{36}
+	return file_admin_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *CashFluxListUsersRequest) GetLimit() int32 {
@@ -2198,7 +2311,7 @@ type CashFluxUser struct {
 
 func (x *CashFluxUser) Reset() {
 	*x = CashFluxUser{}
-	mi := &file_admin_proto_msgTypes[37]
+	mi := &file_admin_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2210,7 +2323,7 @@ func (x *CashFluxUser) String() string {
 func (*CashFluxUser) ProtoMessage() {}
 
 func (x *CashFluxUser) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[37]
+	mi := &file_admin_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2223,7 +2336,7 @@ func (x *CashFluxUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxUser.ProtoReflect.Descriptor instead.
 func (*CashFluxUser) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{37}
+	return file_admin_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *CashFluxUser) GetId() string {
@@ -2334,7 +2447,7 @@ type CashFluxUserList struct {
 
 func (x *CashFluxUserList) Reset() {
 	*x = CashFluxUserList{}
-	mi := &file_admin_proto_msgTypes[38]
+	mi := &file_admin_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2346,7 +2459,7 @@ func (x *CashFluxUserList) String() string {
 func (*CashFluxUserList) ProtoMessage() {}
 
 func (x *CashFluxUserList) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[38]
+	mi := &file_admin_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2359,7 +2472,7 @@ func (x *CashFluxUserList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxUserList.ProtoReflect.Descriptor instead.
 func (*CashFluxUserList) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{38}
+	return file_admin_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *CashFluxUserList) GetItems() []*CashFluxUser {
@@ -2379,7 +2492,7 @@ type CashFluxUserRef struct {
 
 func (x *CashFluxUserRef) Reset() {
 	*x = CashFluxUserRef{}
-	mi := &file_admin_proto_msgTypes[39]
+	mi := &file_admin_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2391,7 +2504,7 @@ func (x *CashFluxUserRef) String() string {
 func (*CashFluxUserRef) ProtoMessage() {}
 
 func (x *CashFluxUserRef) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[39]
+	mi := &file_admin_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2404,7 +2517,7 @@ func (x *CashFluxUserRef) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxUserRef.ProtoReflect.Descriptor instead.
 func (*CashFluxUserRef) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{39}
+	return file_admin_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *CashFluxUserRef) GetUserId() string {
@@ -2425,7 +2538,7 @@ type CashFluxCreateUserRequest struct {
 
 func (x *CashFluxCreateUserRequest) Reset() {
 	*x = CashFluxCreateUserRequest{}
-	mi := &file_admin_proto_msgTypes[40]
+	mi := &file_admin_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2437,7 +2550,7 @@ func (x *CashFluxCreateUserRequest) String() string {
 func (*CashFluxCreateUserRequest) ProtoMessage() {}
 
 func (x *CashFluxCreateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[40]
+	mi := &file_admin_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2450,7 +2563,7 @@ func (x *CashFluxCreateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxCreateUserRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxCreateUserRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{40}
+	return file_admin_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *CashFluxCreateUserRequest) GetUsername() string {
@@ -2479,7 +2592,7 @@ type CashFluxUpdateUserRequest struct {
 
 func (x *CashFluxUpdateUserRequest) Reset() {
 	*x = CashFluxUpdateUserRequest{}
-	mi := &file_admin_proto_msgTypes[41]
+	mi := &file_admin_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2491,7 +2604,7 @@ func (x *CashFluxUpdateUserRequest) String() string {
 func (*CashFluxUpdateUserRequest) ProtoMessage() {}
 
 func (x *CashFluxUpdateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[41]
+	mi := &file_admin_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2504,7 +2617,7 @@ func (x *CashFluxUpdateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxUpdateUserRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxUpdateUserRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{41}
+	return file_admin_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *CashFluxUpdateUserRequest) GetUserId() string {
@@ -2539,7 +2652,7 @@ type CashFluxSuspendUserRequest struct {
 
 func (x *CashFluxSuspendUserRequest) Reset() {
 	*x = CashFluxSuspendUserRequest{}
-	mi := &file_admin_proto_msgTypes[42]
+	mi := &file_admin_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2551,7 +2664,7 @@ func (x *CashFluxSuspendUserRequest) String() string {
 func (*CashFluxSuspendUserRequest) ProtoMessage() {}
 
 func (x *CashFluxSuspendUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[42]
+	mi := &file_admin_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2564,7 +2677,7 @@ func (x *CashFluxSuspendUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxSuspendUserRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxSuspendUserRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{42}
+	return file_admin_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *CashFluxSuspendUserRequest) GetUserId() string {
@@ -2591,7 +2704,7 @@ type CashFluxDeleteUserRequest struct {
 
 func (x *CashFluxDeleteUserRequest) Reset() {
 	*x = CashFluxDeleteUserRequest{}
-	mi := &file_admin_proto_msgTypes[43]
+	mi := &file_admin_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2603,7 +2716,7 @@ func (x *CashFluxDeleteUserRequest) String() string {
 func (*CashFluxDeleteUserRequest) ProtoMessage() {}
 
 func (x *CashFluxDeleteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[43]
+	mi := &file_admin_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2616,7 +2729,7 @@ func (x *CashFluxDeleteUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxDeleteUserRequest.ProtoReflect.Descriptor instead.
 func (*CashFluxDeleteUserRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{43}
+	return file_admin_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *CashFluxDeleteUserRequest) GetUserId() string {
@@ -2637,7 +2750,7 @@ type CashFluxDeleteUserResponse struct {
 
 func (x *CashFluxDeleteUserResponse) Reset() {
 	*x = CashFluxDeleteUserResponse{}
-	mi := &file_admin_proto_msgTypes[44]
+	mi := &file_admin_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2649,7 +2762,7 @@ func (x *CashFluxDeleteUserResponse) String() string {
 func (*CashFluxDeleteUserResponse) ProtoMessage() {}
 
 func (x *CashFluxDeleteUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[44]
+	mi := &file_admin_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2662,7 +2775,7 @@ func (x *CashFluxDeleteUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxDeleteUserResponse.ProtoReflect.Descriptor instead.
 func (*CashFluxDeleteUserResponse) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{44}
+	return file_admin_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *CashFluxDeleteUserResponse) GetDeleted() bool {
@@ -2689,7 +2802,7 @@ type CashFluxStorageStats struct {
 
 func (x *CashFluxStorageStats) Reset() {
 	*x = CashFluxStorageStats{}
-	mi := &file_admin_proto_msgTypes[45]
+	mi := &file_admin_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2701,7 +2814,7 @@ func (x *CashFluxStorageStats) String() string {
 func (*CashFluxStorageStats) ProtoMessage() {}
 
 func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[45]
+	mi := &file_admin_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2714,7 +2827,7 @@ func (x *CashFluxStorageStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CashFluxStorageStats.ProtoReflect.Descriptor instead.
 func (*CashFluxStorageStats) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{45}
+	return file_admin_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *CashFluxStorageStats) GetSnapshotBytes() int64 {
@@ -2778,7 +2891,13 @@ const file_admin_proto_rawDesc = "" +
 	"\akey_set\x18\x03 \x01(\bR\x06keySet\"#\n" +
 	"\tModelList\x12\x16\n" +
 	"\x06models\x18\x01 \x03(\tR\x06models\"\a\n" +
-	"\x05Empty\"F\n" +
+	"\x05Empty\"X\n" +
+	"\rTerminalUsage\x12\x14\n" +
+	"\x05total\x18\x01 \x01(\x03R\x05total\x121\n" +
+	"\bcommands\x18\x02 \x03(\v2\x15.site.v1.CommandUsageR\bcommands\"8\n" +
+	"\fCommandUsage\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x03R\x05count\"F\n" +
 	"\fLoginRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"2\n" +
@@ -2937,7 +3056,7 @@ const file_admin_proto_rawDesc = "" +
 	"\x0esnapshot_bytes\x18\x03 \x01(\x03R\rsnapshotBytes\x12\x19\n" +
 	"\bdb_bytes\x18\x01 \x01(\x03R\adbBytes\x12\x1d\n" +
 	"\n" +
-	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\xf1\x12\n" +
+	"blob_bytes\x18\x02 \x01(\x03R\tblobBytes2\xad\x13\n" +
 	"\fAdminService\x123\n" +
 	"\x05Login\x12\x15.site.v1.LoginRequest\x1a\x13.site.v1.LoginReply\x124\n" +
 	"\tAuthState\x12\x0e.site.v1.Empty\x1a\x17.site.v1.AuthStateReply\x123\n" +
@@ -2955,7 +3074,8 @@ const file_admin_proto_rawDesc = "" +
 	"\vGetSettings\x12\x0e.site.v1.Empty\x1a\x11.site.v1.Settings\x12/\n" +
 	"\fSaveSettings\x12\x11.site.v1.Settings\x1a\f.site.v1.Ack\x120\n" +
 	"\n" +
-	"ListModels\x12\x0e.site.v1.Empty\x1a\x12.site.v1.ModelList\x129\n" +
+	"ListModels\x12\x0e.site.v1.Empty\x1a\x12.site.v1.ModelList\x12:\n" +
+	"\x10GetTerminalUsage\x12\x0e.site.v1.Empty\x1a\x16.site.v1.TerminalUsage\x129\n" +
 	"\x10GetLastTailoring\x12\x0e.site.v1.Empty\x1a\x15.site.v1.TailorResult\x120\n" +
 	"\rGetBaseResume\x12\x0e.site.v1.Empty\x1a\x0f.site.v1.Resume\x128\n" +
 	"\x0eListTailorings\x12\x0e.site.v1.Empty\x1a\x16.site.v1.TailoringList\x12;\n" +
@@ -2993,7 +3113,7 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 48)
 var file_admin_proto_goTypes = []any{
 	(*PromptText)(nil),                     // 0: site.v1.PromptText
 	(*PostPreview)(nil),                    // 1: site.v1.PostPreview
@@ -3004,137 +3124,142 @@ var file_admin_proto_goTypes = []any{
 	(*Settings)(nil),                       // 6: site.v1.Settings
 	(*ModelList)(nil),                      // 7: site.v1.ModelList
 	(*Empty)(nil),                          // 8: site.v1.Empty
-	(*LoginRequest)(nil),                   // 9: site.v1.LoginRequest
-	(*LoginReply)(nil),                     // 10: site.v1.LoginReply
-	(*AuthStateReply)(nil),                 // 11: site.v1.AuthStateReply
-	(*SetupRequest)(nil),                   // 12: site.v1.SetupRequest
-	(*SetupReply)(nil),                     // 13: site.v1.SetupReply
-	(*ResetRequest)(nil),                   // 14: site.v1.ResetRequest
-	(*ResetReply)(nil),                     // 15: site.v1.ResetReply
-	(*SearchRequest)(nil),                  // 16: site.v1.SearchRequest
-	(*AnimeId)(nil),                        // 17: site.v1.AnimeId
-	(*CheckReply)(nil),                     // 18: site.v1.CheckReply
-	(*Anime)(nil),                          // 19: site.v1.Anime
-	(*AnimeList)(nil),                      // 20: site.v1.AnimeList
-	(*Resume)(nil),                         // 21: site.v1.Resume
-	(*ResumeJob)(nil),                      // 22: site.v1.ResumeJob
-	(*ResumeSkill)(nil),                    // 23: site.v1.ResumeSkill
-	(*ResumeProject)(nil),                  // 24: site.v1.ResumeProject
-	(*TailorRequest)(nil),                  // 25: site.v1.TailorRequest
-	(*TailorResult)(nil),                   // 26: site.v1.TailorResult
-	(*JobAnalysis)(nil),                    // 27: site.v1.JobAnalysis
-	(*Rationale)(nil),                      // 28: site.v1.Rationale
-	(*CashFluxPendingDevice)(nil),          // 29: site.v1.CashFluxPendingDevice
-	(*CashFluxPendingDeviceList)(nil),      // 30: site.v1.CashFluxPendingDeviceList
-	(*CashFluxActivationCode)(nil),         // 31: site.v1.CashFluxActivationCode
-	(*CashFluxApprovePairingRequest)(nil),  // 32: site.v1.CashFluxApprovePairingRequest
-	(*CashFluxApprovePairingResponse)(nil), // 33: site.v1.CashFluxApprovePairingResponse
-	(*CashFluxRejectPairingRequest)(nil),   // 34: site.v1.CashFluxRejectPairingRequest
-	(*CashFluxRejectPairingResponse)(nil),  // 35: site.v1.CashFluxRejectPairingResponse
-	(*CashFluxListUsersRequest)(nil),       // 36: site.v1.CashFluxListUsersRequest
-	(*CashFluxUser)(nil),                   // 37: site.v1.CashFluxUser
-	(*CashFluxUserList)(nil),               // 38: site.v1.CashFluxUserList
-	(*CashFluxUserRef)(nil),                // 39: site.v1.CashFluxUserRef
-	(*CashFluxCreateUserRequest)(nil),      // 40: site.v1.CashFluxCreateUserRequest
-	(*CashFluxUpdateUserRequest)(nil),      // 41: site.v1.CashFluxUpdateUserRequest
-	(*CashFluxSuspendUserRequest)(nil),     // 42: site.v1.CashFluxSuspendUserRequest
-	(*CashFluxDeleteUserRequest)(nil),      // 43: site.v1.CashFluxDeleteUserRequest
-	(*CashFluxDeleteUserResponse)(nil),     // 44: site.v1.CashFluxDeleteUserResponse
-	(*CashFluxStorageStats)(nil),           // 45: site.v1.CashFluxStorageStats
-	(*Ack)(nil),                            // 46: site.v1.Ack
+	(*TerminalUsage)(nil),                  // 9: site.v1.TerminalUsage
+	(*CommandUsage)(nil),                   // 10: site.v1.CommandUsage
+	(*LoginRequest)(nil),                   // 11: site.v1.LoginRequest
+	(*LoginReply)(nil),                     // 12: site.v1.LoginReply
+	(*AuthStateReply)(nil),                 // 13: site.v1.AuthStateReply
+	(*SetupRequest)(nil),                   // 14: site.v1.SetupRequest
+	(*SetupReply)(nil),                     // 15: site.v1.SetupReply
+	(*ResetRequest)(nil),                   // 16: site.v1.ResetRequest
+	(*ResetReply)(nil),                     // 17: site.v1.ResetReply
+	(*SearchRequest)(nil),                  // 18: site.v1.SearchRequest
+	(*AnimeId)(nil),                        // 19: site.v1.AnimeId
+	(*CheckReply)(nil),                     // 20: site.v1.CheckReply
+	(*Anime)(nil),                          // 21: site.v1.Anime
+	(*AnimeList)(nil),                      // 22: site.v1.AnimeList
+	(*Resume)(nil),                         // 23: site.v1.Resume
+	(*ResumeJob)(nil),                      // 24: site.v1.ResumeJob
+	(*ResumeSkill)(nil),                    // 25: site.v1.ResumeSkill
+	(*ResumeProject)(nil),                  // 26: site.v1.ResumeProject
+	(*TailorRequest)(nil),                  // 27: site.v1.TailorRequest
+	(*TailorResult)(nil),                   // 28: site.v1.TailorResult
+	(*JobAnalysis)(nil),                    // 29: site.v1.JobAnalysis
+	(*Rationale)(nil),                      // 30: site.v1.Rationale
+	(*CashFluxPendingDevice)(nil),          // 31: site.v1.CashFluxPendingDevice
+	(*CashFluxPendingDeviceList)(nil),      // 32: site.v1.CashFluxPendingDeviceList
+	(*CashFluxActivationCode)(nil),         // 33: site.v1.CashFluxActivationCode
+	(*CashFluxApprovePairingRequest)(nil),  // 34: site.v1.CashFluxApprovePairingRequest
+	(*CashFluxApprovePairingResponse)(nil), // 35: site.v1.CashFluxApprovePairingResponse
+	(*CashFluxRejectPairingRequest)(nil),   // 36: site.v1.CashFluxRejectPairingRequest
+	(*CashFluxRejectPairingResponse)(nil),  // 37: site.v1.CashFluxRejectPairingResponse
+	(*CashFluxListUsersRequest)(nil),       // 38: site.v1.CashFluxListUsersRequest
+	(*CashFluxUser)(nil),                   // 39: site.v1.CashFluxUser
+	(*CashFluxUserList)(nil),               // 40: site.v1.CashFluxUserList
+	(*CashFluxUserRef)(nil),                // 41: site.v1.CashFluxUserRef
+	(*CashFluxCreateUserRequest)(nil),      // 42: site.v1.CashFluxCreateUserRequest
+	(*CashFluxUpdateUserRequest)(nil),      // 43: site.v1.CashFluxUpdateUserRequest
+	(*CashFluxSuspendUserRequest)(nil),     // 44: site.v1.CashFluxSuspendUserRequest
+	(*CashFluxDeleteUserRequest)(nil),      // 45: site.v1.CashFluxDeleteUserRequest
+	(*CashFluxDeleteUserResponse)(nil),     // 46: site.v1.CashFluxDeleteUserResponse
+	(*CashFluxStorageStats)(nil),           // 47: site.v1.CashFluxStorageStats
+	(*Ack)(nil),                            // 48: site.v1.Ack
 }
 var file_admin_proto_depIdxs = []int32{
 	4,  // 0: site.v1.TailoringList.items:type_name -> site.v1.TailoringMeta
-	19, // 1: site.v1.AnimeList.items:type_name -> site.v1.Anime
-	22, // 2: site.v1.Resume.jobs:type_name -> site.v1.ResumeJob
-	23, // 3: site.v1.Resume.skills:type_name -> site.v1.ResumeSkill
-	24, // 4: site.v1.Resume.projects:type_name -> site.v1.ResumeProject
-	21, // 5: site.v1.TailorResult.resume:type_name -> site.v1.Resume
-	27, // 6: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
-	28, // 7: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
-	29, // 8: site.v1.CashFluxPendingDeviceList.items:type_name -> site.v1.CashFluxPendingDevice
-	37, // 9: site.v1.CashFluxUserList.items:type_name -> site.v1.CashFluxUser
-	9,  // 10: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
-	8,  // 11: site.v1.AdminService.AuthState:input_type -> site.v1.Empty
-	12, // 12: site.v1.AdminService.Setup:input_type -> site.v1.SetupRequest
-	14, // 13: site.v1.AdminService.ResetPassword:input_type -> site.v1.ResetRequest
-	16, // 14: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
-	8,  // 15: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
-	17, // 16: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
-	17, // 17: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
-	8,  // 18: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
-	8,  // 19: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
-	21, // 20: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
-	25, // 21: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
-	8,  // 22: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
-	6,  // 23: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
-	8,  // 24: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
-	8,  // 25: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
-	8,  // 26: site.v1.AdminService.GetBaseResume:input_type -> site.v1.Empty
-	8,  // 27: site.v1.AdminService.ListTailorings:input_type -> site.v1.Empty
-	3,  // 28: site.v1.AdminService.GetTailoring:input_type -> site.v1.TailoringId
-	3,  // 29: site.v1.AdminService.DeleteTailoring:input_type -> site.v1.TailoringId
-	8,  // 30: site.v1.AdminService.GetPrompt:input_type -> site.v1.Empty
-	0,  // 31: site.v1.AdminService.SavePrompt:input_type -> site.v1.PromptText
-	0,  // 32: site.v1.AdminService.DryRunPrompt:input_type -> site.v1.PromptText
-	8,  // 33: site.v1.AdminService.GetSlackConfig:input_type -> site.v1.Empty
-	2,  // 34: site.v1.AdminService.SaveSlackConfig:input_type -> site.v1.SlackConfig
-	8,  // 35: site.v1.AdminService.PostToSlackNow:input_type -> site.v1.Empty
-	8,  // 36: site.v1.AdminService.MintCashFluxActivationCode:input_type -> site.v1.Empty
-	8,  // 37: site.v1.AdminService.ListCashFluxPendingDevices:input_type -> site.v1.Empty
-	32, // 38: site.v1.AdminService.ApproveCashFluxPairing:input_type -> site.v1.CashFluxApprovePairingRequest
-	34, // 39: site.v1.AdminService.RejectCashFluxPairing:input_type -> site.v1.CashFluxRejectPairingRequest
-	36, // 40: site.v1.AdminService.ListCashFluxUsers:input_type -> site.v1.CashFluxListUsersRequest
-	8,  // 41: site.v1.AdminService.GetCashFluxStorageStats:input_type -> site.v1.Empty
-	43, // 42: site.v1.AdminService.DeleteCashFluxUser:input_type -> site.v1.CashFluxDeleteUserRequest
-	40, // 43: site.v1.AdminService.CreateCashFluxUser:input_type -> site.v1.CashFluxCreateUserRequest
-	41, // 44: site.v1.AdminService.UpdateCashFluxUser:input_type -> site.v1.CashFluxUpdateUserRequest
-	42, // 45: site.v1.AdminService.SuspendCashFluxUser:input_type -> site.v1.CashFluxSuspendUserRequest
-	39, // 46: site.v1.AdminService.ResetCashFluxCredentials:input_type -> site.v1.CashFluxUserRef
-	39, // 47: site.v1.AdminService.MintCashFluxActivationCodeForUser:input_type -> site.v1.CashFluxUserRef
-	10, // 48: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
-	11, // 49: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
-	13, // 50: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
-	15, // 51: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
-	20, // 52: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
-	20, // 53: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
-	46, // 54: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
-	46, // 55: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
-	18, // 56: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
-	21, // 57: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
-	46, // 58: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
-	26, // 59: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
-	6,  // 60: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
-	46, // 61: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
-	7,  // 62: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
-	26, // 63: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
-	21, // 64: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
-	5,  // 65: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
-	26, // 66: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
-	46, // 67: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
-	0,  // 68: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
-	46, // 69: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
-	1,  // 70: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
-	2,  // 71: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
-	46, // 72: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
-	46, // 73: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
-	31, // 74: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
-	30, // 75: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
-	33, // 76: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
-	35, // 77: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
-	38, // 78: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
-	45, // 79: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
-	44, // 80: site.v1.AdminService.DeleteCashFluxUser:output_type -> site.v1.CashFluxDeleteUserResponse
-	39, // 81: site.v1.AdminService.CreateCashFluxUser:output_type -> site.v1.CashFluxUserRef
-	46, // 82: site.v1.AdminService.UpdateCashFluxUser:output_type -> site.v1.Ack
-	46, // 83: site.v1.AdminService.SuspendCashFluxUser:output_type -> site.v1.Ack
-	46, // 84: site.v1.AdminService.ResetCashFluxCredentials:output_type -> site.v1.Ack
-	31, // 85: site.v1.AdminService.MintCashFluxActivationCodeForUser:output_type -> site.v1.CashFluxActivationCode
-	48, // [48:86] is the sub-list for method output_type
-	10, // [10:48] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	10, // 1: site.v1.TerminalUsage.commands:type_name -> site.v1.CommandUsage
+	21, // 2: site.v1.AnimeList.items:type_name -> site.v1.Anime
+	24, // 3: site.v1.Resume.jobs:type_name -> site.v1.ResumeJob
+	25, // 4: site.v1.Resume.skills:type_name -> site.v1.ResumeSkill
+	26, // 5: site.v1.Resume.projects:type_name -> site.v1.ResumeProject
+	23, // 6: site.v1.TailorResult.resume:type_name -> site.v1.Resume
+	29, // 7: site.v1.TailorResult.job:type_name -> site.v1.JobAnalysis
+	30, // 8: site.v1.TailorResult.rationales:type_name -> site.v1.Rationale
+	31, // 9: site.v1.CashFluxPendingDeviceList.items:type_name -> site.v1.CashFluxPendingDevice
+	39, // 10: site.v1.CashFluxUserList.items:type_name -> site.v1.CashFluxUser
+	11, // 11: site.v1.AdminService.Login:input_type -> site.v1.LoginRequest
+	8,  // 12: site.v1.AdminService.AuthState:input_type -> site.v1.Empty
+	14, // 13: site.v1.AdminService.Setup:input_type -> site.v1.SetupRequest
+	16, // 14: site.v1.AdminService.ResetPassword:input_type -> site.v1.ResetRequest
+	18, // 15: site.v1.AdminService.SearchAnime:input_type -> site.v1.SearchRequest
+	8,  // 16: site.v1.AdminService.ListTracked:input_type -> site.v1.Empty
+	19, // 17: site.v1.AdminService.TrackAnime:input_type -> site.v1.AnimeId
+	19, // 18: site.v1.AdminService.UntrackAnime:input_type -> site.v1.AnimeId
+	8,  // 19: site.v1.AdminService.RunReleaseCheck:input_type -> site.v1.Empty
+	8,  // 20: site.v1.AdminService.GetResume:input_type -> site.v1.Empty
+	23, // 21: site.v1.AdminService.ApplyResume:input_type -> site.v1.Resume
+	27, // 22: site.v1.AdminService.TailorResume:input_type -> site.v1.TailorRequest
+	8,  // 23: site.v1.AdminService.GetSettings:input_type -> site.v1.Empty
+	6,  // 24: site.v1.AdminService.SaveSettings:input_type -> site.v1.Settings
+	8,  // 25: site.v1.AdminService.ListModels:input_type -> site.v1.Empty
+	8,  // 26: site.v1.AdminService.GetTerminalUsage:input_type -> site.v1.Empty
+	8,  // 27: site.v1.AdminService.GetLastTailoring:input_type -> site.v1.Empty
+	8,  // 28: site.v1.AdminService.GetBaseResume:input_type -> site.v1.Empty
+	8,  // 29: site.v1.AdminService.ListTailorings:input_type -> site.v1.Empty
+	3,  // 30: site.v1.AdminService.GetTailoring:input_type -> site.v1.TailoringId
+	3,  // 31: site.v1.AdminService.DeleteTailoring:input_type -> site.v1.TailoringId
+	8,  // 32: site.v1.AdminService.GetPrompt:input_type -> site.v1.Empty
+	0,  // 33: site.v1.AdminService.SavePrompt:input_type -> site.v1.PromptText
+	0,  // 34: site.v1.AdminService.DryRunPrompt:input_type -> site.v1.PromptText
+	8,  // 35: site.v1.AdminService.GetSlackConfig:input_type -> site.v1.Empty
+	2,  // 36: site.v1.AdminService.SaveSlackConfig:input_type -> site.v1.SlackConfig
+	8,  // 37: site.v1.AdminService.PostToSlackNow:input_type -> site.v1.Empty
+	8,  // 38: site.v1.AdminService.MintCashFluxActivationCode:input_type -> site.v1.Empty
+	8,  // 39: site.v1.AdminService.ListCashFluxPendingDevices:input_type -> site.v1.Empty
+	34, // 40: site.v1.AdminService.ApproveCashFluxPairing:input_type -> site.v1.CashFluxApprovePairingRequest
+	36, // 41: site.v1.AdminService.RejectCashFluxPairing:input_type -> site.v1.CashFluxRejectPairingRequest
+	38, // 42: site.v1.AdminService.ListCashFluxUsers:input_type -> site.v1.CashFluxListUsersRequest
+	8,  // 43: site.v1.AdminService.GetCashFluxStorageStats:input_type -> site.v1.Empty
+	45, // 44: site.v1.AdminService.DeleteCashFluxUser:input_type -> site.v1.CashFluxDeleteUserRequest
+	42, // 45: site.v1.AdminService.CreateCashFluxUser:input_type -> site.v1.CashFluxCreateUserRequest
+	43, // 46: site.v1.AdminService.UpdateCashFluxUser:input_type -> site.v1.CashFluxUpdateUserRequest
+	44, // 47: site.v1.AdminService.SuspendCashFluxUser:input_type -> site.v1.CashFluxSuspendUserRequest
+	41, // 48: site.v1.AdminService.ResetCashFluxCredentials:input_type -> site.v1.CashFluxUserRef
+	41, // 49: site.v1.AdminService.MintCashFluxActivationCodeForUser:input_type -> site.v1.CashFluxUserRef
+	12, // 50: site.v1.AdminService.Login:output_type -> site.v1.LoginReply
+	13, // 51: site.v1.AdminService.AuthState:output_type -> site.v1.AuthStateReply
+	15, // 52: site.v1.AdminService.Setup:output_type -> site.v1.SetupReply
+	17, // 53: site.v1.AdminService.ResetPassword:output_type -> site.v1.ResetReply
+	22, // 54: site.v1.AdminService.SearchAnime:output_type -> site.v1.AnimeList
+	22, // 55: site.v1.AdminService.ListTracked:output_type -> site.v1.AnimeList
+	48, // 56: site.v1.AdminService.TrackAnime:output_type -> site.v1.Ack
+	48, // 57: site.v1.AdminService.UntrackAnime:output_type -> site.v1.Ack
+	20, // 58: site.v1.AdminService.RunReleaseCheck:output_type -> site.v1.CheckReply
+	23, // 59: site.v1.AdminService.GetResume:output_type -> site.v1.Resume
+	48, // 60: site.v1.AdminService.ApplyResume:output_type -> site.v1.Ack
+	28, // 61: site.v1.AdminService.TailorResume:output_type -> site.v1.TailorResult
+	6,  // 62: site.v1.AdminService.GetSettings:output_type -> site.v1.Settings
+	48, // 63: site.v1.AdminService.SaveSettings:output_type -> site.v1.Ack
+	7,  // 64: site.v1.AdminService.ListModels:output_type -> site.v1.ModelList
+	9,  // 65: site.v1.AdminService.GetTerminalUsage:output_type -> site.v1.TerminalUsage
+	28, // 66: site.v1.AdminService.GetLastTailoring:output_type -> site.v1.TailorResult
+	23, // 67: site.v1.AdminService.GetBaseResume:output_type -> site.v1.Resume
+	5,  // 68: site.v1.AdminService.ListTailorings:output_type -> site.v1.TailoringList
+	28, // 69: site.v1.AdminService.GetTailoring:output_type -> site.v1.TailorResult
+	48, // 70: site.v1.AdminService.DeleteTailoring:output_type -> site.v1.Ack
+	0,  // 71: site.v1.AdminService.GetPrompt:output_type -> site.v1.PromptText
+	48, // 72: site.v1.AdminService.SavePrompt:output_type -> site.v1.Ack
+	1,  // 73: site.v1.AdminService.DryRunPrompt:output_type -> site.v1.PostPreview
+	2,  // 74: site.v1.AdminService.GetSlackConfig:output_type -> site.v1.SlackConfig
+	48, // 75: site.v1.AdminService.SaveSlackConfig:output_type -> site.v1.Ack
+	48, // 76: site.v1.AdminService.PostToSlackNow:output_type -> site.v1.Ack
+	33, // 77: site.v1.AdminService.MintCashFluxActivationCode:output_type -> site.v1.CashFluxActivationCode
+	32, // 78: site.v1.AdminService.ListCashFluxPendingDevices:output_type -> site.v1.CashFluxPendingDeviceList
+	35, // 79: site.v1.AdminService.ApproveCashFluxPairing:output_type -> site.v1.CashFluxApprovePairingResponse
+	37, // 80: site.v1.AdminService.RejectCashFluxPairing:output_type -> site.v1.CashFluxRejectPairingResponse
+	40, // 81: site.v1.AdminService.ListCashFluxUsers:output_type -> site.v1.CashFluxUserList
+	47, // 82: site.v1.AdminService.GetCashFluxStorageStats:output_type -> site.v1.CashFluxStorageStats
+	46, // 83: site.v1.AdminService.DeleteCashFluxUser:output_type -> site.v1.CashFluxDeleteUserResponse
+	41, // 84: site.v1.AdminService.CreateCashFluxUser:output_type -> site.v1.CashFluxUserRef
+	48, // 85: site.v1.AdminService.UpdateCashFluxUser:output_type -> site.v1.Ack
+	48, // 86: site.v1.AdminService.SuspendCashFluxUser:output_type -> site.v1.Ack
+	48, // 87: site.v1.AdminService.ResetCashFluxCredentials:output_type -> site.v1.Ack
+	33, // 88: site.v1.AdminService.MintCashFluxActivationCodeForUser:output_type -> site.v1.CashFluxActivationCode
+	50, // [50:89] is the sub-list for method output_type
+	11, // [11:50] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_admin_proto_init() }
@@ -3149,7 +3274,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   46,
+			NumMessages:   48,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

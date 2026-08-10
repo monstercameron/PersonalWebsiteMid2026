@@ -52,6 +52,8 @@ func AdminApp() ui.Node {
 	keySet := ui.UseState(false)
 	model := ui.UseState("")
 	models := ui.UseState[[]string](nil)
+	// termUsage holds the terminal command counters shown at the bottom of the settings view.
+	termUsage := ui.UseState[*sitepb.TerminalUsage](nil)
 	apiKey := ui.UseState("")
 
 	// CashFlux device pairing
@@ -174,6 +176,12 @@ func AdminApp() ui.Node {
 				ml, err := c.ListModels(ctx, &sitepb.Empty{})
 				if err == nil {
 					models.Set(ml.GetModels())
+				}
+				// Terminal usage rides along with the settings load rather than getting its own
+				// view: it is one small read-only table, and a whole nav entry for it would
+				// oversell what is really a single question with a number for an answer.
+				if u, err := c.GetTerminalUsage(ctx, &sitepb.Empty{}); err == nil {
+					termUsage.Set(u)
 				}
 			}()
 		case "rss":
@@ -1121,7 +1129,7 @@ func AdminApp() ui.Node {
 	case "resume":
 		content = resumeView(jobURL, onTailor, onApply, onCancel, canonical.Get(), tailored.Get(), jobAnalysis.Get(), rationales.Get(), variants.Get(), selectVariant, deleteVariant)
 	case "settings":
-		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels)
+		content = settingsView(keySet.Get(), models.Get(), model, apiKey, onSave, onReloadModels, termUsage.Get())
 	case "rss":
 		content = rssView(promptText, onSavePrompt, onDryRun, dryRunning.Get(), dryRun.Get(), slackWebhook, slackSet.Get(), slackEnabled.Get(), slackHour, onToggleSlack, onSaveSlack, onPostNow)
 	case "cashflux":

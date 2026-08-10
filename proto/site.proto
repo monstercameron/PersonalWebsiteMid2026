@@ -17,6 +17,65 @@ service ContactService {
   rpc SendMessage(ContactMessage) returns (Ack);
 }
 
+// System — live facts about the running server, plus the terminal's command counters.
+//
+// This is what makes the terminal's claims checkable: `stats` prints numbers that came off the
+// process answering the request, over the same gRPC tunnel the rest of the data plane uses, so a
+// visitor who doubts the site is really running Go end to end can watch the uptime tick.
+service SystemService {
+  // Ping is the round-trip probe behind the boot log's latency line. It carries no payload
+  // because the number it produces is the payload.
+  rpc Ping(PingRequest) returns (PingResponse);
+  // GetStats returns build and runtime facts for the `stats` command.
+  rpc GetStats(StatsRequest) returns (Stats);
+  // RecordCommand counts one terminal command by name. See the privacy note on the message.
+  rpc RecordCommand(CommandEvent) returns (Ack);
+}
+
+// PingRequest is empty; the round trip is the measurement.
+message PingRequest {}
+
+// PingResponse carries the server's own clock so a caller can tell a slow network from a slow
+// server, rather than guessing from one number.
+message PingResponse {
+  int64 server_unix_millis = 1;
+}
+
+// StatsRequest is empty — the stats are not parameterised.
+message StatsRequest {}
+
+// Stats are the live server facts `stats` prints.
+message Stats {
+  // Version is the build identifier (git SHA when built by the deploy script).
+  string version = 1;
+  // GoVersion is the toolchain that built the running binary.
+  string go_version = 2;
+  // UptimeSeconds is how long this process has been serving.
+  int64 uptime_seconds = 3;
+  // StartedUnixMillis is when the process began serving.
+  int64 started_unix_millis = 4;
+  // RequestsServed counts HTTP requests handled since start.
+  int64 requests_served = 5;
+  // TerminalCommands counts commands run in the terminal since start.
+  int64 terminal_commands = 6;
+  // Goroutines is the live goroutine count — a small, honest window into the running process.
+  int32 goroutines = 7;
+  // HeapBytes is the current heap in use.
+  int64 heap_bytes = 8;
+}
+
+// CommandEvent reports that a terminal command ran.
+//
+// PRIVACY, by construction rather than by policy: the only field is a command NAME, and the
+// server discards anything not on its known-command allowlist. No arguments, no free text (so a
+// visitor's typing can never be recorded even by accident), no IP, no session or visitor id, no
+// user agent, no timestamp finer than the day it is aggregated into. There is deliberately no
+// field here that could identify a person, because the safest way not to store something is to
+// have nowhere to put it.
+message CommandEvent {
+  string name = 1;
+}
+
 // Ack is a generic write acknowledgement.
 message Ack {
   bool ok = 1;

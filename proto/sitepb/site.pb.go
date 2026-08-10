@@ -21,6 +21,287 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// PingRequest is empty; the round trip is the measurement.
+type PingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PingRequest) Reset() {
+	*x = PingRequest{}
+	mi := &file_site_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PingRequest) ProtoMessage() {}
+
+func (x *PingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_site_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PingRequest.ProtoReflect.Descriptor instead.
+func (*PingRequest) Descriptor() ([]byte, []int) {
+	return file_site_proto_rawDescGZIP(), []int{0}
+}
+
+// PingResponse carries the server's own clock so a caller can tell a slow network from a slow
+// server, rather than guessing from one number.
+type PingResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ServerUnixMillis int64                  `protobuf:"varint,1,opt,name=server_unix_millis,json=serverUnixMillis,proto3" json:"server_unix_millis,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PingResponse) Reset() {
+	*x = PingResponse{}
+	mi := &file_site_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PingResponse) ProtoMessage() {}
+
+func (x *PingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_site_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PingResponse.ProtoReflect.Descriptor instead.
+func (*PingResponse) Descriptor() ([]byte, []int) {
+	return file_site_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *PingResponse) GetServerUnixMillis() int64 {
+	if x != nil {
+		return x.ServerUnixMillis
+	}
+	return 0
+}
+
+// StatsRequest is empty — the stats are not parameterised.
+type StatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StatsRequest) Reset() {
+	*x = StatsRequest{}
+	mi := &file_site_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatsRequest) ProtoMessage() {}
+
+func (x *StatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_site_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatsRequest.ProtoReflect.Descriptor instead.
+func (*StatsRequest) Descriptor() ([]byte, []int) {
+	return file_site_proto_rawDescGZIP(), []int{2}
+}
+
+// Stats are the live server facts `stats` prints.
+type Stats struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Version is the build identifier (git SHA when built by the deploy script).
+	Version string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	// GoVersion is the toolchain that built the running binary.
+	GoVersion string `protobuf:"bytes,2,opt,name=go_version,json=goVersion,proto3" json:"go_version,omitempty"`
+	// UptimeSeconds is how long this process has been serving.
+	UptimeSeconds int64 `protobuf:"varint,3,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
+	// StartedUnixMillis is when the process began serving.
+	StartedUnixMillis int64 `protobuf:"varint,4,opt,name=started_unix_millis,json=startedUnixMillis,proto3" json:"started_unix_millis,omitempty"`
+	// RequestsServed counts HTTP requests handled since start.
+	RequestsServed int64 `protobuf:"varint,5,opt,name=requests_served,json=requestsServed,proto3" json:"requests_served,omitempty"`
+	// TerminalCommands counts commands run in the terminal since start.
+	TerminalCommands int64 `protobuf:"varint,6,opt,name=terminal_commands,json=terminalCommands,proto3" json:"terminal_commands,omitempty"`
+	// Goroutines is the live goroutine count — a small, honest window into the running process.
+	Goroutines int32 `protobuf:"varint,7,opt,name=goroutines,proto3" json:"goroutines,omitempty"`
+	// HeapBytes is the current heap in use.
+	HeapBytes     int64 `protobuf:"varint,8,opt,name=heap_bytes,json=heapBytes,proto3" json:"heap_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Stats) Reset() {
+	*x = Stats{}
+	mi := &file_site_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Stats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Stats) ProtoMessage() {}
+
+func (x *Stats) ProtoReflect() protoreflect.Message {
+	mi := &file_site_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Stats.ProtoReflect.Descriptor instead.
+func (*Stats) Descriptor() ([]byte, []int) {
+	return file_site_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Stats) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *Stats) GetGoVersion() string {
+	if x != nil {
+		return x.GoVersion
+	}
+	return ""
+}
+
+func (x *Stats) GetUptimeSeconds() int64 {
+	if x != nil {
+		return x.UptimeSeconds
+	}
+	return 0
+}
+
+func (x *Stats) GetStartedUnixMillis() int64 {
+	if x != nil {
+		return x.StartedUnixMillis
+	}
+	return 0
+}
+
+func (x *Stats) GetRequestsServed() int64 {
+	if x != nil {
+		return x.RequestsServed
+	}
+	return 0
+}
+
+func (x *Stats) GetTerminalCommands() int64 {
+	if x != nil {
+		return x.TerminalCommands
+	}
+	return 0
+}
+
+func (x *Stats) GetGoroutines() int32 {
+	if x != nil {
+		return x.Goroutines
+	}
+	return 0
+}
+
+func (x *Stats) GetHeapBytes() int64 {
+	if x != nil {
+		return x.HeapBytes
+	}
+	return 0
+}
+
+// CommandEvent reports that a terminal command ran.
+//
+// PRIVACY, by construction rather than by policy: the only field is a command NAME, and the
+// server discards anything not on its known-command allowlist. No arguments, no free text (so a
+// visitor's typing can never be recorded even by accident), no IP, no session or visitor id, no
+// user agent, no timestamp finer than the day it is aggregated into. There is deliberately no
+// field here that could identify a person, because the safest way not to store something is to
+// have nowhere to put it.
+type CommandEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommandEvent) Reset() {
+	*x = CommandEvent{}
+	mi := &file_site_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandEvent) ProtoMessage() {}
+
+func (x *CommandEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_site_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandEvent.ProtoReflect.Descriptor instead.
+func (*CommandEvent) Descriptor() ([]byte, []int) {
+	return file_site_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CommandEvent) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 // Ack is a generic write acknowledgement.
 type Ack struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -32,7 +313,7 @@ type Ack struct {
 
 func (x *Ack) Reset() {
 	*x = Ack{}
-	mi := &file_site_proto_msgTypes[0]
+	mi := &file_site_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +325,7 @@ func (x *Ack) String() string {
 func (*Ack) ProtoMessage() {}
 
 func (x *Ack) ProtoReflect() protoreflect.Message {
-	mi := &file_site_proto_msgTypes[0]
+	mi := &file_site_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +338,7 @@ func (x *Ack) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ack.ProtoReflect.Descriptor instead.
 func (*Ack) Descriptor() ([]byte, []int) {
-	return file_site_proto_rawDescGZIP(), []int{0}
+	return file_site_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Ack) GetOk() bool {
@@ -84,7 +365,7 @@ type LocaleRequest struct {
 
 func (x *LocaleRequest) Reset() {
 	*x = LocaleRequest{}
-	mi := &file_site_proto_msgTypes[1]
+	mi := &file_site_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -96,7 +377,7 @@ func (x *LocaleRequest) String() string {
 func (*LocaleRequest) ProtoMessage() {}
 
 func (x *LocaleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_site_proto_msgTypes[1]
+	mi := &file_site_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -109,7 +390,7 @@ func (x *LocaleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LocaleRequest.ProtoReflect.Descriptor instead.
 func (*LocaleRequest) Descriptor() ([]byte, []int) {
-	return file_site_proto_rawDescGZIP(), []int{1}
+	return file_site_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LocaleRequest) GetLocale() string {
@@ -130,7 +411,7 @@ type ProjectRequest struct {
 
 func (x *ProjectRequest) Reset() {
 	*x = ProjectRequest{}
-	mi := &file_site_proto_msgTypes[2]
+	mi := &file_site_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -142,7 +423,7 @@ func (x *ProjectRequest) String() string {
 func (*ProjectRequest) ProtoMessage() {}
 
 func (x *ProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_site_proto_msgTypes[2]
+	mi := &file_site_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -155,7 +436,7 @@ func (x *ProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectRequest.ProtoReflect.Descriptor instead.
 func (*ProjectRequest) Descriptor() ([]byte, []int) {
-	return file_site_proto_rawDescGZIP(), []int{2}
+	return file_site_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ProjectRequest) GetId() string {
@@ -183,7 +464,7 @@ type About struct {
 
 func (x *About) Reset() {
 	*x = About{}
-	mi := &file_site_proto_msgTypes[3]
+	mi := &file_site_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -195,7 +476,7 @@ func (x *About) String() string {
 func (*About) ProtoMessage() {}
 
 func (x *About) ProtoReflect() protoreflect.Message {
-	mi := &file_site_proto_msgTypes[3]
+	mi := &file_site_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,7 +489,7 @@ func (x *About) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use About.ProtoReflect.Descriptor instead.
 func (*About) Descriptor() ([]byte, []int) {
-	return file_site_proto_rawDescGZIP(), []int{3}
+	return file_site_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *About) GetHeadline() string {
@@ -243,7 +524,7 @@ type Project struct {
 
 func (x *Project) Reset() {
 	*x = Project{}
-	mi := &file_site_proto_msgTypes[4]
+	mi := &file_site_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -255,7 +536,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_site_proto_msgTypes[4]
+	mi := &file_site_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -268,7 +549,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_site_proto_rawDescGZIP(), []int{4}
+	return file_site_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Project) GetId() string {
@@ -344,7 +625,7 @@ type ProjectList struct {
 
 func (x *ProjectList) Reset() {
 	*x = ProjectList{}
-	mi := &file_site_proto_msgTypes[5]
+	mi := &file_site_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -356,7 +637,7 @@ func (x *ProjectList) String() string {
 func (*ProjectList) ProtoMessage() {}
 
 func (x *ProjectList) ProtoReflect() protoreflect.Message {
-	mi := &file_site_proto_msgTypes[5]
+	mi := &file_site_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -369,7 +650,7 @@ func (x *ProjectList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectList.ProtoReflect.Descriptor instead.
 func (*ProjectList) Descriptor() ([]byte, []int) {
-	return file_site_proto_rawDescGZIP(), []int{5}
+	return file_site_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ProjectList) GetProjects() []*Project {
@@ -391,7 +672,7 @@ type ContactMessage struct {
 
 func (x *ContactMessage) Reset() {
 	*x = ContactMessage{}
-	mi := &file_site_proto_msgTypes[6]
+	mi := &file_site_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -403,7 +684,7 @@ func (x *ContactMessage) String() string {
 func (*ContactMessage) ProtoMessage() {}
 
 func (x *ContactMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_site_proto_msgTypes[6]
+	mi := &file_site_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -416,7 +697,7 @@ func (x *ContactMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContactMessage.ProtoReflect.Descriptor instead.
 func (*ContactMessage) Descriptor() ([]byte, []int) {
-	return file_site_proto_rawDescGZIP(), []int{6}
+	return file_site_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ContactMessage) GetName() string {
@@ -445,7 +726,26 @@ var File_site_proto protoreflect.FileDescriptor
 const file_site_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"site.proto\x12\asite.v1\"/\n" +
+	"site.proto\x12\asite.v1\"\r\n" +
+	"\vPingRequest\"<\n" +
+	"\fPingResponse\x12,\n" +
+	"\x12server_unix_millis\x18\x01 \x01(\x03R\x10serverUnixMillis\"\x0e\n" +
+	"\fStatsRequest\"\xac\x02\n" +
+	"\x05Stats\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1d\n" +
+	"\n" +
+	"go_version\x18\x02 \x01(\tR\tgoVersion\x12%\n" +
+	"\x0euptime_seconds\x18\x03 \x01(\x03R\ruptimeSeconds\x12.\n" +
+	"\x13started_unix_millis\x18\x04 \x01(\x03R\x11startedUnixMillis\x12'\n" +
+	"\x0frequests_served\x18\x05 \x01(\x03R\x0erequestsServed\x12+\n" +
+	"\x11terminal_commands\x18\x06 \x01(\x03R\x10terminalCommands\x12\x1e\n" +
+	"\n" +
+	"goroutines\x18\a \x01(\x05R\n" +
+	"goroutines\x12\x1d\n" +
+	"\n" +
+	"heap_bytes\x18\b \x01(\x03R\theapBytes\"\"\n" +
+	"\fCommandEvent\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"/\n" +
 	"\x03Ack\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"'\n" +
@@ -479,7 +779,11 @@ const file_site_proto_rawDesc = "" +
 	"\n" +
 	"GetProject\x12\x17.site.v1.ProjectRequest\x1a\x10.site.v1.Project2F\n" +
 	"\x0eContactService\x124\n" +
-	"\vSendMessage\x12\x17.site.v1.ContactMessage\x1a\f.site.v1.AckB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
+	"\vSendMessage\x12\x17.site.v1.ContactMessage\x1a\f.site.v1.Ack2\xad\x01\n" +
+	"\rSystemService\x123\n" +
+	"\x04Ping\x12\x14.site.v1.PingRequest\x1a\x15.site.v1.PingResponse\x121\n" +
+	"\bGetStats\x12\x15.site.v1.StatsRequest\x1a\x0e.site.v1.Stats\x124\n" +
+	"\rRecordCommand\x12\x15.site.v1.CommandEvent\x1a\f.site.v1.AckB;Z9github.com/monstercameron/earlcameron/proto/sitepb;sitepbb\x06proto3"
 
 var (
 	file_site_proto_rawDescOnce sync.Once
@@ -493,31 +797,42 @@ func file_site_proto_rawDescGZIP() []byte {
 	return file_site_proto_rawDescData
 }
 
-var file_site_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_site_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_site_proto_goTypes = []any{
-	(*Ack)(nil),            // 0: site.v1.Ack
-	(*LocaleRequest)(nil),  // 1: site.v1.LocaleRequest
-	(*ProjectRequest)(nil), // 2: site.v1.ProjectRequest
-	(*About)(nil),          // 3: site.v1.About
-	(*Project)(nil),        // 4: site.v1.Project
-	(*ProjectList)(nil),    // 5: site.v1.ProjectList
-	(*ContactMessage)(nil), // 6: site.v1.ContactMessage
+	(*PingRequest)(nil),    // 0: site.v1.PingRequest
+	(*PingResponse)(nil),   // 1: site.v1.PingResponse
+	(*StatsRequest)(nil),   // 2: site.v1.StatsRequest
+	(*Stats)(nil),          // 3: site.v1.Stats
+	(*CommandEvent)(nil),   // 4: site.v1.CommandEvent
+	(*Ack)(nil),            // 5: site.v1.Ack
+	(*LocaleRequest)(nil),  // 6: site.v1.LocaleRequest
+	(*ProjectRequest)(nil), // 7: site.v1.ProjectRequest
+	(*About)(nil),          // 8: site.v1.About
+	(*Project)(nil),        // 9: site.v1.Project
+	(*ProjectList)(nil),    // 10: site.v1.ProjectList
+	(*ContactMessage)(nil), // 11: site.v1.ContactMessage
 }
 var file_site_proto_depIdxs = []int32{
-	4, // 0: site.v1.ProjectList.projects:type_name -> site.v1.Project
-	1, // 1: site.v1.ContentService.GetAbout:input_type -> site.v1.LocaleRequest
-	1, // 2: site.v1.ContentService.ListProjects:input_type -> site.v1.LocaleRequest
-	2, // 3: site.v1.ContentService.GetProject:input_type -> site.v1.ProjectRequest
-	6, // 4: site.v1.ContactService.SendMessage:input_type -> site.v1.ContactMessage
-	3, // 5: site.v1.ContentService.GetAbout:output_type -> site.v1.About
-	5, // 6: site.v1.ContentService.ListProjects:output_type -> site.v1.ProjectList
-	4, // 7: site.v1.ContentService.GetProject:output_type -> site.v1.Project
-	0, // 8: site.v1.ContactService.SendMessage:output_type -> site.v1.Ack
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	9,  // 0: site.v1.ProjectList.projects:type_name -> site.v1.Project
+	6,  // 1: site.v1.ContentService.GetAbout:input_type -> site.v1.LocaleRequest
+	6,  // 2: site.v1.ContentService.ListProjects:input_type -> site.v1.LocaleRequest
+	7,  // 3: site.v1.ContentService.GetProject:input_type -> site.v1.ProjectRequest
+	11, // 4: site.v1.ContactService.SendMessage:input_type -> site.v1.ContactMessage
+	0,  // 5: site.v1.SystemService.Ping:input_type -> site.v1.PingRequest
+	2,  // 6: site.v1.SystemService.GetStats:input_type -> site.v1.StatsRequest
+	4,  // 7: site.v1.SystemService.RecordCommand:input_type -> site.v1.CommandEvent
+	8,  // 8: site.v1.ContentService.GetAbout:output_type -> site.v1.About
+	10, // 9: site.v1.ContentService.ListProjects:output_type -> site.v1.ProjectList
+	9,  // 10: site.v1.ContentService.GetProject:output_type -> site.v1.Project
+	5,  // 11: site.v1.ContactService.SendMessage:output_type -> site.v1.Ack
+	1,  // 12: site.v1.SystemService.Ping:output_type -> site.v1.PingResponse
+	3,  // 13: site.v1.SystemService.GetStats:output_type -> site.v1.Stats
+	5,  // 14: site.v1.SystemService.RecordCommand:output_type -> site.v1.Ack
+	8,  // [8:15] is the sub-list for method output_type
+	1,  // [1:8] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_site_proto_init() }
@@ -531,9 +846,9 @@ func file_site_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_site_proto_rawDesc), len(file_site_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   12,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_site_proto_goTypes,
 		DependencyIndexes: file_site_proto_depIdxs,

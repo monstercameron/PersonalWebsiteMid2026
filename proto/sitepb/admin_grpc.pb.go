@@ -34,6 +34,7 @@ const (
 	AdminService_GetSettings_FullMethodName                       = "/site.v1.AdminService/GetSettings"
 	AdminService_SaveSettings_FullMethodName                      = "/site.v1.AdminService/SaveSettings"
 	AdminService_ListModels_FullMethodName                        = "/site.v1.AdminService/ListModels"
+	AdminService_GetTerminalUsage_FullMethodName                  = "/site.v1.AdminService/GetTerminalUsage"
 	AdminService_GetLastTailoring_FullMethodName                  = "/site.v1.AdminService/GetLastTailoring"
 	AdminService_GetBaseResume_FullMethodName                     = "/site.v1.AdminService/GetBaseResume"
 	AdminService_ListTailorings_FullMethodName                    = "/site.v1.AdminService/ListTailorings"
@@ -105,6 +106,8 @@ type AdminServiceClient interface {
 	SaveSettings(ctx context.Context, in *Settings, opts ...grpc.CallOption) (*Ack, error)
 	// ListModels returns the chat models available to the stored OpenAI key.
 	ListModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelList, error)
+	// GetTerminalUsage returns how often each terminal command has been run. See TerminalUsage.
+	GetTerminalUsage(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TerminalUsage, error)
 	// GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
 	GetLastTailoring(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TailorResult, error)
 	// GetBaseResume returns the permanent canonical résumé (the diff baseline; never overwritten).
@@ -335,6 +338,16 @@ func (c *adminServiceClient) ListModels(ctx context.Context, in *Empty, opts ...
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ModelList)
 	err := c.cc.Invoke(ctx, AdminService_ListModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetTerminalUsage(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TerminalUsage, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TerminalUsage)
+	err := c.cc.Invoke(ctx, AdminService_GetTerminalUsage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -617,6 +630,8 @@ type AdminServiceServer interface {
 	SaveSettings(context.Context, *Settings) (*Ack, error)
 	// ListModels returns the chat models available to the stored OpenAI key.
 	ListModels(context.Context, *Empty) (*ModelList, error)
+	// GetTerminalUsage returns how often each terminal command has been run. See TerminalUsage.
+	GetTerminalUsage(context.Context, *Empty) (*TerminalUsage, error)
 	// GetLastTailoring returns the most recent saved tailoring result (empty resume if none).
 	GetLastTailoring(context.Context, *Empty) (*TailorResult, error)
 	// GetBaseResume returns the permanent canonical résumé (the diff baseline; never overwritten).
@@ -747,6 +762,9 @@ func (UnimplementedAdminServiceServer) SaveSettings(context.Context, *Settings) 
 }
 func (UnimplementedAdminServiceServer) ListModels(context.Context, *Empty) (*ModelList, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListModels not implemented")
+}
+func (UnimplementedAdminServiceServer) GetTerminalUsage(context.Context, *Empty) (*TerminalUsage, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTerminalUsage not implemented")
 }
 func (UnimplementedAdminServiceServer) GetLastTailoring(context.Context, *Empty) (*TailorResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetLastTailoring not implemented")
@@ -1104,6 +1122,24 @@ func _AdminService_ListModels_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListModels(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetTerminalUsage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetTerminalUsage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetTerminalUsage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetTerminalUsage(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1588,6 +1624,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListModels",
 			Handler:    _AdminService_ListModels_Handler,
+		},
+		{
+			MethodName: "GetTerminalUsage",
+			Handler:    _AdminService_GetTerminalUsage_Handler,
 		},
 		{
 			MethodName: "GetLastTailoring",

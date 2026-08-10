@@ -19,25 +19,56 @@ import (
 // tokenKey is the localStorage key holding the admin JWT.
 const tokenKey = "ec_admin_jwt"
 
-// adminConn is the lazily-dialed gRPC-over-WebSocket connection to the backend (same-origin /socket).
-var adminConn *grpc.ClientConn
+// tunnelConnection is the lazily-dialed gRPC-over-WebSocket connection to the backend
+// (same-origin /socket). Every service shares it: the admin console, and the public terminal's
+// SystemService and ContactService calls. One connection, because they are one data plane.
+var tunnelConnection *grpc.ClientConn
+
+// dialTunnel returns the shared tunnel connection, dialing it on first use.
+func dialTunnel() (*grpc.ClientConn, error) {
+	if tunnelConnection != nil {
+		return tunnelConnection, nil
+	}
+	// The WebSocket tunnel carries transport security at the browser layer, but grpc-go still
+	// requires credentials to be set explicitly, so pass insecure creds for the gRPC layer.
+	conn, err := grpctunnel.BuildTunnelConn(context.Background(), grpctunnel.TunnelConfig{
+		Target:      "/socket",
+		GRPCOptions: []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
+	})
+	if err != nil {
+		return nil, err
+	}
+	tunnelConnection = conn
+	return tunnelConnection, nil
+}
 
 // adminClient returns the AdminService client, dialing the tunnel on first use. This is the browser
 // side of the data plane: the admin UI talks to the Go backend purely over gRPC, no HTTP forms.
 func adminClient() (sitepb.AdminServiceClient, error) {
-	if adminConn == nil {
-		// The WebSocket tunnel carries transport security at the browser layer, but grpc-go still
-		// requires credentials to be set explicitly, so pass insecure creds for the gRPC layer.
-		conn, err := grpctunnel.BuildTunnelConn(context.Background(), grpctunnel.TunnelConfig{
-			Target:      "/socket",
-			GRPCOptions: []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
-		})
-		if err != nil {
-			return nil, err
-		}
-		adminConn = conn
+	conn, err := dialTunnel()
+	if err != nil {
+		return nil, err
 	}
-	return sitepb.NewAdminServiceClient(adminConn), nil
+	return sitepb.NewAdminServiceClient(conn), nil
+}
+
+// systemClient returns the SystemService client behind the terminal's `stats`, `uptime` and boot
+// latency probe. No authentication: these are public facts about a public server.
+func systemClient() (sitepb.SystemServiceClient, error) {
+	conn, err := dialTunnel()
+	if err != nil {
+		return nil, err
+	}
+	return sitepb.NewSystemServiceClient(conn), nil
+}
+
+// contactClient returns the ContactService client behind the terminal's `contact` form.
+func contactClient() (sitepb.ContactServiceClient, error) {
+	conn, err := dialTunnel()
+	if err != nil {
+		return nil, err
+	}
+	return sitepb.NewContactServiceClient(conn), nil
 }
 
 // callCtx builds a per-call context with a timeout and the admin JWT in "authorization" metadata
