@@ -4,6 +4,17 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Fixed
+- **The CodeFlux page overstated two things, and a review of that repository caught both.**
+  The evidence strip read "11 — stages establish one atom"; 11 is the number of stages a
+  *reused* atom skips, out of 41 in a run, so it now prints both figures. And the capability
+  card described cross-run atom recall as working behaviour when the repository's own
+  `LAD-002` is open and no run has ever recalled an atom another run wrote — registration
+  works, recall has not fired. The card now says which is which.
+- **The CodeFlux repository link follows its rename** — `monstercameron/codeflux` became
+  `monstercameron/CodeFlux`. GitHub redirects the old name, so this is correctness rather
+  than a break.
+
 ### Added
 - **A dedicated page for each of the five Flux products**, at `/projects/<slug>` — CashFlux,
   ArticleFlux, PixelFlux, CodeFlux and SchemaFlux. Server-rendered, so they are crawlable, unfurl

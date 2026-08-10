@@ -104,7 +104,7 @@ func featured() []*sitepb.Project {
 			Blurb: "Search your photographs by what is in them, on a laptop, with nothing leaving the machine.",
 			Long:  "A vision model describes every photograph, a segmenter outlines it, a detector finds the faces, and all of it folds into one searchable vector — offline, on a Snapdragon X2. Blending the caption's text embedding with the image embedding took \"red car\" from 0.80 to 1.00 precision-at-five; fixing JPEG decode, not the model, took the face stage from 82 s to 25 s."},
 		{Id: "codeflux", Name: "CodeFlux", Status: "prototype", Glyph: "⬢",
-			Tags: []string{"Go", "agents", "gRPC"}, Repo: gh + "codeflux",
+			Tags: []string{"Go", "agents", "gRPC"}, Repo: gh + "CodeFlux",
 			Blurb: "A coding agent that assembles programs out of separately verified atoms instead of writing them in one pass.",
 			Long:  "An atom has a typed signature, a contract, declared effects and the evidence that it works; atoms compose into molecules and molecules into programs, each layer naming what discharges its guarantees. Authority comes from what an action is rather than what the model claims it needs, so a poisoned file can propose but never authorize. Written as an explicit bet, with a kill criterion."},
 		{Id: "schemaflux", Name: "SchemaFlux", Status: "v1.1.0", Glyph: "▣",

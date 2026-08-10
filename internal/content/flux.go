@@ -213,10 +213,10 @@ func FluxProjects() []FluxProject {
 				"effects and the evidence that they work. Atoms compose into molecules, molecules into " +
 				"control flow, control flow into a program, and every layer names the pieces that " +
 				"discharge its guarantees.",
-			Repo: gh + "codeflux", DemoLabel: "",
+			Repo: gh + "CodeFlux", DemoLabel: "",
 			Capabilities: []Capability{
 				{"You read the plan before anything runs", "It proposes scope, steps and the checks it intends to satisfy. You describe an outcome in your own words; no specification required."},
-				{"Verified work becomes project capital", "A proven atom is recalled rather than rebuilt — and re-verified against the new run's contract, because reuse without that would just inherit the old blind spot."},
+				{"Verified work is meant to become project capital", "The design: a proven atom is recalled rather than rebuilt, and re-verified against the new run's contract, because reuse without that would inherit the old blind spot. Registration works; recall across runs has not fired yet, and the repository tracks that as an open ticket rather than a feature."},
 				{"Authority comes from what an action is", "Permission is derived from the tool and its declared effects, not from what the model says it needs. A poisoned file can persuade a model to propose something; it cannot make it authorized."},
 				{"Known, ambiguous and recommended stay separate", "A forecast is a range, an unreported price stays unknown instead of becoming zero, and a passing check means those checks passed and nothing more."},
 			},
@@ -232,7 +232,8 @@ func FluxProjects() []FluxProject {
 				{"Writing down the kill criterion in advance", "The project is explicitly a bet — on functional decomposition into pure atoms, and on verified reuse compounding into lower cost. The plan states what result would kill it: no measurable improvement in defects, review time or total cost. Whether it holds is not settled, and the README says so."},
 			},
 			Evidence: []Fact{
-				{"11", "stages establish one atom"}, {"3", "platforms — Windows, macOS, Linux"},
+				{"41", "stages in a run"}, {"11", "of them a reused atom skips"},
+				{"3", "platforms — Windows, macOS, Linux"},
 				{"0", "administrator rights required"},
 			},
 			Maturity: "A prototype, and the least finished of the five. It exists to test a hypothesis rather " +
