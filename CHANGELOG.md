@@ -5,6 +5,66 @@ Semantic Versioning once released.
 
 ## [Unreleased]
 ### Added
+- **AnimeFeedFlux joins the Flux showcase — six featured products.** A full case-study page at
+  `/projects/animefeedflux`, its own brand set generated from Cam's artwork (mark, logo, poster,
+  og), a sampled azure palette, and a card in "Selected work". Its status chip reads `planning`:
+  the design is settled and the engine is being built engine-first, so the page describes what the
+  product does rather than what the repository contains.
+  Two mechanisms came with it, both guarded by tests: `Art` ties a project to its four brand files
+  so a future project cannot ship broken images, and `PosterDark`/`PosterNote` let a sheet drawn on
+  a dark ground mount correctly and stop a specification-stage page from claiming shipped code.
+- **The terminal became usable, and then became the demo it was pretending to be.** Command history
+  on ↑/↓ (plus `Ctrl+A/E/U/L/C` and `Alt+Backspace`), one-tap command chips for phones, deep links
+  (`?cmd=…`) that boot straight into a command with `share` to copy one back, an interactive
+  `contact` that sends over the existing gRPC tunnel, a guided `tour` that types for visitors who
+  will never type anything themselves, `theme` for the terminal palette, `reset` for the virtual
+  filesystem, "did you mean" on a typo, and a handful of hidden commands that are deliberately not
+  listed in `help`.
+- **`stats`, `uptime` and `bench` — numbers a static site cannot fake.** A new `SystemService`
+  returns the build SHA, uptime, requests served, goroutines and heap from the process answering the
+  request; `bench` measures this wasm runtime in this browser and prints ops/sec.
+- **The recruiter briefing is server-rendered.** `~/notes/experience.md`, `skills.md`, `projects.md`
+  and `working-style.md` now render as real HTML beneath the terminal, from the shared
+  `internal/notes` package. They previously existed only inside the wasm binary, invisible to search
+  engines, link unfurlers, screen readers and any failed boot — and the page had no professional
+  experience section at all. **Collapsed by default** behind a native `<details>` — four monospace
+  documents open on the page is a wall of text between the terminal and the work — which keeps it
+  working with no JavaScript and no wasm, and keeps every word in the DOM for crawlers.
+- **Terminal accessibility floor**: the scrollback is a labelled `role="log"` live region, the input
+  has an accessible name, the traffic lights are real labelled `<button>`s, and the fullscreen modal
+  traps Tab and returns focus to the control that opened it.
+- **Client tests actually run.** `client/` is `js && wasm`-only, so `go test ./...` never compiled
+  it. `scripts/test-wasm.sh` runs its suite through node and CI now gates on it, alongside a new
+  `e2e/terminal-flows.mjs` that drives the terminal with real keystrokes.
+- **Command counters, pending Cam's sign-off** (TODOS §15.F): command names only, from a fixed
+  allowlist, aggregated by day, with no visitor, address, session or argument text recorded. Shown
+  in the admin console.
+
+- **About fifty more shell commands** (`client/coreutils.go`) — `uname` · `date` · `cal` · `tree` ·
+  `free` · `lscpu` · `ps` · `env` · `which` · `stat` · `file` · `diff` · `seq` · `rev` · `tac` ·
+  `nl` · `tr` · `base64` · `sha256sum` · `xxd` · `factor` · `expr` · `shuf` · `banner` and more.
+  Real where the browser can be (`free` reads the Go runtime's actual heap, `tree` walks the real
+  filesystem, `cal` uses the real clock), honest where it cannot (`sleep` refuses, because blocking
+  freezes the page's only thread). **`ping` is real**: four live round trips over the gRPC tunnel.
+
+### Fixed
+- **`cp` onto an existing directory destroyed it.** `cp notes/README.md notes` replaced the whole
+  `notes/` directory with a single file — every recruiter-facing document gone in one command, with
+  no error. The destination now resolves inside an existing directory, as the real `cp` does.
+  *(Pre-existing; found by adversarial review of the surrounding work.)*
+- **`mv x x` deleted the file.** `mv` was copy-then-remove with no same-path guard. It is now the
+  no-op the real command is. *(Pre-existing.)*
+- **↑ did nothing.** The terminal supported a `history` command but bound no arrow keys, and
+  recorded history inside the shell — which portfolio programs never reach, so `help` never appeared
+  in `history` at all.
+- **`rm -rf ~/notes` was permanent.** The virtual filesystem persists to localStorage and had no
+  reset, so a visitor playing destructively silently destroyed the recruiter-facing content for
+  every later visit. Seeded content is now restored on boot; visitor edits and files are kept.
+- **The boot log invented its numbers.** "wasm · 4.2 mb" and "tunnel established · 14 ms" were
+  string literals. Transfer size, hydration time and tunnel latency are now measured.
+- **`projects | grep Go` silently did nothing.** Portfolio programs existed only as styled nodes, so
+  the shell had no text to pipe; they are now defined once as data and rendered both ways.
+- Contact messages are rate-limited server-side.
 - **The site has an identity mark, and a favicon.** Cam's "Earl Cameron" lockup is now the
   masthead on every page, replacing the `~/earlcameron` text link. It is **sized by height, not
   width**: the lockup is 2.57:1, a badge ratio rather than a wordmark strip, so at the height of a

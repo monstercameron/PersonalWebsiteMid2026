@@ -460,6 +460,146 @@ built with a slot for those paragraphs — nothing was synthesised to fill it.
 - [x] 5 · The evidence — metrics, demo, benchmark, or architecture diagram. — the "evidence" strip.
       No architecture diagram yet; that is the weakest part of the five pages.
 
+## 16. AnimeFeedFlux added to the Flux tier (2026-08-09)
+- [x] Sixth featured product: `/projects/animefeedflux`, a card in the showcase (`featuredCount`
+      5 → 6), the `projects` program, and the `~/notes` briefing.
+- [x] Brand assets generated from Cam's three source PNGs — mark, logo, poster and og — using
+      Chromium as the encoder, since no ImageMagick/cwebp exists on this machine. Palette sampled
+      from the sheet (#0090f0 / #6018f0) and lifted toward azure, because the violet end sits on
+      top of CodeFlux's indigo.
+- [x] `Art`, `PosterDark`, `PosterNote` on `FluxProject`: brand files tied to the flag by test, a
+      dark sheet mounted on the terminal ground rather than the light plate, and an overridable
+      poster caption so a spec-stage page cannot assert its product is real.
+- [x] Copy leads with the product — what the feeds are and how they behave — rather than the
+      repository's contents. The `planning` chip carries the stage.
+- [ ] Revisit the status chip when Phase C lands and there is something to run.
+
+## 15. Terminal — functionality + demo pass (2026-08-09)
+> Cam's ask: make the simulated terminal more functional and a genuinely good demo for two
+> audiences — a recruiter with ~40 seconds, and a loiterer with five minutes. Ordered by payoff.
+> Extends §13.C (testing) and §13.D (responsive) rather than replacing them.
+
+### A. Defects found while reading the code — not features
+- [x] **No arrow-key history.** `client/terminal.go` `onKey` handled only Enter and Tab, while
+      `history` was a supported command — anyone typing three commands pressed Up, got nothing, and
+      correctly read the terminal as fake. Added Up/Down recall + `Ctrl+A/E/U/L/C`.
+      Also fixed underneath: history was recorded in `shell.run`, which portfolio programs never
+      reach, so `help` then `history` listed nothing. Recording moved up to `runCommand`.
+      > **`Ctrl+W` was planned and cut.** It is the standard kill-previous-word binding, and in
+      > Chrome it closes the tab and cannot be `preventDefault`ed — binding it would have cost a
+      > visitor the page. `Alt+Backspace` does the same edit and is bindable; `Ctrl+Backspace` is
+      > already native. `Ctrl+C` deliberately does nothing while text is selected, because a
+      > terminal you cannot copy out of is worse than one without `^C`.
+- [x] **`rm -rf ~/notes` was permanent.** The vfs persists to localStorage (`vfsKey`) with no
+      `reset`, so a visitor playing destructively silently bricked the recruiter path for themselves
+      forever. Added `reset`, plus boot-time repair that restores a missing `notes/` tree.
+
+### B. Recruiter reach
+- [x] **Deep links** — `?cmd=…` / `#…` autoruns a command after boot, so a résumé email can land
+      someone directly on `cat notes/experience.md`. `share` copies the deep link back.
+- [x] **Mobile command chips** — a bare input plus "type a command…" is a bounce on a phone; tappable
+      chips convert loiterers with zero typing. (This is §13.D's "mobile mode", scoped to the terminal.)
+- [x] **`resume` actually downloads**, and `open <id>` renders an inline card with a real link
+      instead of only printing two lines.
+- [x] **Interactive `contact`** over the existing gRPC `ContactService` — a recruiter should never
+      have to leave the shell to reach Cam. Server-side validated + rate-limited.
+
+### C. Credibility — where this separates from other terminal portfolios
+- [x] **Honest boot metrics.** `bootScrollback` hardcoded "tunnel established · 14 ms" and
+      "wasm · 4.2 mb". Now measured: real transfer size, real tunnel RTT, real hydration time.
+      Faked numbers, found out by anyone who opens DevTools, cost more than they buy.
+- [x] **`bench`** — a real in-browser microbenchmark (alloc, JSON round-trip, wasm↔js call overhead).
+      The most on-brand command available, and one a static site cannot fake.
+- [x] **`stats` / `uptime`** — real server numbers over the tunnel (build SHA, uptime, requests),
+      proving the data plane is live. New `SystemService` in `proto/site.proto`.
+- [x] **Streaming output** — `sh.run` returned `[]outLine` synchronously, so nothing could arrive
+      incrementally. Now append-as-you-go; this is what unlocks `tour`, `bench` and every
+      backend-routed command.
+- [x] **Pipes into portfolio programs** — `runCommand` bailed out of program mode on `|>&`, so the
+      two halves read as two modes. `projects | grep Go` now works.
+
+### D. Floor
+- [x] **a11y** — the scrollback was unlabeled divs (screen readers got nothing) and the fullscreen
+      modal had no focus trap, only Escape. Added `role="log"` + `aria-live`, an input label, focus
+      trap + restore. Feeds §13.C's a11y line and §1's accessibility line.
+- [x] **SSR fallback for the notes** — the recruiter-facing `notes/` content existed only inside the
+      wasm binary, so it was invisible to crawlers, unfurlers and any failed boot.
+- [x] **Collapsed by default** (Cam, 2026-08-09). Four monospace documents open on the page is a
+      wall of text between the terminal and the work, and most visitors want one of them or none.
+      A native `<details>`, not a component or a JS toggle: this section exists *for* the visitor
+      whose wasm never runs, and a fallback that needs the thing it is a fallback for is not one.
+      The content stays in the DOM — collapsed is a rendering state, not an absence — so crawlers
+      and screen readers still reach every word, and the `<h2>` stays inside the `<summary>` so the
+      page's only professional-experience heading stays in the document outline.
+      > Caught in review: `list-style-position: outside` put the disclosure triangle in the left
+      > margin, which this section has none of, so it clipped off-screen — leaving a heading with
+      > no visible affordance, the one thing a collapsed section cannot afford. `inside` fixes it.
+
+### E. Loiterers
+- [x] **`tour`** — auto-types a scripted sequence at realistic speed, skippable; dumps instantly
+      under `prefers-reduced-motion`. This is what converts the majority who will never type.
+- [x] **Idle attract-mode** — one ghost-typed suggestion after ~20s in view. Once, not on a loop.
+- [x] **Restrained easter eggs** — `sudo` · `vim` · `cowsay` · `fortune` · `sl` · `matrix` · `htop`,
+      deliberately kept off `help`; discovery is the point.
+- [x] **One toy** — snake, rendered as text frames in the scrollback. One is charming, three is a
+      theme park.
+- [x] **`man` for portfolio programs + Levenshtein "did you mean"** — a typo becomes a hint instead
+      of a dead end.
+- [x] **`theme`** — live palette switch for **the terminal only** (aubergine · nord · paper ·
+      matrix), persisted. The terminal renders its colours through `--t-*` custom properties, with
+      the palette table in `internal/theme`. Site-wide theming is a different and much larger job —
+      it needs the whole token layer expressed as custom properties — and stays §3's item.
+- [x] **Idle attract-mode verification note:** the hint fires on a 20s timer, so the e2e suite does
+      not wait for it; it was verified by temporarily shortening the interval, then restored.
+
+### E2. Second-tier coreutils (2026-08-09, Cam's follow-up)
+> Cam typed `uname -a`, got "command not found — did you mean `anime`?", and asked for a proper set
+> of generic bash programs. A did-you-mean is only as good as the vocabulary behind it: the
+> suggestion was not wrong, the command list was.
+- [x] ~50 more commands in `client/coreutils.go`, dispatched from the shell's default branch.
+      **Real where the browser can be**: `date` · `cal` · `tree` (walks the vfs) · `free` (the Go
+      runtime's actual heap) · `lscpu` (what the browser will admit) · `uname` (says it is wasm,
+      rather than faking a Linux string) · `base64` · `sha256sum` · `xxd` · `diff` · `seq` · `rev` ·
+      `tac` · `nl` · `tr` · `factor` · `expr` · `shuf` · `stat` · `file` · `which` · `basename` ·
+      `dirname` · `realpath` · `env` · `banner`.
+      **Honest where it cannot be**: `sleep` refuses (blocking freezes the page's only thread),
+      `wget` points at the backend, `chmod`/`chown` say permissions are not modelled, `md5sum`
+      prints a sha256 and says so rather than mislabelling a digest.
+- [x] **`ping` is real** — four live round trips over the gRPC tunnel with a min/avg/max summary.
+      There is no ICMP in a browser, but there is a real server on a real socket.
+- [x] Output is bounded where the real command is unbounded (`seq`, `yes`, `xxd`, `banner`): these
+      print into the DOM, and the real versions would lock the tab.
+
+### G. Adversarial review — findings fixed (sequential Sonnet passes, per AGENTS.md)
+- [x] **Correctness lens.** Five real findings, all fixed with regression tests. Two were
+      *pre-existing* and worse than anything new: `cp <file> <dir>` replaced the whole directory
+      with a single file (silent, total loss of `notes/`), and `mv x x` deleted the file. Also:
+      three async commands (`contact`, `stats`, and both error paths) wrote to the scrollback
+      without checking the cancellation token, so a slow response could land on a later command's
+      output; and snake's document key listener stayed live for up to one tick after being
+      superseded, swallowing an ArrowUp meant for history.
+- [x] **Security/privacy lens.** No injection, no XSS (verified against GWC's own no-innerHTML
+      reconciler guard, not assumed), no meaningful disclosure in `stats` for a public portfolio,
+      no deep-link allowlist bypass. Two fixed: `RecordCommand` was a public unauthenticated write
+      path with no throttle (now budgeted at 20 writes/sec, counter still accurate); `tour.go`
+      passed a whole command line to `logCommand` where telemetry.go claims only bare names are
+      ever sent — the code was fixed rather than the comment weakened.
+- [x] **Also hardened:** a cached filesystem whose root is not a directory is discarded and
+      reseeded, instead of leaving the terminal permanently empty with `reset` as the only
+      undiscoverable way out.
+- [ ] **Noted, not fixed — needs a real client IP to fix properly:** the contact rate limiter is
+      process-global, so one attacker can lock every visitor out of the contact form for a minute.
+      Per-visitor limiting is impossible while the tunnel reports the proxy's address as the peer.
+
+### F. Instrumentation — ⚠️ needs Cam's sign-off, it observes visitors
+- [x] Built, privacy-conservative by construction: **command name only**, from a known-command
+      allowlist (never free text, so a visitor's typing can never be recorded), **no IP, no session
+      id, no user agent, no timestamps finer than the day**. Surfaced in the admin console.
+- [ ] **Cam's call:** keep it, or drop it. Cam currently has no idea whether visitors type anything
+      at all, and that data decides where the next round of terminal effort goes — but it is still
+      telemetry on people who did not ask to be measured. Off is a defensible answer; say the word
+      and the whole path comes out.
+
 ## Goal (2026-07-21): RSS control panels + CashFlux managed service
 Tracking (Claude Code TodoWrite tool is not exposed in this session; tracked here instead).
 

@@ -373,7 +373,7 @@ palette change is then one edit.
 
 ### Per-product brand tokens (`theme.Brands`, `theme.Plate`) — 2026-08-09
 
-The five Flux products have their own commissioned artwork, and the `/projects/<slug>` pages tie to
+The Flux products have their own commissioned artwork, and the `/projects/<slug>` pages tie to
 it. Two things vary per product and nothing else does:
 
 | Slug | `Accent` | `Tint` | Sampled from |

@@ -2,6 +2,112 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-08-09 — The terminal stops being a demo of a terminal
+
+Cam asked for ideas to make the simulated terminal more functional and a better demo for the two
+audiences it actually gets — a recruiter with about forty seconds, and someone idly poking around
+for five minutes — and then asked for all of them built and tested.
+
+**Two of the twenty items were defects, and they mattered more than any feature.** First, `onKey`
+handled Enter and Tab only, while `history` was a supported command: anyone who typed three
+commands pressed Up, got nothing, and correctly concluded the thing was fake. Worse, history was
+recorded inside `shell.run`, which portfolio programs never reach — so `help` then `history` showed
+an empty list. Recording moved up to `runCommand`, where every command passes. Second, the vfs
+persists to localStorage with no way back: `rm -rf ~/notes` destroyed the recruiter-facing content
+**permanently, for every later visit, silently**. Now `repairSeed` restores anything seeded and
+missing on boot while leaving the visitor's own edits and files alone, and `reset` is the in-session
+escape hatch.
+
+**Ctrl+W was in the plan and got cut on contact with reality.** It is the standard kill-previous-word
+binding, and in Chrome it closes the tab and cannot be preventDefault'd — binding it would have cost
+a visitor the whole page. Alt+Backspace does the same edit and is bindable. Ctrl+A/E/U/L/C are fine;
+Ctrl+C deliberately does nothing when text is selected, because a terminal you cannot copy out of is
+worse than one without ^C.
+
+**The boot log was lying, and that was the most expensive thing on the page.** It printed
+"wasm · 4.2 mb" and "tunnel established · 14 ms" as string literals, on a site whose entire argument
+is that it really is Go over a real gRPC tunnel. Anyone who opened DevTools found out. All three
+numbers are now measured — transfer size from the Resource Timing entry, hydration from the
+navigation clock, latency from an actual `SystemService.Ping` round trip. The real numbers are worse
+(26 MB, ~180 ms on a phone) and worth far more. `stats` extends the same idea: build SHA, uptime,
+requests served, goroutines, heap, straight off the process answering the request. `bench` is the
+one command a static site cannot fake at all.
+
+**`projects | grep Go` used to do nothing**, because portfolio programs only ever existed as styled
+`ui.Node`s and the shell had no text to pipe. Rather than write a second, drifting text renderer per
+program, programs are now *data* — `progRow` — rendered two ways: styled nodes when run alone, plain
+text inside a pipeline. That single change is what makes the two halves of the terminal read as one
+system. It also caught a rendering bug immediately: columns padded with spaces collapse in HTML, so
+a status column has to be a real element, not `padRight`.
+
+**`theme` is deliberately terminal-only.** A site-wide palette switch needs the whole `internal/theme`
+token layer expressed as CSS custom properties, which is TODOS §3's own unshipped item, not part of
+"make the terminal a better demo". So the terminal renders its own colours through `--t-*` custom
+properties (set via `setProperty` — GWC's typed prop path does not carry `--*` names), with the
+Aubergine values as `var()` fallbacks so it is correct before anything runs.
+
+**The recruiter notes were invisible to everyone who mattered most.** `~/notes/experience.md` and
+friends were consts inside a `js && wasm` package, which means they existed only inside the wasm
+binary: no search engine, no link unfurler, no screen reader that never opens the terminal, and
+nobody whose boot failed ever saw them. They moved to `internal/notes` and are now server-rendered
+as a "briefing" section too — which also closes TODOS §14.A's gap, the site having no professional
+experience section at all.
+
+**Telemetry is built and is Cam's call to keep** (TODOS §15.F). It records a command *name* from a
+fixed allowlist and nothing else — no arguments, no free text, no IP, no session, no timestamp finer
+than the day — checked against the allowlist on the client before sending and again on the server
+before storing, so a typo or something personal typed into the wrong window is dropped at both ends
+rather than recorded. It answers one question Cam genuinely cannot answer today: does anyone type
+anything at all. Removing it is one file, one RPC and one table.
+
+**What broke.** The e2e suite went flaky on the history checks: it used fixed 400 ms sleeps, and this
+page renders at roughly 0.4fps headless, so a keystroke could land against a render that had not
+committed. Fixed by waiting on conditions (`the input changed`, `the scrollback grew`) instead of
+timers — which is what the harness's own doc comment already insisted on. Ran three times clean
+afterwards. Separately, a fade affordance on the scrolling briefing blocks was written, tested,
+found not to render, traced to GWC's CSS emitter dropping `mask-image` entirely, and removed rather
+than smuggled in as a raw-CSS exception.
+
+**Testing.** `client/` is `js && wasm`-only, so `go test ./...` never compiled it — its tests were
+not merely absent, they were *unrunnable* by CI. `scripts/test-wasm.sh` runs them through node with
+the toolchain's wasm shim (localStorage shimmed in `TestMain`), and CI now runs it. 25 unit tests
+cover the history, the line editor, the vfs repair, the deep-link allowlist and the program
+renderers; `e2e/terminal-flows.mjs` drives 60 checks through real keystrokes, including the
+no-JavaScript SSR path.
+
+**Then Cam typed `uname -a` and got "did you mean `anime`?"** — which is the exact moment a demo
+stops being convincing, and the suggestion was not wrong: the *vocabulary* was. About fifty more
+commands landed in `client/coreutils.go`, on one rule — real where the browser can be, honest where
+it cannot. `free` reads the Go runtime's actual heap, `tree` walks the real vfs, `lscpu` reports
+what the browser will admit, `cal`/`date` use the real clock, `base64`/`sha256sum`/`xxd`/`diff`/
+`factor`/`expr` genuinely compute, and `ping` sends four real round trips over the gRPC tunnel with
+a min/avg/max summary — there is no ICMP in a browser, but there is a real server on a real socket.
+Where it cannot: `sleep` refuses outright (blocking is the one thing a wasm app must never do —
+it freezes the page's only thread), and `md5sum` prints a sha256 and *says so* rather than
+mislabelling a digest. Everything unbounded in the original is bounded here (`seq`, `yes`, `xxd`,
+`banner`) because these print into the DOM. `uname` says `Wasm`, not `strings.Title(runtime.GOOS)`,
+which produced "Js" and read like a typo.
+
+**The adversarial passes earned their keep.** Correctness lens found five real defects, two of them
+*pre-existing* and worse than anything in the new code: `cp notes/README.md notes` replaced the
+entire `notes/` directory with a single file — destroying every recruiter-facing document in one
+command, silently — because the destination logic never checked whether the target was an existing
+directory; and `mv x x` deleted the file, because mv was copy-then-remove with no same-path guard.
+Both now behave like the real commands, both have regression tests. It also found three async
+commands writing into the scrollback without checking the cancellation token, so a slow `contact`
+or `stats` could land its result on top of a later command's output, and a race where snake's
+document key listener stayed live for up to one tick after being superseded — swallowing an ArrowUp
+meant for history. Security lens found no injection, no XSS (confirmed against GWC's own
+no-innerHTML guard rather than assumed), and no meaningful disclosure; it did find that
+`RecordCommand` was a public unauthenticated write path with no throttle, now budgeted, and that
+`tour.go` passed a whole command line to `logCommand` where telemetry.go claims only bare tokens are
+ever sent — the code was fixed rather than the comment softened, since a claim that depends on a
+downstream filter to stay true is not the claim that was made.
+
+**Next.** Cam's decision on the telemetry. The three-way drift between `internal/content.featured`,
+`client/programs.go termProjects` and `internal/notes.Projects` is still hand-synced and still
+tracked in TODOS §0 — wiring the terminal to the real `ContentService` is the actual fix.
+
 ## 2026-08-09 — Five Flux products get real pages, and the showcase changes hands
 
 Cam had a zip of commissioned brand art for the five Flux products — a poster, a logo lockup and a

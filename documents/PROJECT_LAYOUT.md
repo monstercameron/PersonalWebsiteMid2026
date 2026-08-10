@@ -26,10 +26,24 @@ earlcameron/                     module github.com/monstercameron/earlcameron  (
 │   ├── resume/                  # ResumeService — tailoring + server-side Go PDF
 │   ├── anime/                   # anime cron → RSS
 │   ├── admin/                   # owner-only auth/authz/audit (server-enforced)
+│   ├── system/                  # SystemService — live process facts (`stats`/`uptime`/Ping)
+│   │                            #   + the terminal command-name allowlist, shared with the client
+│   ├── notes/                   # the ~/notes briefing text, shared by the terminal and the SSR
+│   │                            #   page — NOT in client/, which is wasm-only and so invisible
+│   │                            #   to crawlers, unfurlers and any failed boot
 │   └── telemetry/               # live stats stream
 ├── client/                      # GoWebComponents frontend (GOOS=js GOARCH=wasm)
-│   ├── main.go                  # ui.Run("#app", app.Root)
-│   └── app/                     # boot, terminal engine, programs, standard-site sections
+│   ├── main.go                  # mounts the terminal, or the admin console under /admin
+│   ├── terminal.go              # the component: hooks, effects, key bindings
+│   ├── termctl.go               # termCtl — streaming output + command dispatch
+│   ├── lineedit.go              # history navigation, readline kills, did-you-mean (pure logic)
+│   ├── shell.go / shellutil.go  # the faux shell: pipes, &&, >, ~30 commands, completion
+│   ├── vfs.go                   # localStorage-backed virtual filesystem (+ seed repair)
+│   ├── programs.go              # portfolio programs as data (progRow) → styled nodes OR text
+│   ├── palette.go               # terminal-only `theme`, via --t-* custom properties
+│   ├── system.go                # measured boot metrics, `stats`, `uptime`
+│   ├── bench.go / tour.go / eggs.go / deeplink.go / contactform.go / telemetry.go
+│   └── admin.go / adminview.go  # the owner console
 ├── web/
 │   ├── static/                  # built app.wasm(.gz), wasm_exec.js, css, fonts (gitignored builds)
 │   └── data/                    # runtime sqlite (gitignored)
