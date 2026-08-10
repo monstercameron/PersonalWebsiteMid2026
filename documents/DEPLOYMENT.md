@@ -81,7 +81,45 @@ sudo /opt/earlcameron/src/PersonalWebsiteMid2026/deploy/update.sh
 Pulls all three repos, rebuilds, stages a new `releases/<utc>-<sha>/`, flips the symlink,
 restarts, and **health-checks — rolling back automatically if the new release fails.**
 
-Two details worth knowing:
+## ⚠️ Promoting `dev` → `main` does NOT deploy this repo (2026-08-10)
+
+Verified against the live webhook delivery log, because the failure is completely silent:
+the promotion is green, `main` really does move, and the box keeps serving the old commit.
+
+`deployhook` (in the ArticleFlux repo, serving both sites) fires on a `workflow_run` matching
+a `(workflow name, branch)` pair. The pair configured for **this** repo is `("CI", "main")`.
+But `promote.yml` fast-forwards `main` with a push authenticated by `GITHUB_TOKEN`, and GitHub
+does not start workflow runs from `GITHUB_TOKEN` events — so **no CI run on `main` ever happens
+after a promotion**, and the hook waits for something that will never arrive.
+
+Both obvious attempts are declined, each with a green 200:
+
+| dispatched from | hook's answer |
+|---|---|
+| `main` | `no deploy: workflow is "Promote dev to main", not "CI"` |
+| `dev`  | `no deploy: branch is "dev", not "main"` |
+
+**So, after promoting, deploy with:**
+
+```bash
+gh workflow run ci.yml --ref main      # produces CI/main → the pair the hook accepts
+```
+
+Confirm it actually took, rather than trusting the 200 — the response body says which:
+
+```bash
+gh api repos/monstercameron/PersonalWebsiteMid2026/hooks/658081377/deliveries \
+  --jq '[.[] | select(.action=="completed")][0].id'   # then …/deliveries/<id> --jq .response.payload
+```
+
+A working delivery answers `deploying monstercameron/PersonalWebsiteMid2026 at <sha>`.
+
+**The real fix is in the ArticleFlux repo, not this one:** give this repo the same second
+trigger ArticleFlux already has — `("Promote dev to main", "dev")` — so promotion deploys on
+its own. ArticleFlux's `deploy/README.md` documents that topology and explains why the pair is
+pinned to the dispatch ref; this repo simply never got the second entry.
+
+## Two details worth knowing about `update.sh`
 
 - It **pulls this repo first, then re-execs itself once** (`EC_UPDATE_REEXEC`). bash reads
   a script incrementally as it runs, so a pull that rewrote `update.sh` mid-run would
