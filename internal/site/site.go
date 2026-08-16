@@ -247,9 +247,15 @@ var monoFont = css.Raw("font-family", `ui-monospace,"SF Mono",SFMono-Regular,Men
 const articleFluxURL = "https://feed.earlcameron.com/home"
 
 // animeFeedFluxURL is AnimeFeedFlux's public feed list — the exact page the product itself hands
-// out as its front door. Unauthenticated, read-only publish plane; safe for any visitor. The
-// admin console lives on a separate IP-allowlisted host and is deliberately NOT linked here.
-const animeFeedFluxURL = "https://anime.earlcameron.com/"
+// out as its front door. Unauthenticated, read-only publish plane; safe for any visitor.
+//
+// animeFeedFluxAdminURL is its control plane. Linking it is the cashFluxOwnerURL pattern: Cam's
+// own quick way in from the nav popover, not an invitation — the host is IP-allowlisted to his
+// address, so to anyone else the link is a 403, which is the allowlist working.
+const (
+	animeFeedFluxURL      = "https://anime.earlcameron.com/"
+	animeFeedFluxAdminURL = "https://admin.anime.earlcameron.com/"
+)
 
 // The site links CashFlux two different ways, and which one a link gets depends on who is
 // expected to click it.
@@ -300,33 +306,60 @@ func homeMark() ui.Node {
 }
 
 // topNav renders the site navigation so the single home page indexes every visitor-facing page:
-// the on-page sections (work, anime, contact) plus the standalone pages (résumé, CashFlux,
-// ArticleFlux). The admin console is owner-only, so its entry lives in the footer, not here.
+// the on-page sections (work, contact) plus the standalone pages and apps. Labels say what a
+// thing IS (Budgeting, Feed Reader), not what it is called — the product names already live on
+// their cards and case-study pages (Cam's directive, 2026-08-16).
 func topNav() ui.Node {
+	linkClass := Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm),
+		Transition(PropColors, Ms(150), EaseOut), focusRing(),
+		ReducedMotion(css.Raw("transition-duration", "0ms")))
 	link := func(href, text string) ui.Node {
-		return A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm),
-			Transition(PropColors, Ms(150), EaseOut), focusRing(),
-			ReducedMotion(css.Raw("transition-duration", "0ms"))), Props{Href: href}, text)
+		return A(linkClass, Props{Href: href}, text)
+	}
+	app := func(href, text string) ui.Node {
+		// Separate full apps — open in their own tab so the portfolio stays put (matches the
+		// elsewhere() cards).
+		return A(linkClass, Props{Href: href, Target: "_blank", Rel: "noopener"}, text)
 	}
 	return Div(Class(Flex, ItemsCenter, JustifyBetween, Gap(Spacing3), PadY(Spacing4), css.Raw("flex-wrap", "wrap")),
 		homeMark(),
 		Div(Class(Flex, Gap(Spacing5), ItemsCenter, css.Raw("flex-wrap", "wrap")),
-			link("#work", "work"),
-			link("/resume", "résumé"),
-			// CashFlux and ArticleFlux are separate full apps — open them in their own tab so the
-			// portfolio stays put (matches the elsewhere() cards).
-			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
-				Props{Href: cashFluxOwnerURL, Target: "_blank", Rel: "noopener"}, "cashflux"),
-			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
-				Props{Href: articleFluxURL, Target: "_blank", Rel: "noopener"}, "articleflux"),
-			// AnimeFeedFlux's public feed list — the URL the product itself hands out. A full
-			// separate app like the two above, so it opens in its own tab.
-			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
-				Props{Href: animeFeedFluxURL, Target: "_blank", Rel: "noopener"}, "feeds"),
-			link("#contact", "contact"),
+			link("#work", "Work"),
+			link("/resume", "Résumé"),
+			app(cashFluxOwnerURL, "Budgeting"),
+			app(articleFluxURL, "Feed Reader"),
+			feedsPopover(),
+			link("#contact", "Contact"),
 			// The owner's door, labelled as such. Same-tab: /admin is this site's own WASM
 			// console, not an external app.
-			link("/admin", "login"),
+			link("/admin", "Login"),
+		),
+	)
+}
+
+// feedsPopover is the "Feeds" nav entry: a native <details> disclosure holding AnimeFeedFlux's
+// two doors — the public feed list (the URL the product hands out) and its admin console. No
+// script involved, so it works before the wasm boots and in a no-JS visit; clicking elsewhere
+// does not auto-close it, which is the accepted cost of staying script-free in an SSR shell.
+func feedsPopover() ui.Node {
+	item := func(href, text string) ui.Node {
+		return A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm), focusRing(),
+			Transition(PropColors, Ms(150), EaseOut), css.Raw("text-decoration", "none"),
+			css.Raw("white-space", "nowrap"), css.Raw("display", "block"), PadX(Spacing3), PadY(Spacing2)),
+			Props{Href: href, Target: "_blank", Rel: "noopener"}, text)
+	}
+	return Details(Class(css.Raw("position", "relative")),
+		Summary(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm), focusRing(),
+			Transition(PropColors, Ms(150), EaseOut), css.Raw("cursor", "pointer"),
+			css.Raw("list-style", "none"), css.Raw("user-select", "none"),
+			ReducedMotion(css.Raw("transition-duration", "0ms"))),
+			"Feeds ▾"),
+		Div(Class(css.Raw("position", "absolute"), css.Raw("top", "calc(100% + 6px)"),
+			css.Raw("right", "0"), css.Raw("z-index", "30"), css.Raw("min-width", "10rem"),
+			Flex, FlexCol, Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg),
+			PadY(Spacing2), css.Raw("box-shadow", "0 8px 24px rgba(0,0,0,0.45)")),
+			item(animeFeedFluxURL, "Feed list"),
+			item(animeFeedFluxAdminURL, "Admin"),
 		),
 	)
 }
