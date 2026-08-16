@@ -18,6 +18,12 @@ name: Release
 on:
   push:
     tags: ['v*']
+    # Dry-run the image build (verify + build, NO push, NO deploy — those are gated on the
+    # tag ref) whenever the container recipe itself changes on dev. workflow_dispatch only
+    # works once the file reaches the default branch, so this path trigger is what proves
+    # a Dockerfile change before any tag exists.
+    branches: ['dev']
+    paths: ['deploy/docker/**', '.github/workflows/release.yml']
   workflow_dispatch:
 
 permissions:
