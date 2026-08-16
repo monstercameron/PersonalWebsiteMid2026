@@ -23,5 +23,6 @@ func main() {
 	// Bound before the terminal mounts: the copy buttons belong to the SSR shell, not to any
 	// component, so they are wired directly rather than through the reconciler.
 	bindCopyButtons()
+	bindNavPopover()
 	ui.Run("#term-root", Terminal)
 }

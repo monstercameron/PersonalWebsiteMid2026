@@ -348,7 +348,11 @@ func feedsPopover() ui.Node {
 			css.Raw("white-space", "nowrap"), css.Raw("display", "block"), PadX(Spacing3), PadY(Spacing2)),
 			Props{Href: href, Target: "_blank", Rel: "noopener"}, text)
 	}
-	return Details(Class(css.Raw("position", "relative")),
+	// data-nav-popover is the contract with client/navpopover.go, which closes the disclosure
+	// when a click or focus lands outside it once the wasm has booted. Before that (or with no
+	// JS at all) the popover still opens and closes on its own summary — it just doesn't
+	// auto-dismiss, which is the graceful half of the behaviour rather than a broken one.
+	return Details(Class(css.Raw("position", "relative")), FromProps(Props{Data: map[string]string{"nav-popover": "1"}}),
 		Summary(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm), focusRing(),
 			Transition(PropColors, Ms(150), EaseOut), css.Raw("cursor", "pointer"),
 			css.Raw("list-style", "none"), css.Raw("user-select", "none"),
