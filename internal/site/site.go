@@ -5,7 +5,6 @@ package site
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/monstercameron/GoWebComponents/v5/css"
 	. "github.com/monstercameron/GoWebComponents/v5/css/u"
@@ -140,7 +139,6 @@ func Page(_ *sitepb.About, projects []*sitepb.Project, baseURL string) ui.Node {
 			how(),
 			labsShelf(labs),
 			elsewhere(),
-			animeRadar(baseURL),
 			contact(),
 			footer(),
 		),
@@ -325,7 +323,6 @@ func topNav() ui.Node {
 			// separate app like the two above, so it opens in its own tab.
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
 				Props{Href: animeFeedFluxURL, Target: "_blank", Rel: "noopener"}, "feeds"),
-			link("#anime", "anime"),
 			link("#contact", "contact"),
 			// The owner's door, labelled as such. Same-tab: /admin is this site's own WASM
 			// console, not an external app.
@@ -705,84 +702,12 @@ func elsewhere() ui.Node {
 	)
 }
 
-// animeRadar renders the public anime-release RSS feeds (a personal feature): the Release Radar
-// (episodes I'm tracking) and the daily Question-of-the-Day prompt feed. These are document-plane
-// RSS (HTTP GET), safe to link publicly — the config that drives them stays owner-gated at /admin.
-func animeRadar(baseURL string) ui.Node {
-	// A feed card is no longer one big <a>: it now holds a link, a readable URL, and a copy button,
-	// and nesting controls inside an anchor is invalid. The title carries the link instead.
-	feed := func(path, glyph, title, sub string) ui.Node {
-		url := strings.TrimRight(baseURL, "/") + path
-		return Div(Class(append([]any{Flex, FlexCol, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg),
-			Pad(Spacing4), Hover(Border(theme.Accent))}, lift()...)...),
-			Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
-				Span(Class(Fg(theme.Accent2), FontSize(Rem(1.25)), css.Raw("min-width", "24px")), glyph),
-				Div(Class(Flex, FlexCol),
-					A(Class(FontSemibold, Fg(theme.Fg), Hover(Fg(theme.Accent)), css.Raw("text-decoration", "none")),
-						Props{Href: path}, title),
-					Span(Class(sansFont, Fg(theme.Dim), TextSize(TextSm)), sub),
-				),
-			),
-			feedURLRow(url),
-		)
-	}
-	// An external card differs from feed() only in that its address is not on this host and its
-	// URL is the page a browser should open, not an XML document — so the title link opens in a
-	// new tab and the copy row still hands over the exact address.
-	external := func(url, glyph, title, sub string) ui.Node {
-		return Div(Class(append([]any{Flex, FlexCol, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg),
-			Pad(Spacing4), Hover(Border(theme.Accent))}, lift()...)...),
-			Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
-				Span(Class(Fg(theme.Accent2), FontSize(Rem(1.25)), css.Raw("min-width", "24px")), glyph),
-				Div(Class(Flex, FlexCol),
-					A(Class(FontSemibold, Fg(theme.Fg), Hover(Fg(theme.Accent)), css.Raw("text-decoration", "none")),
-						Props{Href: url, Target: "_blank", Rel: "noopener"}, title),
-					Span(Class(sansFont, Fg(theme.Dim), TextSize(TextSm)), sub),
-				),
-			),
-			feedURLRow(url),
-		)
-	}
-	grid := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(min(320px,100%),1fr))"))}
-	grid = append(grid,
-		feed("/anime.xml", "◈", "Release Radar", "RSS · new episodes I'm tracking"),
-		feed("/anime/qotd.xml", "✎", "Question of the Day", "RSS · a daily anime prompt"),
-		// AnimeFeedFlux's own feed list — the address the product hands out. One card, not one
-		// per feed: the list page stays correct as feeds are added there, this site does not.
-		external(animeFeedFluxURL, "⇶", "AnimeFeedFlux · all feeds", "AI-generated feeds · RSS, Atom & JSON Feed"),
-	)
-	return Div(FromProps(Props{ID: "anime"}), Class(sectionRules(Gap(Spacing5))...),
-		label("~/anime · feeds"),
-		headed("Anime, on RSS.",
-			"Open to anyone. Copy an address into your feed reader — or browse the AnimeFeedFlux list, where the AI-generated feeds live."),
-		Div(grid...),
-	)
-}
-
-// feedURLRow renders the absolute feed URL in a selectable read-only field beside a copy button.
-//
-// Two affordances on purpose. The button is the fast path, but it depends on the wasm client having
-// booted and on the Clipboard API being available (it is not in an insecure context), so the field
-// carries the URL in full either way — a visitor can always select and copy it by hand, which is the
-// behaviour a no-JS or failed-boot visitor falls back to rather than being left with nothing.
-//
-// data-copy-url is the contract with client/clipboard.go, which binds the button after the wasm
-// loads. The field is readonly rather than disabled so its text stays selectable and focusable.
-func feedURLRow(url string) ui.Node {
-	return Div(Class(Flex, ItemsCenter, Gap(Spacing2)),
-		Input(Class(css.Raw("flex", "1"), css.Raw("min-width", "0"), monoFont, TextSize(TextSm),
-			Fg(theme.Dim), Bg(theme.Bg), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing2), PadY(Spacing2),
-			css.Raw("text-overflow", "ellipsis")),
-			Props{Value: url, ReadOnly: true, Type: "text", Aria: map[string]string{"label": "RSS feed URL"}}),
-		Button(Class(Fg(theme.Accent2), Border(theme.Border), Rounded(RadiusLg), PadX(Spacing3), PadY(Spacing2),
-			TextSize(TextSm), Hover(Border(theme.Accent), Fg(theme.Accent)), css.Raw("cursor", "pointer"),
-			css.Raw("font", "inherit"), css.Raw("background", "none"), focusRing(),
-			Transition(PropColors, Ms(180), EaseOut), css.Raw("white-space", "nowrap"),
-			ReducedMotion(css.Raw("transition-duration", "0ms"))),
-			Props{Type: "button", Data: map[string]string{"copy-url": url}},
-			"copy"),
-	)
-}
+// The ~/anime feeds section (animeRadar + feedURLRow) was removed 2026-08-16 on Cam's call —
+// "it adds no value" as a homepage section. The feeds themselves still serve (/anime.xml,
+// /anime/qotd.xml, and AnimeFeedFlux via the nav's "feeds" link); only the on-page cards went.
+// The terminal's `anime` program and qotdpost's /#anime item links are intentionally untouched:
+// a vanished anchor degrades to the top of the page, while rewriting a live feed's links would
+// churn every subscriber for a cosmetic cleanup.
 
 // contact renders the contact section (mailto for the no-JS path; the terminal has a live form).
 func contact() ui.Node {
