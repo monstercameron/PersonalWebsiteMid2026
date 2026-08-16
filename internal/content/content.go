@@ -113,9 +113,10 @@ func featured() []*sitepb.Project {
 			Long:  "One public API over one execution path, with retries, structured-output contracts, logging, metrics and cost tracking centralized instead of re-implemented per call site. The result envelope keeps model claims separate from measured facts, and a snapshot test over the public API surface fails the build if it drifts."},
 		// Sixth of the featured six, and live since 2026-08-15 — the status chip carries the
 		// version like the other released projects (SchemaFlux, GWC, GoGRPCBridge).
+		// No Demo link on purpose (Cam, 2026-08-16): anime.earlcameron.com is his production
+		// instance, not a public demo — do not re-add it here.
 		{Id: "animefeedflux", Name: "AnimeFeedFlux", Status: "v0.2.0", Glyph: "◍",
 			Tags: []string{"Go", "RSS", "LLM", "WASM"}, Repo: gh + "AnimeFeedFlux",
-			Demo:  "https://anime.earlcameron.com/",
 			Blurb: "AI-written anime feeds — daily trivia, ranked news, seasonal roundups — published on a schedule as RSS, Atom and JSON Feed.",
 			Long:  "Describe the feed you want — \"a daily anime trivia question\", \"today's anime news, ranked\" — and it runs on your schedule, writes the items and publishes them at a stable URL that Slack or any reader can subscribe to. Trivia is written by the model; news only summarises and links out, and a link can be published only if it is byte-equal to a URL that was actually fetched, so an invented URL has no code path to a reader. Recipes can grant the model live web search per feed. Runs in production behind a read-only publish plane, with a gRPC control plane and a Go→WASM admin; tagged releases deploy themselves behind a healthcheck."},
 		{Id: "gwc", Name: "GoWebComponents", Status: "v5.0.1", Glyph: "⟠",

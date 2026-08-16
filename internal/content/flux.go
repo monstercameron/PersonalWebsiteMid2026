@@ -314,8 +314,10 @@ func FluxProjects() []FluxProject {
 				"items, and publishes them at a stable address as RSS, Atom and JSON Feed — so the thing " +
 				"you subscribe to is an ordinary feed, and nothing downstream has to know a model wrote " +
 				"it. The whole product surface is one sentence: a URL that returns valid XML and never lies.",
-			Repo: gh + "AnimeFeedFlux", Demo: "https://anime.earlcameron.com/", DemoLabel: "Browse the live feeds",
-			PosterNote: "The product is live and linked above; the poster is a design exercise, not a claim.",
+			// No Demo on purpose (Cam, 2026-08-16): anime.earlcameron.com is his production
+			// instance, not a public demo — the demo slot stays empty like PixelFlux/CodeFlux.
+			Repo: gh + "AnimeFeedFlux", DemoLabel: "",
+			PosterNote: "The product is live; the poster is a design exercise, not a claim.",
 			Capabilities: []Capability{
 				{"Describe a feed, get a URL", "A recipe is a prompt, a schedule, a model and a spend cap. What comes out is an ordinary feed address that Slack, or any reader, can subscribe to without knowing a model wrote it."},
 				{"Two kinds of item, separated by design", "Generative items — trivia, on-this-day — are written by the model, which is the source. Grounded items — news, releases — are only edited by it; the facts and the links come from the publisher. Conflating the two is named in the plan as the main way the project fails, so they are split at the architecture level rather than by convention."},
