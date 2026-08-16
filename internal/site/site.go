@@ -118,9 +118,9 @@ func focusRing() []css.Rule {
 // page behind its card. Changing this number without reordering content.featured() to match will
 // silently promote or demote whatever happens to sit at the boundary.
 //
-// The sixth, AnimeFeedFlux, is a specification rather than software — Cam's call to bill it beside
-// the shipped ones. Its card and its page both lead with "planning" so the promotion costs the
-// other five nothing: the honesty is what keeps them credible.
+// The sixth, AnimeFeedFlux, was billed here while still a specification (chip: "planning") —
+// Cam's call, and the honesty held until it stopped being needed: since 2026-08-15 it runs in
+// production and its chip carries a version like the other released projects.
 const featuredCount = 6
 
 // Page renders the full standard site for the given content. baseURL is the public origin

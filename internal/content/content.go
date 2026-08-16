@@ -107,16 +107,17 @@ func featured() []*sitepb.Project {
 			Tags: []string{"Go", "agents", "gRPC"}, Repo: gh + "CodeFlux",
 			Blurb: "A coding agent that assembles programs out of separately verified atoms instead of writing them in one pass.",
 			Long:  "An atom has a typed signature, a contract, declared effects and the evidence that it works; atoms compose into molecules and molecules into programs, each layer naming what discharges its guarantees. Authority comes from what an action is rather than what the model claims it needs, so a poisoned file can propose but never authorize. Written as an explicit bet, with a kill criterion."},
-		{Id: "schemaflux", Name: "SchemaFlux", Status: "v1.1.0", Glyph: "▣",
+		{Id: "schemaflux", Name: "SchemaFlux", Status: "v1.2.0", Glyph: "▣",
 			Tags: []string{"Go", "generics", "LLM"}, Repo: gh + "SchemaFlux",
 			Blurb: "Typed LLM operations for Go — fluent builders that return the Go type you asked for, not a wall of text.",
 			Long:  "One public API over one execution path, with retries, structured-output contracts, logging, metrics and cost tracking centralized instead of re-implemented per call site. The result envelope keeps model claims separate from measured facts, and a snapshot test over the public API surface fails the build if it drifts."},
-		// Sixth of the featured six. The "planning" status chip carries the stage, so the copy leads
-		// with the substance — the design decisions already made — rather than with what is absent.
-		{Id: "animefeedflux", Name: "AnimeFeedFlux", Status: "planning", Glyph: "◍",
-			Tags: []string{"Go", "RSS", "LLM", "spec"}, Repo: gh + "AnimeFeedFlux",
+		// Sixth of the featured six, and live since 2026-08-15 — the status chip carries the
+		// version like the other released projects (SchemaFlux, GWC, GoGRPCBridge).
+		{Id: "animefeedflux", Name: "AnimeFeedFlux", Status: "v0.2.0", Glyph: "◍",
+			Tags: []string{"Go", "RSS", "LLM", "WASM"}, Repo: gh + "AnimeFeedFlux",
+			Demo:  "https://anime.earlcameron.com/",
 			Blurb: "AI-written anime feeds — daily trivia, ranked news, seasonal roundups — published on a schedule as RSS, Atom and JSON Feed.",
-			Long:  "Describe the feed you want — \"a daily anime trivia question\", \"today's anime news, ranked\" — and it runs on your schedule, writes the items and publishes them at a stable URL that Slack or any reader can subscribe to. Trivia is written by the model; news only summarises and links out, and a link can be published only if it is byte-equal to a URL that was actually fetched, so an invented URL has no code path to a reader. Built against Slack's RSS app, which is stricter than the spec and fails silently. The idea already runs in miniature on this site, which generates and posts /anime.xml and /anime/qotd.xml today."},
+			Long:  "Describe the feed you want — \"a daily anime trivia question\", \"today's anime news, ranked\" — and it runs on your schedule, writes the items and publishes them at a stable URL that Slack or any reader can subscribe to. Trivia is written by the model; news only summarises and links out, and a link can be published only if it is byte-equal to a URL that was actually fetched, so an invented URL has no code path to a reader. Recipes can grant the model live web search per feed. Runs in production behind a read-only publish plane, with a gRPC control plane and a Go→WASM admin; tagged releases deploy themselves behind a healthcheck."},
 		{Id: "gwc", Name: "GoWebComponents", Status: "v5.0.1", Glyph: "⟠",
 			Tags: []string{"Go", "WASM", "framework"}, Repo: gh + "GoWebComponents",
 			Demo:  "https://monstercameron.github.io/GoWebComponents/",
@@ -128,7 +129,7 @@ func featured() []*sitepb.Project {
 			// one sentence later, for the reader who wants it.
 			Blurb: "A browser runtime where applications ship as WebAssembly components instead of JavaScript bundles.",
 			Long:  "A browser where pages are WASM, not HTML+JS — a reactified-C component ABI, a Go host (Blitz + wasmtime), and a real storefront demo over authenticated RPC."},
-		{Id: "grpcbridge", Name: "GoGRPCBridge", Status: "v1.1.1", Glyph: "⇄",
+		{Id: "grpcbridge", Name: "GoGRPCBridge", Status: "v1.1.2", Glyph: "⇄",
 			Tags: []string{"Go", "gRPC", "WebSocket"}, Repo: gh + "GoGRPCBridge",
 			Demo:  "https://monstercameron.github.io/GoGRPCBridge/",
 			Blurb: "gRPC over WebSockets for the browser — no Envoy, no proxy. This site talks to its backend through it.",

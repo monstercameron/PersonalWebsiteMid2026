@@ -69,10 +69,10 @@ func link(text, href string) progRow { return progRow{text: text, href: href} }
 var termProjects = []struct{ id, name, status, blurb, repo string }{
 	{"cashflux", "CashFlux", "shipping", "Local-first budgeting suite — all Go/WASM, no JS framework.", "https://github.com/monstercameron/CashFlux"},
 	{"articleflux", "ArticleFlux", "shipping", "Self-hosted feed reader, Go all the way down. Real gRPC in the browser.", "https://github.com/monstercameron/ArticleFlux"},
-	{"animefeedflux", "AnimeFeedFlux", "planning", "AI-written anime feeds — trivia, ranked news, roundups — published as RSS on a schedule.", "https://github.com/monstercameron/AnimeFeedFlux"},
+	{"animefeedflux", "AnimeFeedFlux", "v0.2.0", "AI-written anime feeds — trivia, ranked news, roundups — published as RSS on a schedule.", "https://github.com/monstercameron/AnimeFeedFlux"},
 	{"gwc", "GoWebComponents", "v5.0.1", "React-style UI framework in Go→WASM. This site runs on it.", "https://github.com/monstercameron/GoWebComponents"},
 	{"wasibrowser", "WASIBrowser", "prototype", "A no-JavaScript browser that renders WebAssembly apps.", "https://github.com/monstercameron/WASIBrowser"},
-	{"grpcbridge", "GoGRPCBridge", "v1.1.1", "gRPC over WebSockets for the browser — no proxy.", "https://github.com/monstercameron/GoGRPCBridge"},
+	{"grpcbridge", "GoGRPCBridge", "v1.1.2", "gRPC over WebSockets for the browser — no proxy.", "https://github.com/monstercameron/GoGRPCBridge"},
 	{"pathtracer", "WebGL Path Tracer", "demo", "Path tracing live in a browser tab — materials, physics, benchmarks.", "https://github.com/monstercameron/pathtracer"},
 	{"semanticscript", "SemanticScript", "research", "An agent-first programming language for LLMs.", "https://github.com/monstercameron/SemanticScript"},
 	{"semanticassembly", "SemanticAssembly", "research", "Agent-native RISC-V-first assembly layer.", "https://github.com/monstercameron/SemanticAssembly"},

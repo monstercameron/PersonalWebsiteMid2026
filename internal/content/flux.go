@@ -265,7 +265,7 @@ func FluxProjects() []FluxProject {
 			Slug: "schemaflux", Name: "SchemaFlux", Head: "Schema", Tail: "Flux",
 			Art:     true,
 			Tagline: "Structured AI that ships.",
-			Status:  "v1.1.0 · stable API",
+			Status:  "v1.2.0 · stable API",
 			Lede:    "A Go library that makes a language model return a typed Go value instead of a wall of text you have to parse.",
 			Pitch: "One public API of fluent builders over one execution path. Application code reads like " +
 				"Go — Extracting[Person](text).Strict().Run() — while retries, structured-output " +
@@ -289,10 +289,10 @@ func FluxProjects() []FluxProject {
 				{"Shipping 1.0 with twelve unmet criteria, on the record", "Twelve of the project's own thirty-two acceptance criteria were not met when 1.0 shipped. They were listed with a reason each, and ADR 0005 argues why the version went out anyway. Writing down what a release does not do is a more useful artifact than a 0.9 that never ends — and it is why the gaps got closed in the open, across the ten commits that became 1.1.0."},
 			},
 			Evidence: []Fact{
-				{"v1.1.0", "released, API-surface test guarding it"}, {"94.2%", "coverage floor, ratcheted"},
+				{"v1.2.0", "released, API-surface test guarding it"}, {"94.2%", "coverage floor, ratcheted"},
 				{"1", "execution path behind every builder"},
 			},
-			Maturity: "The exception on this page: a library at a released 1.1.0 with an API-surface test guarding " +
+			Maturity: "The exception on this page: a library at a released 1.2.0 with an API-surface test guarding " +
 				"it, and every behaviour claim in its README backed by a test. It is still honest about the " +
 				"gaps — read \"What 1.0 does not include\" before depending on it for anything load-bearing.",
 		},
