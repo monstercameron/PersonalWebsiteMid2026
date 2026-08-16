@@ -248,6 +248,11 @@ var monoFont = css.Raw("font-family", `ui-monospace,"SF Mono",SFMono-Regular,Men
 // form. /home is the public front door that explains the project and links its demo.
 const articleFluxURL = "https://feed.earlcameron.com/home"
 
+// animeFeedFluxURL is AnimeFeedFlux's public feed list — the exact page the product itself hands
+// out as its front door. Unauthenticated, read-only publish plane; safe for any visitor. The
+// admin console lives on a separate IP-allowlisted host and is deliberately NOT linked here.
+const animeFeedFluxURL = "https://anime.earlcameron.com/"
+
 // The site links CashFlux two different ways, and which one a link gets depends on who is
 // expected to click it.
 //
@@ -316,8 +321,15 @@ func topNav() ui.Node {
 				Props{Href: cashFluxOwnerURL, Target: "_blank", Rel: "noopener"}, "cashflux"),
 			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
 				Props{Href: articleFluxURL, Target: "_blank", Rel: "noopener"}, "articleflux"),
+			// AnimeFeedFlux's public feed list — the URL the product itself hands out. A full
+			// separate app like the two above, so it opens in its own tab.
+			A(Class(Fg(theme.Dim), Hover(Fg(theme.Accent)), TextSize(TextSm)),
+				Props{Href: animeFeedFluxURL, Target: "_blank", Rel: "noopener"}, "feeds"),
 			link("#anime", "anime"),
 			link("#contact", "contact"),
+			// The owner's door, labelled as such. Same-tab: /admin is this site's own WASM
+			// console, not an external app.
+			link("/admin", "login"),
 		),
 	)
 }
@@ -714,15 +726,35 @@ func animeRadar(baseURL string) ui.Node {
 			feedURLRow(url),
 		)
 	}
+	// An external card differs from feed() only in that its address is not on this host and its
+	// URL is the page a browser should open, not an XML document — so the title link opens in a
+	// new tab and the copy row still hands over the exact address.
+	external := func(url, glyph, title, sub string) ui.Node {
+		return Div(Class(append([]any{Flex, FlexCol, Gap(Spacing3), Bg(theme.BgRaised), Border(theme.Border), Rounded(RadiusLg),
+			Pad(Spacing4), Hover(Border(theme.Accent))}, lift()...)...),
+			Div(Class(Flex, ItemsCenter, Gap(Spacing3)),
+				Span(Class(Fg(theme.Accent2), FontSize(Rem(1.25)), css.Raw("min-width", "24px")), glyph),
+				Div(Class(Flex, FlexCol),
+					A(Class(FontSemibold, Fg(theme.Fg), Hover(Fg(theme.Accent)), css.Raw("text-decoration", "none")),
+						Props{Href: url, Target: "_blank", Rel: "noopener"}, title),
+					Span(Class(sansFont, Fg(theme.Dim), TextSize(TextSm)), sub),
+				),
+			),
+			feedURLRow(url),
+		)
+	}
 	grid := []any{Class(Grid, Gap(Spacing3), css.Raw("grid-template-columns", "repeat(auto-fill,minmax(min(320px,100%),1fr))"))}
 	grid = append(grid,
 		feed("/anime.xml", "◈", "Release Radar", "RSS · new episodes I'm tracking"),
 		feed("/anime/qotd.xml", "✎", "Question of the Day", "RSS · a daily anime prompt"),
+		// AnimeFeedFlux's own feed list — the address the product hands out. One card, not one
+		// per feed: the list page stays correct as feeds are added there, this site does not.
+		external(animeFeedFluxURL, "⇶", "AnimeFeedFlux · all feeds", "AI-generated feeds · RSS, Atom & JSON Feed"),
 	)
 	return Div(FromProps(Props{ID: "anime"}), Class(sectionRules(Gap(Spacing5))...),
-		label("~/anime · release radar"),
+		label("~/anime · feeds"),
 		headed("Anime, on RSS.",
-			"Two feeds, open to anyone. Copy either address and paste it into your feed reader."),
+			"Open to anyone. Copy an address into your feed reader — or browse the AnimeFeedFlux list, where the AI-generated feeds live."),
 		Div(grid...),
 	)
 }

@@ -12,8 +12,8 @@ package content
 //  1. **Every factual claim is sourced from the project's own repository** — its README, its
 //     tests, its measurements. Numbers are quoted, never estimated. If a project's README does
 //     not support a sentence here, the sentence does not ship.
-//  2. **Maturity is stated, not implied.** Most are alpha, prototype or (for AnimeFeedFlux) not
-//     yet written; they are built in spare time with AI agents in the loop, and each page says
+//  2. **Maturity is stated, not implied.** Most are alpha or prototype (AnimeFeedFlux is the one
+//     running in production); they are built in spare time with AI agents in the loop, and each page says
 //     so in its own section rather than burying it. A recruiter who discovers that themselves
 //     discounts everything else on the page; one who is told it up front reads the rest as credible.
 //
@@ -297,10 +297,10 @@ func FluxProjects() []FluxProject {
 				"gaps — read \"What 1.0 does not include\" before depending on it for anything load-bearing.",
 		},
 		{
-			// The newest of the six, and the only one with no product behind it yet. Its page is
-			// built from its specification rather than its code, and says so in every place a
-			// reader might otherwise assume otherwise — the status chip, the evidence figures and
-			// the maturity paragraph.
+			// The newest of the six — and since 2026-08-15, live: the engine, both planes and
+			// the WASM admin run in production at anime.earlcameron.com, shipping themselves on
+			// tagged releases. The page's copy tracked the specification while that was all
+			// there was; it now tracks the running product.
 			//
 			// Its sheet is the one drawn on a dark ground rather than near-white, so PosterDark
 			// swaps the plate underneath it. The wordmark splits "Anime" / "FeedFlux" to match the
@@ -308,14 +308,14 @@ func FluxProjects() []FluxProject {
 			Slug: "animefeedflux", Name: "AnimeFeedFlux", Head: "Anime", Tail: "FeedFlux",
 			Art: true, PosterDark: true,
 			Tagline: "Feeds that write themselves.",
-			Status:  "planning · spec of record",
+			Status:  "live · v0.2.0",
 			Lede:    "A feed generator: describe the feed you want in a sentence, and it publishes on a schedule to any reader you already use.",
 			Pitch: "A recipe carries a prompt, a schedule, a model and a budget. It runs on time, writes the " +
 				"items, and publishes them at a stable address as RSS, Atom and JSON Feed — so the thing " +
 				"you subscribe to is an ordinary feed, and nothing downstream has to know a model wrote " +
 				"it. The whole product surface is one sentence: a URL that returns valid XML and never lies.",
-			Repo: gh + "AnimeFeedFlux", DemoLabel: "",
-			PosterNote: "The specification is real and linked above; the poster is a design exercise, not a claim.",
+			Repo: gh + "AnimeFeedFlux", Demo: "https://anime.earlcameron.com/", DemoLabel: "Browse the live feeds",
+			PosterNote: "The product is live and linked above; the poster is a design exercise, not a claim.",
 			Capabilities: []Capability{
 				{"Describe a feed, get a URL", "A recipe is a prompt, a schedule, a model and a spend cap. What comes out is an ordinary feed address that Slack, or any reader, can subscribe to without knowing a model wrote it."},
 				{"Two kinds of item, separated by design", "Generative items — trivia, on-this-day — are written by the model, which is the source. Grounded items — news, releases — are only edited by it; the facts and the links come from the publisher. Conflating the two is named in the plan as the main way the project fails, so they are split at the architecture level rather than by convention."},
@@ -338,12 +338,14 @@ func FluxProjects() []FluxProject {
 				{"0", "invented links publishable, by construction"},
 				{"2", "planes — the public one cannot write to the database"},
 			},
-			Maturity: "The newest of the six and the earliest: designed, not yet running. The architecture, the " +
-				"compliance rules and the failure modes are settled; the engine that executes them is being " +
-				"built engine-first, so it is delivering feeds to Slack before a single screen exists. What " +
-				"makes it more than a plan is that the idea already runs in miniature on this very site, " +
-				"which generates /anime.xml and /anime/qotd.xml and posts them on a schedule. AnimeFeedFlux " +
-				"is that, generalised.",
+			Maturity: "The newest of the six, and running in production: the engine, the read-only publish " +
+				"plane and the gRPC control plane with its WebAssembly admin all serve at " +
+				"anime.earlcameron.com, in Docker behind nginx. Releases ship themselves — tagging a " +
+				"version runs the test gate, publishes a container image, and the host rolls it out " +
+				"behind a healthcheck with a recorded rollback point. It was built engine-first, so " +
+				"every screen in the admin drives an RPC the CLI had already exercised. Recipes can " +
+				"declare live web search per feed; the remaining unproven claim is the week-long live " +
+				"Slack soak, which the plan tracks rather than assumes.",
 		},
 	}
 }
