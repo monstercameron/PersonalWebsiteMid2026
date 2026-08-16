@@ -8,6 +8,12 @@ services:
   earlcameron:
     image: ghcr.io/monstercameron/personalwebsitemid2026:v0.0.0 # pinned by ec-deploy-release.sh
     container_name: earlcameron
+    # Run as the same system user the legacy systemd unit used, so the bind-mounted data
+    # keeps one owner and a rollback to systemd sees identical permissions. The uid:gid is
+    # BOX-SPECIFIC — read it with `id earlcameron` when installing (995:986 on the current
+    # droplet). Without this the image's default nonroot user (65532) cannot open site.db,
+    # which is exactly how the first cutover attempt failed (2026-08-16).
+    user: "995:986"
     restart: unless-stopped
     # Host loopback only: nginx stays the sole public listener, same rule the systemd unit
     # enforced with LISTEN_ADDR=127.0.0.1:8095. Inside the container the server binds :8095
@@ -17,14 +23,17 @@ services:
     # The droplet's existing data directory, bind-mounted rather than a named volume so the
     # cutover from systemd carries every row over and a rollback sees the same files. The
     # image sets DB_PATH=/data/site.db and CASHFLUX_DATA_DIR=/data/cashflux to match.
+    # NOTE the real path: the systemd unit's env file points DB_PATH at
+    # /var/lib/earlcameron — NOT the /opt/earlcameron/data the deployment doc's diagram
+    # used to claim. Mounting the wrong (empty) dir was the first cutover's other failure.
     volumes:
-      - /opt/earlcameron/data:/data
+      - /var/lib/earlcameron:/data
     # The same env file the systemd unit read (secrets, BASE_URL, admin config). Its
     # LISTEN_ADDR/DB_PATH/CASHFLUX_DATA_DIR lines are host paths, wrong inside the
     # container — the environment block below re-asserts the container-correct values,
     # and compose gives `environment:` precedence over `env_file:`.
     env_file:
-      - /opt/earlcameron/.env
+      - /etc/earlcameron/earlcameron.env
     environment:
       LISTEN_ADDR: ":8095"
       DB_PATH: /data/site.db

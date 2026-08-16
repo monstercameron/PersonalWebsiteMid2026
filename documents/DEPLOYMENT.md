@@ -29,9 +29,16 @@ What changed and what did not:
   dependency — the Release workflow builds the image from the same three-sibling workspace
   ci.yml already assembles (refs still read from `deploy/lib.sh`, one source of pins).
 - **The runtime contract is untouched.** Container publishes to `127.0.0.1:8095` (nginx
-  config unchanged), bind-mounts the existing `/opt/earlcameron/data` at `/data`, and reads
-  the same `/opt/earlcameron/.env` (compose re-asserts the three container-path keys:
+  config unchanged), bind-mounts the real data directory at `/data`, and reads the same env
+  file the systemd unit did (compose re-asserts the three container-path keys:
   `LISTEN_ADDR=:8095`, `DB_PATH=/data/site.db`, `CASHFLUX_DATA_DIR=/data/cashflux`).
+  ⚠️ **The live box diverges from this document's older diagram**, discovered the hard way
+  during the 2026-08-16 cutover (two failed container starts, ~4 min of downtime before
+  the systemd rollback, then a clean second cutover): the env file is
+  `/etc/earlcameron/earlcameron.env` (not `/opt/earlcameron/.env`) and the data is
+  `/var/lib/earlcameron/` (not `/opt/earlcameron/data`). The compose file also pins
+  `user:` to the `earlcameron` system user's uid:gid, because the image's default nonroot
+  user cannot open the existing site.db.
 - **Rollback is two commands.** `sh ec-deploy-release.sh $(cat /opt/earlcameron/.previous-tag)`
   rolls to the prior image; the legacy systemd flow below is the deeper fallback
   (`systemctl start earlcameron` after `docker compose down` — same data files either way).
