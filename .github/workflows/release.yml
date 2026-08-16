@@ -1,0 +1,179 @@
+# Release — verify, build the container image, publish to GHCR, poke the droplet.
+#
+# The AFF-shaped replacement for building on the box (documents/DEPLOYMENT.md). One
+# ritual: promote dev -> main, tag vX.Y.Z on main, push the tag. This workflow proves the
+# three-repo workspace still builds and tests green, bakes the release image (server +
+# site wasm + hosted CashFlux frontend), pushes it to GHCR, and POSTs the deploy hook the
+# droplet's webhook receiver listens on — which runs ec-autoupdate.sh, whose rollout is
+# health-gated with a recorded rollback tag. No inbound SSH from CI; the box pulls.
+#
+# workflow_dispatch runs verify + a NO-PUSH image build: the dry run that proves the
+# Dockerfile before any tag exists. It publishes nothing and pokes nothing.
+#
+# This also retires the promote-doesn't-deploy trap DEPLOYMENT.md documents: deploys are
+# keyed to tag pushes (a human act with a real token), not to workflow_run chains that
+# GITHUB_TOKEN pushes never start.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # Lowercase literal, not derived from github.repository: GHCR rejects uppercase path
+  # components, and the repo name has them (the exact failure AFF's first release hit).
+  IMAGE: ghcr.io/monstercameron/personalwebsitemid2026
+
+jobs:
+  verify:
+    name: Verify before shipping
+    runs-on: ubuntu-latest
+    steps:
+      # Same three-sibling layout as ci.yml, for the same reason: the relative replace
+      # directives only resolve with all three checkouts side by side, and the refs are
+      # read from deploy/lib.sh so CI, this workflow, and the droplet's legacy flow can
+      # never test three different combinations.
+      - name: Check out the site
+        uses: actions/checkout@v4
+        with:
+          path: PersonalWebsiteMid2026
+
+      - name: Derive dependency refs from deploy/lib.sh
+        id: refs
+        working-directory: PersonalWebsiteMid2026
+        run: |
+          set -euo pipefail
+          gwc="$(sed -n 's/^GWC_REF="\${GWC_REF:-\(.*\)}"$/\1/p' deploy/lib.sh)"
+          cf="$(sed -n 's/^CASHFLUX_REF="\${CASHFLUX_REF:-\(.*\)}"$/\1/p' deploy/lib.sh)"
+          [ -n "$gwc" ] || { echo "could not read GWC_REF from deploy/lib.sh"; exit 1; }
+          [ -n "$cf" ]  || { echo "could not read CASHFLUX_REF from deploy/lib.sh"; exit 1; }
+          echo "gwc=$gwc" >> "$GITHUB_OUTPUT"
+          echo "cashflux=$cf" >> "$GITHUB_OUTPUT"
+
+      - name: Check out GoWebComponents
+        uses: actions/checkout@v4
+        with:
+          repository: monstercameron/GoWebComponents
+          ref: ${{ steps.refs.outputs.gwc }}
+          path: GoWebComponents
+          submodules: recursive
+
+      - name: Check out CashFlux
+        uses: actions/checkout@v4
+        with:
+          repository: monstercameron/CashFlux
+          ref: ${{ steps.refs.outputs.cashflux }}
+          path: CashFlux
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: PersonalWebsiteMid2026/go.mod
+          cache-dependency-path: PersonalWebsiteMid2026/go.sum
+
+      - name: Build
+        working-directory: PersonalWebsiteMid2026
+        run: go build ./...
+
+      - name: Vet
+        working-directory: PersonalWebsiteMid2026
+        run: go vet ./...
+
+      - name: Test
+        working-directory: PersonalWebsiteMid2026
+        run: go test ./...
+
+  build:
+    name: Build and push image
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v4
+        with:
+          path: PersonalWebsiteMid2026
+
+      - name: Derive dependency refs from deploy/lib.sh
+        id: refs
+        working-directory: PersonalWebsiteMid2026
+        run: |
+          set -euo pipefail
+          gwc="$(sed -n 's/^GWC_REF="\${GWC_REF:-\(.*\)}"$/\1/p' deploy/lib.sh)"
+          cf="$(sed -n 's/^CASHFLUX_REF="\${CASHFLUX_REF:-\(.*\)}"$/\1/p' deploy/lib.sh)"
+          echo "gwc=$gwc" >> "$GITHUB_OUTPUT"
+          echo "cashflux=$cf" >> "$GITHUB_OUTPUT"
+
+      - name: Check out GoWebComponents
+        uses: actions/checkout@v4
+        with:
+          repository: monstercameron/GoWebComponents
+          ref: ${{ steps.refs.outputs.gwc }}
+          path: GoWebComponents
+          submodules: recursive
+
+      - name: Check out CashFlux
+        uses: actions/checkout@v4
+        with:
+          repository: monstercameron/CashFlux
+          ref: ${{ steps.refs.outputs.cashflux }}
+          path: CashFlux
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: meta
+        run: echo "sha_tag=sha-$(echo '${{ github.sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      # Context is the WORKSPACE ROOT (the three siblings), not this repo — the
+      # Dockerfile's own doc comment explains why. On workflow_dispatch push is false:
+      # the build itself is the artifact being verified.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: PersonalWebsiteMid2026/deploy/docker/Dockerfile
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.sha_tag }}
+            ${{ env.IMAGE }}:latest
+            ${{ startsWith(github.ref, 'refs/tags/v') && format('{0}:{1}', env.IMAGE, github.ref_name) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy hook (pull-based droplet update)
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      # The hook only STARTS ec-autoupdate.sh on the box; the box compares tags, checks
+      # the image is actually published, and health-gates the rollout. A lost delivery is
+      # covered by the daily fallback timer, so this step failing is not a failed deploy —
+      # it is a slower one, which the log line says out loud.
+      - name: POST the deploy hook
+        env:
+          HOOK_SECRET: ${{ secrets.EC_DEPLOY_HOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$HOOK_SECRET" ]; then
+            echo "EC_DEPLOY_HOOK_SECRET is not set — skipping the poke; the daily timer will pick this release up."
+            exit 0
+          fi
+          code=$(curl -sS -o /tmp/hook-body -w '%{http_code}' -m 30 -X POST \
+            -H "X-Ec-Deploy-Token: $HOOK_SECRET" \
+            https://earlcameron.com/internal/deploy-hook || echo 000)
+          echo "hook answered $code: $(cat /tmp/hook-body 2>/dev/null || true)"
+          if [ "$code" != "200" ]; then
+            echo "::warning::deploy hook did not answer 200 — the daily fallback timer will still deploy this release"
+          fi

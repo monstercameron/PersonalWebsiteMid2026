@@ -1,0 +1,16 @@
+[
+  {
+    "//": "earlcameron.com's entry for the droplet's shared `webhook` receiver (the daemon AnimeFeedFlux's bootstrap installed on 127.0.0.1:9309, /etc/webhook.conf — this OBJECT gets appended into that file's array, it is not its own file). The secret lives ONLY in /etc/earlcameron/deploy-hook-secret and the repo's EC_DEPLOY_HOOK_SECRET actions secret — never in git. The Release workflow POSTs via nginx's /internal/deploy-hook location on the earlcameron.com vhost; the receiver just starts ec-autoupdate.sh, which does the tag comparison and the health-gated rollout, so a forged or replayed request with the right secret can at worst trigger a no-op re-check.",
+    "id": "ec-deploy",
+    "execute-command": "/usr/local/bin/ec-autoupdate.sh",
+    "command-working-directory": "/opt/earlcameron",
+    "response-message": "update check started",
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "EC_HOOK_SECRET_PLACEHOLDER",
+        "parameter": { "source": "header", "name": "X-Ec-Deploy-Token" }
+      }
+    }
+  }
+]

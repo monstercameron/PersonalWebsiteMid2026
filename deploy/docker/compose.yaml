@@ -1,0 +1,36 @@
+# Compose file for the Docker deployment of earlcameron.com — installed to
+# /opt/earlcameron/compose.yaml on the droplet (ec-deploy-release.sh rewrites the image
+# tag pin in place there, exactly like AnimeFeedFlux's flow).
+#
+# Deploys are pinned to immutable v* tags, never :latest — the pinned tag is what
+# ec-autoupdate.sh compares against and what .previous-tag rolls back to.
+services:
+  earlcameron:
+    image: ghcr.io/monstercameron/personalwebsitemid2026:v0.0.0 # pinned by ec-deploy-release.sh
+    container_name: earlcameron
+    restart: unless-stopped
+    # Host loopback only: nginx stays the sole public listener, same rule the systemd unit
+    # enforced with LISTEN_ADDR=127.0.0.1:8095. Inside the container the server binds :8095
+    # (set in the image); publishing to 127.0.0.1 is where the boundary lives now.
+    ports:
+      - "127.0.0.1:8095:8095"
+    # The droplet's existing data directory, bind-mounted rather than a named volume so the
+    # cutover from systemd carries every row over and a rollback sees the same files. The
+    # image sets DB_PATH=/data/site.db and CASHFLUX_DATA_DIR=/data/cashflux to match.
+    volumes:
+      - /opt/earlcameron/data:/data
+    # The same env file the systemd unit read (secrets, BASE_URL, admin config). Its
+    # LISTEN_ADDR/DB_PATH/CASHFLUX_DATA_DIR lines are host paths, wrong inside the
+    # container — the environment block below re-asserts the container-correct values,
+    # and compose gives `environment:` precedence over `env_file:`.
+    env_file:
+      - /opt/earlcameron/.env
+    environment:
+      LISTEN_ADDR: ":8095"
+      DB_PATH: /data/site.db
+      CASHFLUX_DATA_DIR: /data/cashflux
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

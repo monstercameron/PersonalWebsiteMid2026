@@ -1,0 +1,19 @@
+# ec-autoupdate.timer — DAILY FALLBACK check for a new earlcameron.com release.
+#
+# The PRIMARY update path is the deploy webhook: the Release workflow POSTs to
+# /internal/deploy-hook the moment the image is published, and the receiver starts the
+# same ec-autoupdate.sh immediately. This timer exists only for the delivery that got
+# lost — webhook down, network blip, secret rotated mid-flight — so it runs once a day,
+# not on a tight poll (same operator ruling as AnimeFeedFlux, 2026-08-16: a frequent poll
+# is too aggressive for a deliberate, occasional release act).
+[Unit]
+Description=Daily fallback earlcameron.com auto-update check
+
+[Timer]
+OnBootSec=5min
+OnCalendar=daily
+RandomizedDelaySec=1800
+Persistent=true
+
+[Install]
+WantedBy=timers.target

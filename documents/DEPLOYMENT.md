@@ -3,6 +3,47 @@
 > **Status: BUILT.** `deploy/` holds the real scripts. Goal, in Cam's words: **one-click to
 > install, one action to update — without racking my brain.**
 
+## ⚡ Current flow: Docker, à la AnimeFeedFlux (2026-08-16)
+
+The sections below this one describe the ORIGINAL on-box-build flow; it still works and is
+the documented rollback, but the current deployment is a container, built in CI, pulled by
+the box — the same shape AnimeFeedFlux proved end-to-end (including its failure path) on
+2026-08-16:
+
+```
+tag vX.Y.Z on main ──► Release workflow (.github/workflows/release.yml)
+                          verify (3-repo workspace, build/vet/test)
+                          build deploy/docker/Dockerfile ──► ghcr.io/monstercameron/personalwebsitemid2026:vX.Y.Z
+                          POST https://earlcameron.com/internal/deploy-hook  (X-Ec-Deploy-Token)
+                                    │
+Droplet: nginx ──► webhook daemon (127.0.0.1:9309, shared with AFF) ──► ec-autoupdate.sh
+                          newest v* tag vs compose.yaml pin, image published?
+                          └─► ec-deploy-release.sh: pin → pull → up -d → BLOCK on healthcheck
+                              (.previous-tag recorded first; daily timer = lost-delivery fallback)
+```
+
+What changed and what did not:
+
+- **The droplet stops building.** No Go toolchain, no two-wasm-binary OOM risk, no swap
+  dependency — the Release workflow builds the image from the same three-sibling workspace
+  ci.yml already assembles (refs still read from `deploy/lib.sh`, one source of pins).
+- **The runtime contract is untouched.** Container publishes to `127.0.0.1:8095` (nginx
+  config unchanged), bind-mounts the existing `/opt/earlcameron/data` at `/data`, and reads
+  the same `/opt/earlcameron/.env` (compose re-asserts the three container-path keys:
+  `LISTEN_ADDR=:8095`, `DB_PATH=/data/site.db`, `CASHFLUX_DATA_DIR=/data/cashflux`).
+- **Rollback is two commands.** `sh ec-deploy-release.sh $(cat /opt/earlcameron/.previous-tag)`
+  rolls to the prior image; the legacy systemd flow below is the deeper fallback
+  (`systemctl start earlcameron` after `docker compose down` — same data files either way).
+- **The promote-doesn't-deploy trap (§ below) is retired for real deploys**: releases key
+  off tag pushes, which a human makes with a real token, not off `workflow_run` chains that
+  `GITHUB_TOKEN` pushes never start.
+
+Pieces: `deploy/docker/{Dockerfile, compose.yaml, ec-deploy-release.sh, ec-autoupdate.sh,
+ec-autoupdate.service, ec-autoupdate.timer, webhook-site.conf.example}`. Secrets:
+`/etc/earlcameron/deploy-hook-secret` on the box, mirrored to the repo's
+`EC_DEPLOY_HOOK_SECRET` actions secret. Dry-run the image without tagging via the
+workflow's `workflow_dispatch` (build, no push, no poke).
+
 ```
 Internet ──443/TLS──► Nginx (reverse proxy, Let's Encrypt)
                          │  proxy_pass 127.0.0.1:8095

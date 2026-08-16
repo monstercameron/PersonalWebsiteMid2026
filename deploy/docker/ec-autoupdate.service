@@ -1,0 +1,13 @@
+# ec-autoupdate.service — one auto-update check for earlcameron.com (driven by the
+# .timer as fallback; the deploy webhook runs the same script as the primary path).
+# Oneshot: the unit's success/failure IS the deploy's, because ec-autoupdate.sh execs
+# ec-deploy-release.sh, which blocks on the container healthcheck — so
+# `journalctl -u ec-autoupdate` answers "did the last update work" directly.
+[Unit]
+Description=earlcameron.com auto-update to the newest v* release tag
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ec-autoupdate.sh
