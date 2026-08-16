@@ -178,7 +178,7 @@ jobs:
           fi
           code=$(curl -sS -o /tmp/hook-body -w '%{http_code}' -m 30 -X POST \
             -H "X-Ec-Deploy-Token: $HOOK_SECRET" \
-            https://earlcameron.com/internal/deploy-hook || echo 000)
+            https://www.earlcameron.com/internal/deploy-hook || echo 000)
           echo "hook answered $code: $(cat /tmp/hook-body 2>/dev/null || true)"
           if [ "$code" != "200" ]; then
             echo "::warning::deploy hook did not answer 200 — the daily fallback timer will still deploy this release"

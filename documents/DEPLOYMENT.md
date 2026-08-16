@@ -14,7 +14,8 @@ the box — the same shape AnimeFeedFlux proved end-to-end (including its failur
 tag vX.Y.Z on main ──► Release workflow (.github/workflows/release.yml)
                           verify (3-repo workspace, build/vet/test)
                           build deploy/docker/Dockerfile ──► ghcr.io/monstercameron/personalwebsitemid2026:vX.Y.Z
-                          POST https://earlcameron.com/internal/deploy-hook  (X-Ec-Deploy-Token)
+                          POST https://www.earlcameron.com/internal/deploy-hook  (X-Ec-Deploy-Token;
+                                www is canonical — the apex 301s, which a POST must not chase)
                                     │
 Droplet: nginx ──► webhook daemon (127.0.0.1:9309, shared with AFF) ──► ec-autoupdate.sh
                           newest v* tag vs compose.yaml pin, image published?
