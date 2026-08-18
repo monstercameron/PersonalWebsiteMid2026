@@ -312,7 +312,7 @@ func linksOut() []progRow {
 func resumeOut() []progRow {
 	return []progRow{
 		head("Earl Cameron — Senior Software Engineer"),
-		dim("UKG (2020–present) · Go · C# · React · agents & AI infra · on-device LLMs"),
+		dim("UKG (2019–present) · Go · C# · React · agents & AI infra · on-device LLMs"),
 		link("open the full résumé · /resume", "/resume"),
 		dim("or read it here: cat notes/experience.md"),
 	}

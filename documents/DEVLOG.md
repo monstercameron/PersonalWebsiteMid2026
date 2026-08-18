@@ -2,6 +2,88 @@
 
 Newest first. Dated narrative of the build: what, why, what broke, what's next. Log failures too.
 
+## 2026-08-18 — Cam corrects the résumé, including one thing it claimed he never did
+
+Three corrections after reading yesterday's pass, and the first one is the important one: **"Built a
+Unified Search micro-frontend spanning HCM product areas" was not his work.** It had been sitting in
+`resume.Data()` from an earlier version of the document, it survived a full rewrite and three
+adversarial recruiter reviews without anyone catching it, and it would have been on a page he sends
+to strangers. Nothing in a review loop can catch this class of error — the reviewer only sees the
+text and judges whether it reads well, and a false bullet reads exactly as well as a true one. Only
+the person who did the work can. Removed with no replacement; the role now runs five bullets.
+
+**The other two were scope.** The Qualcomm/NPU on-device inference work is out of Skills and
+WhisperToMe is out of Projects — Cam's read is that the esoteric hardware experiments, sitting next
+to production agent work, invite a screener to discount the whole row as tinkering. Projects cut
+from six to three (CashFlux, ArticleFlux, GoWebComponents); GoGRPCBridge lost its own entry and
+moved inside the GoWebComponents description, since it is the transport half of the
+"written entirely in Go" claim and that claim does not land with the framework alone. Worth noting
+what this cost: the reviewer had called the WhisperToMe entry — NPU chosen for battery draw rather
+than speed — "the best single addition across all three revisions", because it was the clearest
+tradeoff-reasoning signal on the page. Cam's call outranks that, and the ArticleFlux FTS5 line still
+carries a build-vs-buy decision, but the page is thinner on judgment signal than it was yesterday.
+
+**The real career narrative went in**, which yesterday's version had flattened into "product
+engineering": UKG Pro Core on the core HR team through Jan 2025, then two tiger teams building AI
+features across Bryte AI after the promotion, and now a dedicated AI product development team
+building a new recruiting product. The internal team now shows in the org line — "UKG — AI Product
+Development" over "UKG — UKG Pro, Core HR" — which is what makes seven years at one employer read
+as movement rather than as sitting still. Bryte AI is UKG's public brand and is named; the
+recruiting product is unreleased and stays generic, because an internal codename on a document
+strangers forward is a disclosure, not a credential.
+
+## 2026-08-17 — The résumé, screened by someone trying to reject it
+
+Cam's brief: the résumé is dogshit, here is my actual LinkedIn history, keep the agentic-development
+and Go-everything story, figure out what to do about the unfinished bachelor's, then run an
+adversarial reviewer and loop until it says the words that get me hired.
+
+**The first finding was not in the text.** `/resume` prefers a stored `active_resume` setting over
+`resume.Data()`, and the dev database had one — an old applied copy showing `AI-native Systems
+Engineer`, **Lauderhill, FL**, a personal gmail address, and a **B.S. from FIU**. Every edit to the
+résumé package since that row was written had been rendering to nobody, including the 2026-07-29
+decision that the résumé should not carry a home city. The override was backed up and cleared. The
+production box almost certainly holds the same row; until it is cleared there, none of today's work
+is visible to a visitor. Worth noting the shape of this bug class: a database row that silently
+outranks code is invisible to every test in the repo, because the tests exercise the code.
+
+**Education.** Cam has not finished the bachelor's; the résumé claimed it. Offered the options, he
+chose to drop the section entirely rather than list the completed A.S. or write "coursework". The
+render now omits the heading when the slice is empty — an empty **Education** header is worse than
+no section, because it is exactly where a reader looking for a degree stops. The tailoring
+guardrail test was rewritten for the empty case: it used to assert `out.Edu[0] == base.Edu[0]`,
+which would now panic rather than test anything, and the interesting case today is precisely that a
+job posting demanding a degree cannot get "PhD, Fake University" past `constrainToBase`.
+
+**Three review rounds, and the loop earned its keep.** Round 1 came back REJECT at 35% and the
+single most useful sentence in it was that the AI-systems bullets contained no precise noun while
+the SQL bullets contained CXPACKET and SOS_SCHEDULER_YIELD — the résumé was more specific about
+2022 database contention than about the job it is trying to get. That is a fact gap, not a wording
+gap, so it went back to Cam: he confirmed tool-calling agents, retrieval/RAG, and evals/guardrails/
+tracing, and those went in verbatim. Round 2 (ADVANCE, 60%/70%) caught a regression I had
+introduced myself: merging the SQL and Go bullets to rebalance the page against the current role
+buried the only Go evidence in the entire employment history as the third clause of a sentence that
+opens on SQL Server. Balance is worth less than being found; un-merged. Round 3 said send it.
+
+**What actually moved the number**, for future reference: naming techniques instead of categories;
+ordering Skills to match the headline (AI/ML had been fifth of six while the title called it first);
+citing `docs/BENCHMARKS.md` instead of asserting a geomean win over React that no reader could
+check; giving the velocity figures their mechanism (221 packages and 2,998 tests in six weeks reads
+as inflation until the agent workflow explains it, at which point it becomes evidence for the
+practice the summary claims); and converting "no JavaScript, no npm" into the tradeoff it actually
+is. That last one is the one I would generalize: stated as avoidance it reads as NIH hobby work;
+stated as one language, one type system and one debugger across the stack, the same fact reads as
+an infrastructure decision. Nothing about the work changed — only whether the reader was told the
+reason.
+
+**Breakage worth logging:** `go build ./...` failed three times mid-session on `../CashFlux`, a
+local `replace` dependency another session was editing live (`migrateTo15` undefined, then a
+missing `slog` import, then an unused one). It never touched the résumé packages, but it blocks
+rebuilding the server binary, so the dev server sat one revision behind until an until-loop caught
+the dependency compiling and restarted it.
+
+**Next:** clear `active_resume` on the droplet, or nothing above ships.
+
 ## 2026-08-09 — The terminal stops being a demo of a terminal
 
 Cam asked for ideas to make the simulated terminal more functional and a better demo for the two

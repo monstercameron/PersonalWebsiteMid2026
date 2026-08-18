@@ -435,9 +435,13 @@ func diffView(before, after *sitepb.Resume) ui.Node {
 	for _, p := range after.GetProjects() {
 		ctx(p.GetName() + " — " + p.GetDesc())
 	}
-	hdr("EDUCATION")
-	for _, e := range after.GetEducation() {
-		ctx(e)
+	// Only when there is education to show — the canonical résumé has no such section, and a bare
+	// "EDUCATION" header over nothing reads as a rendering bug in the diff preview.
+	if len(after.GetEducation()) > 0 {
+		hdr("EDUCATION")
+		for _, e := range after.GetEducation() {
+			ctx(e)
+		}
 	}
 	return Div(rows...)
 }
@@ -535,12 +539,17 @@ func resumeDocument(r *sitepb.Resume) ui.Node {
 	for _, p := range r.GetProjects() {
 		pul = append(pul, Tag("li", Span(Class(css.Raw("font-weight", "700")), p.GetName()), Span(" — "+p.GetDesc())))
 	}
-	items = append(items, Tag("ul", pul...), sec("Education"))
-	eul := []any{Class(css.Raw("margin", "4px 0 0"), css.Raw("padding-left", "18px"))}
-	for _, e := range r.GetEducation() {
-		eul = append(eul, Tag("li", e))
+	items = append(items, Tag("ul", pul...))
+	// Same rule as the rendered résumé (internal/resume.RenderHTML): the section exists only when
+	// it has content, so the admin preview shows what a reader will actually receive.
+	if len(r.GetEducation()) > 0 {
+		items = append(items, sec("Education"))
+		eul := []any{Class(css.Raw("margin", "4px 0 0"), css.Raw("padding-left", "18px"))}
+		for _, e := range r.GetEducation() {
+			eul = append(eul, Tag("li", e))
+		}
+		items = append(items, Tag("ul", eul...))
 	}
-	items = append(items, Tag("ul", eul...))
 	return Div(items...)
 }
 

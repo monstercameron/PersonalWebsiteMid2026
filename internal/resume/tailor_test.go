@@ -43,8 +43,17 @@ func TestConstrainToBaseBlocksFabrication(t *testing.T) {
 	if len(out.Skills) != len(base.Skills) || out.Skills[0].Label != base.Skills[0].Label {
 		t.Error("skills must come from base")
 	}
-	if len(out.Edu) != len(base.Edu) || out.Edu[0] != base.Edu[0] {
-		t.Error("education must come from base")
+	// Indexed comparison rather than out.Edu[0]: the canonical résumé carries no education section,
+	// so the interesting case here is precisely the empty one — a model that answers a job posting
+	// asking for a degree by inventing "PhD, Fake University" must not be able to add a section that
+	// does not exist, which an [0] comparison would have panicked on instead of asserting.
+	if len(out.Edu) != len(base.Edu) {
+		t.Fatalf("education entry count must match base (%d), got %d", len(base.Edu), len(out.Edu))
+	}
+	for i := range base.Edu {
+		if out.Edu[i] != base.Edu[i] {
+			t.Errorf("education[%d] must come from base: got %q, want %q", i, out.Edu[i], base.Edu[i])
+		}
 	}
 	if len(out.Projects) != len(base.Projects) || out.Projects[0].Name != base.Projects[0].Name {
 		t.Error("projects must come from base")

@@ -4,6 +4,49 @@ All notable changes to earlcameron.com. Format: [Keep a Changelog](https://keepa
 Semantic Versioning once released.
 
 ## [Unreleased]
+### Changed
+- **The résumé was rewritten against a hostile recruiter screen — and it stopped claiming a degree
+  Cam does not hold.** Seven years at UKG were compressed into one flat "Software Engineer (P3 /
+  Senior) · 2020 — present" block that hid two promotions; the page now carries three dated roles
+  (Senior Software Engineer, Software Engineer, and Cloud Engineer at Ultimate Software before the
+  acquisition) plus the 4Geeks/HeyTutor teaching contracts, so tenure and trajectory are legible in
+  the date column rather than buried in a range. The Education section is gone entirely, by Cam's
+  decision: the bachelor's is unfinished, and a résumé is the wrong place to either claim it or
+  explain it. `RenderHTML` omits the heading when there is nothing to list — an empty **Education**
+  header answers the question louder than silence does — and the admin diff and preview follow the
+  same rule.
+  Content changed under two constraints Cam set: nothing non-production from the employer (the
+  innovation-award chatbot and the Bryte ChangeJob proof-of-concept came out), and no invented
+  figures, since he has no releasable UKG metrics. Precise nouns do the work metrics cannot: the
+  current role now names tool-calling agents, retrieval-grounded answers, and the eval/guardrail/
+  tracing layers, rather than the "LLM-backed services" every 2026 résumé claims, and it carries
+  the real trajectory: UKG Pro Core HR, then two tiger teams on Bryte AI, then a dedicated AI
+  product development team. One inherited bullet claiming a Unified Search micro-frontend was
+  removed as false — Cam never did that work.
+  Three adversarial recruiter reviews drove the revisions, from **REJECT at 35%** to **68% / 75%**
+  forward probability (AI-systems / Go-platforms reqs) and an explicit "send it". What moved the
+  number: AI/ML now leads the Skills block instead of sitting fifth while the headline called it
+  first; the "no JavaScript, no npm" framing became the tradeoff it actually is (one language, one
+  type system, one debugger across the stack), because avoidance stated as an achievement reads as
+  NIH; the React benchmark claim now cites `docs/BENCHMARKS.md` instead of asserting a geomean win
+  no reader could check; CashFlux's velocity figures name the agent workflow that produced them,
+  which is both the honest answer and the proof of the practice the summary claims; and the
+  project list was cut to the three that carry the story — CashFlux, ArticleFlux and
+  GoWebComponents, with GoGRPCBridge folded into the last as the transport half of the
+  "written entirely in Go" claim. The Qualcomm/NPU on-device inference work is deliberately
+  absent from Skills and Projects (Cam, 2026-08-18): beside production agent work it invites a
+  screener to read the whole row as hobby tinkering.
+  Print CSS gained page-break discipline (headings stay with their content, bullets do not split)
+  now that the document runs to two pages. `internal/notes` — the terminal briefing and the
+  server-rendered section beneath it — was updated in lockstep, since that package's contract is
+  that no claim lives there that is not also in the résumé.
+- **A stored résumé override was silently outranking the code.** `/resume` prefers the
+  `active_resume` setting when one is stored, and one was — an old copy carrying Cam's home city,
+  his personal email address, and the degree claim. Every résumé edit since it was applied,
+  including the 2026-07-29 decision to drop the city, rendered to nobody. The dev override was
+  backed up and cleared so the canonical résumé serves again. **The production database very
+  likely holds the same row**, and clearing it is a prerequisite for any of this reaching a reader.
+
 ### Added
 - **AnimeFeedFlux joins the Flux showcase — six featured products.** A full case-study page at
   `/projects/animefeedflux`, its own brand set generated from Cam's artwork (mark, logo, poster,

@@ -26,9 +26,11 @@ type Doc struct {
 // About is the ~/about.md splash.
 const About = `Earl Cameron — AI-native systems engineer · Remote
 
-Senior software engineer (UKG, since 2020). I build production systems across the stack — Go,
-C#/.NET on the backend; React, Angular, TypeScript on the front — and I ship fast by pairing deep
-systems judgment with LLMs in the loop. Recently focused on agentic systems and AI infrastructure.
+Senior software engineer, seven years at UKG building enterprise HR software at scale — cloud
+operations, then product engineering, now AI product development. Full-stack: Go and C#/.NET on
+the backend; React, Angular, TypeScript on the front; Claude-driven agent workflows in day-to-
+day delivery. Outside work I build complete web applications in Go end to end — the UI framework
+and the transport included.
 
 Curious recruiter? ` + "`ls notes`" + ` and read on.
 `
@@ -36,7 +38,7 @@ Curious recruiter? ` + "`ls notes`" + ` and read on.
 // README is the index the terminal prints from ~/notes/README.md.
 const README = `notes/ — a quick briefing for recruiters.
 
-  cat notes/experience.md      roles, impact, education
+  cat notes/experience.md      roles, scope, impact
   cat notes/skills.md          languages, frameworks, infra, AI/ML
   cat notes/projects.md        open-source work (github.com/monstercameron)
   cat notes/working-style.md   how I operate
@@ -45,38 +47,49 @@ Everything here is public and professional. The rest of the terminal is a playgr
 type ` + "`help`" + ` or ` + "`projects`" + `.
 `
 
-// Experience is the roles-and-education briefing.
+// Experience is the roles briefing.
+//
+// Mirrors internal/resume.Data() role for role and date for date — the package contract is that no
+// claim lives here that is not also in the résumé, and a recruiter who reads both is exactly the
+// recruiter who notices when the terminal and the PDF disagree about a title. There is no EDUCATION
+// block, matching the résumé (Cam's decision, 2026-08-17); nothing here should reintroduce one.
 const Experience = `EXPERIENCE
 
-UKG — Software Engineer (P3 / Senior)                                    2020 – present
-  HCM domain, and more recently an agentic-systems / AI-infrastructure org (agents & AI tooling).
-  Selected work:
-    · Angular → React modernization (React, Tremor, Node, MS SQL Server)
-    · Unified Search micro-frontend
-    · "48 Hours" ChatAssistant
-    · Bryte ChangeJob proof-of-concept
-    · HCM Pillar Dashboard
-    · Go store/send benchmarks; client-per-core capacity experiments
-    · Provider registries; authentication & session systems
-    · SQL performance work (CXPACKET / SOS_SCHEDULER_YIELD); throughput & priority stored procs
+UKG — Senior Software Engineer, AI Product Development                Jan 2025 – present
+  Two tiger teams building AI features for Bryte AI, UKG's AI product line, and now a
+  dedicated team shaping a new recruiting product. Tool-calling agents over HCM data
+  and retrieval-grounded answers drawn from it. Mentoring engineers and interns;
+  training the support organizations that field the product first.
 
-EDUCATION
-  B.S. Information Technology — Florida International University (FIU)
-  A.S. Information Technology — Miami Dade College
+UKG — Software Engineer, UKG Pro Core HR                             Jul 2021 – Jan 2025
+    · Angular → React modernization of a long-lived surface (React, Node, MS SQL Server)
+    · HCM Pillar Dashboard — status across product areas in one view
+    · SQL Server contention (CXPACKET / SOS_SCHEDULER_YIELD); throughput & priority procs
+
+Ultimate Software (now UKG) — Cloud Engineer                         Oct 2019 – Jul 2021
+    · Led emergency war rooms for critical infrastructure incidents
+    · Owned escalated customer cases and defects through to resolution
+    · Built the internal dashboard teams used to track dev & infrastructure Jira cases
+    · Wrote process documentation for recurring infrastructure & escalation workflows
+
+4Geeks Academy · HeyTutor — Instructor & Tutor (contract)                  2020 – present
+    · Instructor/TA on a full-stack web development program (4Geeks, 2020 – 2021)
+    · HTML/CSS and JavaScript fundamentals (HeyTutor); 5.0 average student rating
 `
 
 // Skills is the capability inventory.
 const Skills = `SKILLS
 
+  AI / ML     Tool-calling agents · retrieval / RAG · evals & guardrails · OpenAI & Anthropic
+              APIs · LangChain · local runtimes (llama.cpp, Ollama, LM Studio)
   Languages   Go · C# · TypeScript / JavaScript · Python   (Rust, C — exploratory)
-  Frontend    React · Angular · Blazor / Razor · Tailwind · WebAssembly (Go→WASM)
   Backend     .NET · Node · Flask · gRPC · REST
-  Data        MS SQL Server · MySQL · MongoDB · SQLite
+  Frontend    React · Angular · Blazor / Razor · Tailwind · WebAssembly (Go→WASM)
+  Data        MS SQL Server · PostgreSQL · MySQL · MongoDB · SQLite
   Infra       Docker · IIS · WSL2 · GCP · DigitalOcean · Nginx
-  AI / ML     OpenAI & Anthropic APIs · LangChain · FAISS · Whisper · Stable Diffusion ·
-              local LLM runtimes · on-device inference (Snapdragon NPU, QNN, ONNX Runtime GenAI,
-              INT4 quantization)
-  Workflow    AI-native — Claude Code, Copilot, Cursor; heavy but measured LLM use
+  Practice    Agentic development — Claude Code and Codex on real delivery work; agent
+              harnesses; spec-first; adversarial review before merge; benchmarked (see
+              GoWebComponents docs/BENCHMARKS.md)
 `
 
 // Projects is the open-source inventory.
